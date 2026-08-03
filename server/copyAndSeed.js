@@ -61,7 +61,7 @@ const flowerCreations = [
     isBestSeller: true,
     ratingAverage: 5.0,
     ratingCount: 14,
-    images: flowerImagesMap[1] ? flowerImagesMap[1].map((url) => ({ url })) : [],
+    images: flowerImagesMap[1] || [],
     image: flowerImagesMap[1]?.[0] || '',
   },
   {
@@ -76,7 +76,7 @@ const flowerCreations = [
     isBestSeller: false,
     ratingAverage: 4.9,
     ratingCount: 9,
-    images: flowerImagesMap[2] ? flowerImagesMap[2].map((url) => ({ url })) : [],
+    images: flowerImagesMap[2] || [],
     image: flowerImagesMap[2]?.[0] || '',
   },
   {
@@ -91,7 +91,7 @@ const flowerCreations = [
     isBestSeller: true,
     ratingAverage: 5.0,
     ratingCount: 22,
-    images: flowerImagesMap[3] ? flowerImagesMap[3].map((url) => ({ url })) : [],
+    images: flowerImagesMap[3] || [],
     image: flowerImagesMap[3]?.[0] || '',
   },
   {
@@ -106,7 +106,7 @@ const flowerCreations = [
     isBestSeller: false,
     ratingAverage: 4.8,
     ratingCount: 6,
-    images: flowerImagesMap[4] ? flowerImagesMap[4].map((url) => ({ url })) : [],
+    images: flowerImagesMap[4] || [],
     image: flowerImagesMap[4]?.[0] || '',
   },
   {
@@ -121,7 +121,7 @@ const flowerCreations = [
     isBestSeller: false,
     ratingAverage: 4.9,
     ratingCount: 11,
-    images: flowerImagesMap[5] ? flowerImagesMap[5].map((url) => ({ url })) : [],
+    images: flowerImagesMap[5] || [],
     image: flowerImagesMap[5]?.[0] || '',
   },
   {
@@ -136,7 +136,7 @@ const flowerCreations = [
     isBestSeller: true,
     ratingAverage: 5.0,
     ratingCount: 18,
-    images: flowerImagesMap[6] ? flowerImagesMap[6].map((url) => ({ url })) : [],
+    images: flowerImagesMap[6] || [],
     image: flowerImagesMap[6]?.[0] || '',
   },
   {
@@ -151,7 +151,7 @@ const flowerCreations = [
     isBestSeller: false,
     ratingAverage: 4.9,
     ratingCount: 8,
-    images: flowerImagesMap[7] ? flowerImagesMap[7].map((url) => ({ url })) : [],
+    images: flowerImagesMap[7] || [],
     image: flowerImagesMap[7]?.[0] || '',
   },
   {
@@ -166,7 +166,7 @@ const flowerCreations = [
     isBestSeller: true,
     ratingAverage: 5.0,
     ratingCount: 27,
-    images: flowerImagesMap[8] ? flowerImagesMap[8].map((url) => ({ url })) : [],
+    images: flowerImagesMap[8] || [],
     image: flowerImagesMap[8]?.[0] || '',
   },
   {
@@ -181,7 +181,7 @@ const flowerCreations = [
     isBestSeller: false,
     ratingAverage: 5.0,
     ratingCount: 15,
-    images: flowerImagesMap[9] ? flowerImagesMap[9].map((url) => ({ url })) : [],
+    images: flowerImagesMap[9] || [],
     image: flowerImagesMap[9]?.[0] || '',
   },
   {
@@ -196,7 +196,7 @@ const flowerCreations = [
     isBestSeller: true,
     ratingAverage: 5.0,
     ratingCount: 31,
-    images: flowerImagesMap[10] ? flowerImagesMap[10].map((url) => ({ url })) : [],
+    images: flowerImagesMap[10] || [],
     image: flowerImagesMap[10]?.[0] || '',
   },
 ]

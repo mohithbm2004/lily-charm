@@ -10,6 +10,7 @@ import orderRoutes from './routes/orderRoutes.js'
 import uploadRoutes from './routes/uploadRoutes.js'
 import collectionRoutes from './routes/collectionRoutes.js'
 import customRequestRoutes from './routes/customRequestRoutes.js'
+import { startAutomaticDbCleanup } from './utils/dbCleanup.js'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
 
 const app = express()
@@ -57,5 +58,6 @@ app.use(errorHandler)
 const PORT = process.env.PORT || 5000
 
 connectDB().then(() => {
+  startAutomaticDbCleanup()
   app.listen(PORT, () => console.log(`Lily Charm API running on port ${PORT}`))
 })
