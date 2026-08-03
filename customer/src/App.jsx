@@ -1,0 +1,56 @@
+import { Routes, Route, useLocation } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import Navbar from './components/Navbar'
+import Footer from './components/Footer'
+import CartDrawer from './components/CartDrawer'
+import Home from './pages/Home'
+import Shop from './pages/Shop'
+import Product from './pages/Product'
+import Checkout from './pages/Checkout'
+import Dashboard from './pages/Dashboard'
+import Collections from './pages/Collections'
+import About from './pages/About'
+import Contact from './pages/Contact'
+import Journal from './pages/Journal'
+import ResetPassword from './pages/ResetPassword'
+
+function PageTransition({ children }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4, ease: 'easeInOut' }}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+export default function App() {
+  const location = useLocation()
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <CartDrawer />
+      <main className="flex-1">
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={<PageTransition><Home /></PageTransition>} />
+            <Route path="/collections" element={<PageTransition><Collections /></PageTransition>} />
+            <Route path="/shop" element={<PageTransition><Shop /></PageTransition>} />
+            <Route path="/product/:id" element={<PageTransition><Product /></PageTransition>} />
+            <Route path="/checkout" element={<PageTransition><Checkout /></PageTransition>} />
+            <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
+            <Route path="/about" element={<PageTransition><About /></PageTransition>} />
+            <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
+            <Route path="/journal" element={<PageTransition><Journal /></PageTransition>} />
+            <Route path="/reset-password" element={<PageTransition><ResetPassword /></PageTransition>} />
+          </Routes>
+        </AnimatePresence>
+      </main>
+      <Footer />
+    </div>
+  )
+}

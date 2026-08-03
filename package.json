@@ -1,0 +1,14 @@
+{
+  "name": "lily-charm-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev:server": "npm --prefix server start",
+    "dev:customer": "npm --prefix customer run dev",
+    "dev:admin": "npm --prefix admin run dev",
+    "build:customer": "npm --prefix customer run build",
+    "build:admin": "npm --prefix admin run build",
+    "build:all": "npm --prefix customer run build && npm --prefix admin run build"
+  }
+}
