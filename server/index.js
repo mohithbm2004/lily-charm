@@ -51,9 +51,12 @@ app.use('/api/', apiLimiter)
 app.post('/api/create-order', createRazorpayOrder)
 app.post('/api/verify-payment', verifyPayment)
 
+import paymentRoutes from './routes/paymentRoutes.js'
+
 app.use('/api/auth', authRoutes)
 app.use('/api/products', productRoutes)
 app.use('/api/orders', orderRoutes)
+app.use('/api/payment', paymentRoutes)
 app.use('/api/uploads', uploadRoutes)
 app.use('/api/collections', collectionRoutes)
 app.use('/api/custom-requests', customRequestRoutes)

@@ -892,21 +892,21 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* TAB 3: ORDER TRACKING */}
+        {/* TAB 3: ORDER TRACKING & FULFILLMENT */}
         {activeTab === 'orders' && (
           <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--color-line)] pb-4">
               <div>
                 <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
-                  <Truck className="text-[var(--color-primary)]" size={20} /> Order Delivery & Fulfillment Manager
+                  <Truck className="text-[var(--color-primary)]" size={20} /> Order Delivery & Fulfillment Suite
                 </h2>
                 <p className="text-xs text-[var(--color-ink-soft)] mt-0.5">
-                  Real-time customer orders placed via storefront with payment & delivery tracking.
+                  Process orders, update courier tracking numbers, approve refunds, and generate PDF invoices.
                 </p>
               </div>
               <div className="flex items-center gap-3 self-start">
-                <span className="bg-[var(--color-primary)] text-white text-xs font-bold font-mono px-3 py-1.5 rounded-full">
-                  {orders.length} Total Orders
+                <span className="bg-[var(--color-primary)] text-white text-xs font-bold font-mono px-3 py-1.5 rounded">
+                  {orders.length} Orders
                 </span>
                 {orders.length > 0 && (
                   <button
@@ -923,6 +923,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
+            {/* Orders Table Container */}
             {orders.length === 0 ? (
               <div className="border border-dashed border-[var(--color-line)] bg-[var(--color-card-bg)] p-12 text-center space-y-2">
                 <Truck size={32} className="mx-auto text-[var(--color-ink-soft)]" />
@@ -932,79 +933,159 @@ export default function AdminDashboard() {
                 </p>
               </div>
             ) : (
-              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] overflow-x-auto shadow-sm">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-[var(--color-line)] text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[var(--color-ink-soft)] bg-[var(--color-bg)]">
-                      <th className="p-4">Order ID & Date</th>
-                      <th className="p-4">Customer Shipping Details</th>
-                      <th className="p-4">Items Ordered</th>
-                      <th className="p-4">Total Amount</th>
-                      <th className="p-4">Delivery Status</th>
-                      <th className="p-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--color-line)] text-xs">
-                    {orders.map((o) => (
-                      <tr key={o.id || o._id} className="hover:bg-[var(--color-bg)]/60 transition-colors">
-                        <td className="p-4 align-top">
-                          <p className="font-mono font-bold text-sm text-[var(--color-primary)]">{o.id || o._id}</p>
-                          <p className="text-[0.68rem] text-[var(--color-ink-soft)] mt-0.5">{o.date || (o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '')}</p>
-                          <span className="inline-block mt-2 text-[0.6rem] font-mono font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-300">
-                            {o.paymentMethod || 'Paid (Razorpay)'}
-                          </span>
-                        </td>
-                        <td className="p-4 space-y-1 align-top">
-                          <p className="font-bold text-sm">{o.customerName || o.shippingAddress?.name || 'Customer'}</p>
-                          {o.email && <p className="text-[0.68rem] text-[var(--color-primary)] font-semibold">{o.email}</p>}
-                          {o.phone && <p className="text-[0.68rem] text-[var(--color-ink-soft)] font-mono">{o.phone}</p>}
-                          <p className="text-[0.68rem] text-[var(--color-ink-soft)] max-w-xs leading-relaxed">
-                            {o.address || o.shippingAddress?.address || o.shippingAddress?.line1}, {o.city || o.shippingAddress?.city} - {o.pincode || o.shippingAddress?.pincode}
-                          </p>
-                        </td>
-                        <td className="p-4 space-y-2 align-top">
-                          {o.items?.map((item, idx) => (
-                            <div key={idx} className="flex items-center gap-2">
-                              {item.image && (
-                                <img src={item.image} alt={item.title} className="w-8 h-10 object-cover border border-[var(--color-line)] shrink-0" />
-                              )}
-                              <div>
-                                <p className="font-medium leading-tight">{item.title}</p>
-                                <p className="text-[0.65rem] text-[var(--color-ink-soft)] font-mono">Qty: {item.qty || 1} • {formatPrice(item.price)}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </td>
-                        <td className="p-4 font-bold text-sm text-emerald-800 align-top">{formatPrice(o.total)}</td>
-                        <td className="p-4 align-top">
-                          <select
-                            value={o.orderStatus || o.status || 'Handcrafting'}
-                            onChange={(e) => updateOrderStatus(o.id || o._id, e.target.value)}
-                            className="border border-[var(--color-line)] p-2 text-xs bg-[var(--color-bg)] font-semibold focus:outline-none focus:border-[var(--color-primary)] w-full"
-                          >
-                            <option value="Handcrafting">🎨 Handcrafting Stems</option>
-                            <option value="Packed & Dispatched">📦 Packed & Dispatched</option>
-                            <option value="Out for Delivery">🚚 Out for Delivery</option>
-                            <option value="Delivered">✅ Delivered to Customer</option>
-                            <option value="Cancelled">❌ Cancelled</option>
-                          </select>
-                        </td>
-                        <td className="p-4 text-right align-top">
-                          <button
-                            onClick={() => {
-                              if (confirm(`Are you sure you want to delete order "${o.id}"?`)) {
-                                deleteOrder(o.id || o._id)
-                              }
-                            }}
-                            className="text-rose-600 hover:text-rose-800 text-xs font-bold flex items-center gap-1 ml-auto hover:underline"
-                          >
-                            <Trash2 size={13} /> Delete
-                          </button>
-                        </td>
+              <div className="space-y-4">
+                <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] overflow-x-auto shadow-sm">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-[var(--color-line)] text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[var(--color-ink-soft)] bg-[var(--color-bg)]">
+                        <th className="p-4">Order ID & Date</th>
+                        <th className="p-4">Customer & Address</th>
+                        <th className="p-4">Items Ordered</th>
+                        <th className="p-4">Amount & Payment</th>
+                        <th className="p-4">Courier Tracking</th>
+                        <th className="p-4">Fulfillment Status</th>
+                        <th className="p-4 text-right">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--color-line)] text-xs">
+                      {orders.map((o) => (
+                        <tr key={o.id || o._id} className="hover:bg-[var(--color-bg)]/60 transition-colors">
+                          <td className="p-4 align-top space-y-1">
+                            <p className="font-mono font-bold text-sm text-[var(--color-primary)]">{o.orderNumber || o.id || o._id}</p>
+                            <p className="text-[0.68rem] text-[var(--color-ink-soft)]">{o.date || (o.createdAt ? new Date(o.createdAt).toLocaleDateString('en-IN') : '')}</p>
+                            <button
+                              onClick={() => window.open(`${API_URL}/orders/${o._id || o.id}/invoice`, '_blank')}
+                              className="text-[0.62rem] font-bold text-blue-700 hover:underline flex items-center gap-1 mt-1"
+                            >
+                              📄 Download Invoice
+                            </button>
+                          </td>
+                          <td className="p-4 space-y-1 align-top">
+                            <p className="font-bold text-sm">{o.customerName || o.shippingAddress?.name || 'Customer'}</p>
+                            {(o.email || o.shippingAddress?.email) && (
+                              <p className="text-[0.68rem] text-[var(--color-primary)] font-semibold">{o.email || o.shippingAddress?.email}</p>
+                            )}
+                            {(o.phone || o.shippingAddress?.phone) && (
+                              <p className="text-[0.68rem] text-[var(--color-ink-soft)] font-mono">{o.phone || o.shippingAddress?.phone}</p>
+                            )}
+                            <p className="text-[0.68rem] text-[var(--color-ink-soft)] max-w-xs leading-relaxed">
+                              {o.address || o.shippingAddress?.address || o.shippingAddress?.line1}, {o.city || o.shippingAddress?.city} - {o.pincode || o.shippingAddress?.pincode}
+                            </p>
+                          </td>
+                          <td className="p-4 space-y-2 align-top">
+                            {o.items?.map((item, idx) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                {item.image && (
+                                  <img src={item.image} alt={item.title} className="w-8 h-10 object-cover border border-[var(--color-line)] shrink-0" />
+                                )}
+                                <div>
+                                  <p className="font-medium leading-tight text-xs">{item.title}</p>
+                                  <p className="text-[0.65rem] text-[var(--color-ink-soft)] font-mono">Qty: {item.qty || 1} • {formatPrice(item.price)}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </td>
+                          <td className="p-4 space-y-1 align-top">
+                            <p className="font-bold text-sm text-emerald-800 font-mono">{formatPrice(o.grandTotal || o.total)}</p>
+                            <span className="inline-block text-[0.62rem] font-mono font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 border border-emerald-300">
+                              {o.paymentMethod || 'Paid (Razorpay)'}
+                            </span>
+                            {o.razorpayPaymentId && (
+                              <p className="text-[0.6rem] font-mono text-[var(--color-ink-soft)]">ID: {o.razorpayPaymentId}</p>
+                            )}
+                          </td>
+
+                          {/* Tracking Number Input */}
+                          <td className="p-4 align-top space-y-1.5">
+                            <input
+                              type="text"
+                              placeholder="Enter Tracking No..."
+                              defaultValue={o.trackingNumber || ''}
+                              onBlur={(e) => {
+                                if (e.target.value !== o.trackingNumber) {
+                                  updateOrderStatus(o.id || o._id, o.status || 'Confirmed', e.target.value)
+                                }
+                              }}
+                              className="w-full border border-[var(--color-line)] p-1.5 text-xs font-mono bg-white focus:border-[var(--color-primary)]"
+                            />
+                            <p className="text-[0.62rem] text-[var(--color-ink-soft)]">Carrier: {o.carrier || 'BlueDart'}</p>
+                          </td>
+
+                          {/* Status Dropdown */}
+                          <td className="p-4 align-top space-y-2">
+                            <select
+                              value={o.status || 'Confirmed'}
+                              onChange={(e) => updateOrderStatus(o.id || o._id, e.target.value)}
+                              className="border border-[var(--color-line)] p-2 text-xs bg-[var(--color-bg)] font-bold focus:outline-none focus:border-[var(--color-primary)] w-full"
+                            >
+                              <option value="Pending Payment">⏳ Pending Payment</option>
+                              <option value="Paid">💳 Paid</option>
+                              <option value="Confirmed">✅ Order Confirmed</option>
+                              <option value="Processing">🎨 Studio Processing</option>
+                              <option value="Packed">📦 Packed & Sealed</option>
+                              <option value="Shipped">🚚 Shipped</option>
+                              <option value="Out For Delivery">🛵 Out For Delivery</option>
+                              <option value="Delivered">🎉 Delivered</option>
+                              <option value="Cancelled">❌ Cancelled</option>
+                              <option value="Refund Requested">⚠️ Refund Requested</option>
+                              <option value="Refund Approved">💸 Refund Approved</option>
+                              <option value="Refund Rejected">🚫 Refund Rejected</option>
+                            </select>
+
+                            {/* Refund Actions if requested */}
+                            {o.status === 'Refund Requested' && (
+                              <div className="flex items-center gap-1.5 pt-1">
+                                <button
+                                  onClick={async () => {
+                                    if (confirm('Approve refund for this order?')) {
+                                      await fetch(`${API_URL}/orders/${o._id || o.id}/process-refund`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ action: 'approve' }),
+                                      })
+                                      window.location.reload()
+                                    }
+                                  }}
+                                  className="bg-emerald-700 text-white text-[0.6rem] font-bold uppercase px-2 py-1"
+                                >
+                                  Approve Refund
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm('Reject refund request?')) {
+                                      await fetch(`${API_URL}/orders/${o._id || o.id}/process-refund`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ action: 'reject' }),
+                                      })
+                                      window.location.reload()
+                                    }
+                                  }}
+                                  className="bg-rose-700 text-white text-[0.6rem] font-bold uppercase px-2 py-1"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
+                          </td>
+
+                          <td className="p-4 text-right align-top">
+                            <button
+                              onClick={() => {
+                                if (confirm(`Are you sure you want to delete order "${o.id || o._id}"?`)) {
+                                  deleteOrder(o.id || o._id)
+                                }
+                              }}
+                              className="text-rose-600 hover:text-rose-800 text-xs font-bold flex items-center gap-1 ml-auto hover:underline"
+                            >
+                              <Trash2 size={13} /> Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>

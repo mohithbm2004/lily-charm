@@ -7,6 +7,16 @@ const orderItemSchema = new mongoose.Schema(
     price: Number,
     qty: Number,
     image: String,
+    specimen: String,
+  },
+  { _id: false }
+)
+
+const statusHistorySchema = new mongoose.Schema(
+  {
+    status: String,
+    timestamp: { type: Date, default: Date.now },
+    note: String,
   },
   { _id: false }
 )
@@ -14,7 +24,11 @@ const orderItemSchema = new mongoose.Schema(
 const orderSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
-    orderNumber: { type: String, default: () => `LC-${Date.now().toString().slice(-6)}` },
+    orderNumber: {
+      type: String,
+      default: () => `LC-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`,
+      unique: true,
+    },
     items: [orderItemSchema],
     shippingAddress: {
       name: String,
@@ -23,20 +37,62 @@ const orderSchema = new mongoose.Schema(
       line1: String,
       address: String,
       city: String,
+      state: String,
       pincode: String,
     },
-    subtotal: Number,
-    shipping: Number,
-    total: Number,
+    billingAddress: {
+      name: String,
+      email: String,
+      phone: String,
+      line1: String,
+      address: String,
+      city: String,
+      state: String,
+      pincode: String,
+    },
+    subtotal: { type: Number, required: true },
+    discountAmount: { type: Number, default: 0 },
+    couponCode: { type: String, default: '' },
+    tax: { type: Number, default: 0 },
+    shippingCharge: { type: Number, default: 0 },
+    grandTotal: { type: Number, required: true },
     paymentMethod: { type: String, default: 'Razorpay Prepaid' },
+    paymentStatus: {
+      type: String,
+      enum: ['Pending', 'Paid', 'Failed', 'Refunded', 'Partially Refunded'],
+      default: 'Pending',
+    },
     status: {
       type: String,
-      enum: ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'Handcrafting', 'Dispatched', 'Out for Delivery', 'Delivered', 'Cancelled'],
-      default: 'paid',
+      enum: [
+        'Pending Payment',
+        'Payment Failed',
+        'Paid',
+        'Confirmed',
+        'Processing',
+        'Packed',
+        'Shipped',
+        'Out For Delivery',
+        'Delivered',
+        'Cancelled',
+        'Refund Requested',
+        'Refund Approved',
+        'Refund Rejected',
+        'Returned',
+      ],
+      default: 'Pending Payment',
     },
     razorpayOrderId: String,
     razorpayPaymentId: String,
     razorpaySignature: String,
+    trackingNumber: { type: String, default: '' },
+    carrier: { type: String, default: 'BlueDart / Delhivery' },
+    estimatedDelivery: { type: Date },
+    notes: { type: String, default: '' },
+    refundReason: { type: String, default: '' },
+    refundAmount: { type: Number, default: 0 },
+    refundStatus: { type: String, default: 'None' },
+    statusHistory: [statusHistorySchema],
   },
   { timestamps: true }
 )

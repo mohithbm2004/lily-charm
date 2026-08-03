@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { formatPrice } from '../lib/format'
 import Reveal from '../components/Reveal'
-import { User, Package, MapPin, Sparkles, Upload, CheckCircle2, Search, Edit3, LogOut } from 'lucide-react'
+import { User, Package, MapPin, Sparkles, Upload, CheckCircle2, Search, Edit3, LogOut, Download, Eye, Truck, RefreshCw } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import OrderDetailsModal from '../components/OrderDetailsModal'
+import OrderTimeline from '../components/OrderTimeline'
 
 const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
 
-const tabs = ['Profile Details', 'My Orders', 'Custom Price Quotes', 'Saved Addresses']
+const tabs = ['My Orders', 'Profile Details', 'Custom Price Quotes', 'Saved Addresses']
 
 export default function Dashboard() {
   const { user, logout, updateUserProfile } = useAuth()
@@ -39,6 +41,7 @@ export default function Dashboard() {
   // Orders state from MongoDB
   const [userOrders, setUserOrders] = useState([])
   const [userCustomRequests, setUserCustomRequests] = useState([])
+  const [selectedOrder, setSelectedOrder] = useState(null)
 
   const fetchProfileFromApi = async (email) => {
     if (!email) return
@@ -301,53 +304,94 @@ export default function Dashboard() {
             </form>
           )}
 
-          {/* TAB 2: MY ORDERS */}
+          {/* TAB 1: MY ORDERS */}
           {tab === 'My Orders' && (
             <div className="space-y-4 text-xs">
-              <div className="border-b border-[var(--color-line)] pb-3">
-                <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
-                  <Package size={18} className="text-[var(--color-primary)]" /> My Placed Orders
-                </h2>
-                <p className="text-xs text-[var(--color-ink-soft)]">
-                  Live order status tracking for your purchases.
-                </p>
+              <div className="border-b border-[var(--color-line)] pb-3 flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
+                    <Package size={18} className="text-[var(--color-primary)]" /> My Placed Orders
+                  </h2>
+                  <p className="text-xs text-[var(--color-ink-soft)]">
+                    Track every step of your handcrafted order from studio creation to home delivery.
+                  </p>
+                </div>
+                <button
+                  onClick={() => fetchUserOrdersAndRequests(userProfile.email)}
+                  className="p-2 border border-[var(--color-line)] bg-[var(--color-card-bg)] hover:bg-black/5 flex items-center gap-1 font-bold text-[0.65rem] uppercase"
+                >
+                  <RefreshCw size={12} /> Refresh
+                </button>
               </div>
 
               {userOrders.length === 0 ? (
-                <div className="border border-dashed border-[var(--color-line)] p-8 text-center text-[var(--color-ink-soft)]">
-                  <p className="font-bold uppercase">No Orders Found for {userProfile.email}</p>
-                  <p className="text-[0.7rem] mt-1">Place an order at checkout to track delivery status here!</p>
+                <div className="border border-dashed border-[var(--color-line)] p-8 text-center text-[var(--color-ink-soft)] space-y-3">
+                  <p className="font-bold uppercase text-sm">No Orders Found for {userProfile.email}</p>
+                  <p className="text-[0.7rem]">Place an order at checkout to track delivery status live right here!</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {userOrders.map((o) => (
-                    <div key={o._id} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5 space-y-3">
-                      <div className="flex justify-between items-start border-b border-[var(--color-line)] pb-3">
+                    <div key={o._id} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow">
+                      {/* Order Header */}
+                      <div className="flex flex-wrap justify-between items-start border-b border-[var(--color-line)] pb-3 gap-2">
                         <div>
                           <p className="font-mono font-bold text-sm text-[var(--color-primary)]">{o.orderNumber || o._id}</p>
-                          <p className="text-[0.68rem] text-[var(--color-ink-soft)]">{new Date(o.createdAt).toLocaleDateString()}</p>
+                          <p className="text-[0.68rem] text-[var(--color-ink-soft)]">Placed on: {new Date(o.createdAt).toLocaleDateString('en-IN')}</p>
                         </div>
-                        <span className="specimen-tag bg-emerald-800 text-white font-mono uppercase">{o.status || 'paid'}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="specimen-tag bg-[var(--color-primary)] text-white font-mono uppercase px-2 py-0.5 text-[0.62rem]">
+                            {o.status || 'Confirmed'}
+                          </span>
+                          <span className="specimen-tag bg-emerald-800 text-white font-mono uppercase px-2 py-0.5 text-[0.62rem]">
+                            {o.paymentStatus || 'Paid'}
+                          </span>
+                        </div>
                       </div>
 
+                      {/* Timeline Preview */}
+                      <div className="bg-[var(--color-bg)] p-3 border border-[var(--color-line)]">
+                        <OrderTimeline status={o.status} history={o.statusHistory} />
+                      </div>
+
+                      {/* Items Preview */}
                       <div className="space-y-2">
                         {o.items?.map((it, idx) => (
-                          <div key={idx} className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2">
-                              {it.image && <img src={it.image} alt={it.title} className="w-10 h-12 object-cover border border-[var(--color-line)]" />}
+                          <div key={idx} className="flex items-center justify-between gap-3 p-2 bg-[var(--color-bg)] border border-[var(--color-line)]">
+                            <div className="flex items-center gap-3">
+                              <img src={it.image || '/images/products/flower-1-1.jpg'} alt={it.title} className="w-10 h-12 object-cover border border-[var(--color-line)]" />
                               <div>
-                                <p className="font-bold">{it.title}</p>
-                                <p className="text-[0.65rem] text-[var(--color-ink-soft)]">Qty: {it.qty || 1}</p>
+                                <p className="font-bold text-xs">{it.title}</p>
+                                <p className="text-[0.65rem] text-[var(--color-ink-soft)]">Qty: {it.qty || 1} × {formatPrice(it.price)}</p>
                               </div>
                             </div>
-                            <span className="font-bold text-[var(--color-primary)]">{formatPrice(it.price * (it.qty || 1))}</span>
+                            <span className="font-bold font-mono text-[var(--color-primary)]">{formatPrice(it.price * (it.qty || 1))}</span>
                           </div>
                         ))}
                       </div>
 
-                      <div className="pt-3 border-t border-[var(--color-line)] flex justify-between items-center text-xs font-bold">
-                        <span>Total Paid</span>
-                        <span className="text-emerald-800 text-sm font-mono">{formatPrice(o.total)}</span>
+                      {/* Footer Actions & Total */}
+                      <div className="pt-3 border-t border-[var(--color-line)] flex flex-wrap justify-between items-center gap-3">
+                        <div>
+                          <span className="text-[0.68rem] text-[var(--color-ink-soft)] uppercase font-bold">Total Amount Paid</span>
+                          <p className="text-emerald-800 text-base font-mono font-bold">{formatPrice(o.grandTotal || o.total)}</p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() => setSelectedOrder(o)}
+                            className="btn-primary py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center gap-1"
+                          >
+                            <Eye size={12} /> View Details & Timeline
+                          </button>
+
+                          <button
+                            onClick={() => window.open(`${API_URL}/orders/${o._id}/invoice`, '_blank')}
+                            className="btn-outline py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center gap-1"
+                          >
+                            <Download size={12} /> Invoice PDF
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -412,6 +456,14 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Order Details & Live Tracking Modal */}
+      <OrderDetailsModal
+        order={selectedOrder}
+        isOpen={Boolean(selectedOrder)}
+        onClose={() => setSelectedOrder(null)}
+        onRefresh={() => fetchUserOrdersAndRequests(userProfile.email)}
+      />
     </div>
   )
 }
