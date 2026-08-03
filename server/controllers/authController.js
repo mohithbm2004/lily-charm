@@ -50,7 +50,8 @@ export async function register(req, res, next) {
       })
     }
 
-    await sendOtpEmail(cleanEmail, user.name, rawOtp)
+    // Send OTP email asynchronously in background so HTTP response is instant
+    sendOtpEmail(cleanEmail, user.name, rawOtp).catch(console.error)
 
     res.status(201).json({
       message: 'Verification OTP sent to your email address.',
@@ -151,7 +152,8 @@ export async function resendOtp(req, res, next) {
     user.lastOtpSentAt = new Date()
     await user.save()
 
-    await sendOtpEmail(cleanEmail, user.name, rawOtp)
+    // Send OTP email asynchronously in background
+    sendOtpEmail(cleanEmail, user.name, rawOtp).catch(console.error)
 
     res.json({
       message: 'A new 6-digit OTP code has been sent to your email.',
@@ -184,7 +186,8 @@ export async function login(req, res, next) {
       user.lastOtpSentAt = new Date()
       await user.save()
 
-      await sendOtpEmail(cleanEmail, user.name, rawOtp)
+      // Send OTP email asynchronously in background
+      sendOtpEmail(cleanEmail, user.name, rawOtp).catch(console.error)
 
       return res.status(403).json({
         message: 'Account not verified. Verification OTP sent to your email.',
