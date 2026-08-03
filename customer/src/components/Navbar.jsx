@@ -51,27 +51,9 @@ export default function Navbar() {
       <header className="sticky top-0 z-50 bg-[var(--color-bg)] transition-shadow duration-300">
         {/* Top Main Navigation */}
         <div className="border-b border-[var(--color-line)] bg-[var(--color-bg)]">
-          <div className="max-w-7xl mx-auto px-6 md:px-10 h-16 md:h-20 flex items-center justify-between gap-4">
+          <div className="max-w-7xl mx-auto px-6 md:px-10 h-16 md:h-20 flex items-center justify-between gap-6">
             
-            {/* Left Nav Links */}
-            <nav className="hidden lg:flex items-center gap-6 xl:gap-8 flex-1">
-              {navLinks.slice(0, 3).map((l) => (
-                <NavLink
-                  key={l.label}
-                  to={l.to}
-                  end={l.to === '/'}
-                  className={({ isActive }) =>
-                    `text-[0.72rem] tracking-[0.2em] uppercase font-[var(--font-button)] font-medium transition-colors ${
-                      isActive ? 'text-[var(--color-primary)] font-bold underline underline-offset-4' : 'text-[var(--color-ink)] hover:text-[var(--color-primary)]'
-                    }`
-                  }
-                >
-                  {l.label}
-                </NavLink>
-              ))}
-            </nav>
-
-            {/* Center Brand Title */}
+            {/* Left Brand Title */}
             <Link
               to="/"
               className="font-[var(--font-display)] text-2xl md:text-3xl tracking-[0.2em] uppercase font-bold text-[var(--color-ink)] shrink-0 hover:opacity-85 transition-opacity py-2"
@@ -80,20 +62,23 @@ export default function Navbar() {
             </Link>
 
             {/* Right Nav Links & Actions */}
-            <div className="hidden lg:flex items-center gap-5 xl:gap-6 flex-1 justify-end">
-              {navLinks.slice(3).map((l) => (
-                <NavLink
-                  key={l.label}
-                  to={l.to}
-                  className={({ isActive }) =>
-                    `text-[0.72rem] tracking-[0.2em] uppercase font-[var(--font-button)] font-medium transition-colors ${
-                      isActive ? 'text-[var(--color-primary)] font-bold underline underline-offset-4' : 'text-[var(--color-ink)] hover:text-[var(--color-primary)]'
-                    }`
-                  }
-                >
-                  {l.label}
-                </NavLink>
-              ))}
+            <div className="hidden lg:flex items-center gap-5 xl:gap-7 justify-end flex-1">
+              <nav className="flex items-center gap-5 xl:gap-7">
+                {navLinks.map((l) => (
+                  <NavLink
+                    key={l.label}
+                    to={l.to}
+                    end={l.to === '/'}
+                    className={({ isActive }) =>
+                      `text-[0.72rem] tracking-[0.2em] uppercase font-[var(--font-button)] font-medium transition-colors ${
+                        isActive ? 'text-[var(--color-primary)] font-bold underline underline-offset-4' : 'text-[var(--color-ink)] hover:text-[var(--color-primary)]'
+                      }`
+                    }
+                  >
+                    {l.label}
+                  </NavLink>
+                ))}
+              </nav>
 
               <button
                 onClick={() => setIsCustomModalOpen(true)}
@@ -143,7 +128,7 @@ export default function Navbar() {
             </div>
 
             <button
-              className="md:hidden text-[var(--color-ink)]"
+              className="lg:hidden text-[var(--color-ink)]"
               onClick={() => setMenuOpen((v) => !v)}
               aria-label="Toggle menu"
             >

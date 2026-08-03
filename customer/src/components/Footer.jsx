@@ -21,51 +21,48 @@ const IconTwitter = (props) => (
 
 export default function Footer() {
   return (
-    <footer className="bg-[var(--color-primary)] text-[var(--color-bg)]">
+    <footer className="bg-[#212B1C] text-[#FAF7F2] border-t border-white/10">
       <div className="max-w-7xl mx-auto px-6 md:px-10 py-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12">
         <div className="space-y-3">
-          <p className="font-[var(--font-display)] text-2xl tracking-wider font-bold">Lily Charm</p>
-          <p className="text-xs md:text-sm text-[var(--color-beige)]/90 leading-relaxed max-w-xs">
+          <p className="font-[var(--font-display)] text-2xl tracking-widest uppercase font-bold text-[#F5E8D0]">Lily Charm</p>
+          <p className="text-xs md:text-sm text-[#E2DACB] leading-relaxed max-w-xs font-normal">
             Handcrafted velvet floral sculptures & botanical art, created to outlast every season.
           </p>
         </div>
         <div>
-          <p className="eyebrow text-[var(--color-beige)] font-bold text-xs tracking-[0.2em] uppercase mb-4">Quick Links</p>
-          <ul className="space-y-2 text-xs md:text-sm text-[var(--color-beige)]/85">
-            <li><Link to="/" className="hover:text-white transition-colors">Home</Link></li>
-            <li><Link to="/shop" className="hover:text-white transition-colors">Shop Catalog</Link></li>
-            <li><Link to="/about" className="hover:text-white transition-colors">About Studio</Link></li>
-            <li><Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
-            <li><Link to="/journal" className="hover:text-white transition-colors">Studio Journal</Link></li>
+          <p className="text-[#F5E8D0] font-bold text-xs tracking-[0.24em] uppercase mb-4 font-[var(--font-button)]">Quick Links</p>
+          <ul className="space-y-2.5 text-xs md:text-sm text-[#FAF7F2]">
+            <li><Link to="/" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Home</Link></li>
+            <li><Link to="/shop" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Shop Catalog</Link></li>
+            <li><Link to="/about" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">About Studio</Link></li>
+            <li><Link to="/contact" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Contact Us</Link></li>
+            <li><Link to="/journal" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Studio Journal</Link></li>
           </ul>
         </div>
         <div>
-          <p className="eyebrow text-[var(--color-beige)] font-bold text-xs tracking-[0.2em] uppercase mb-4">Collections</p>
-          <ul className="space-y-2 text-xs md:text-sm text-[var(--color-beige)]/85">
-            <li><Link to="/collections" className="hover:text-white transition-colors">Velvet Lilies</Link></li>
-            <li><Link to="/collections" className="hover:text-white transition-colors">Velvet Tulips</Link></li>
-            <li><Link to="/collections" className="hover:text-white transition-colors">Golden Sunflowers</Link></li>
-            <li><Link to="/collections" className="hover:text-white transition-colors">Heart Bouquets</Link></li>
+          <p className="text-[#F5E8D0] font-bold text-xs tracking-[0.24em] uppercase mb-4 font-[var(--font-button)]">Collections</p>
+          <ul className="space-y-2.5 text-xs md:text-sm text-[#FAF7F2]">
+            <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Velvet Lilies</Link></li>
+            <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Velvet Tulips</Link></li>
+            <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Golden Sunflowers</Link></li>
+            <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Heart Bouquets</Link></li>
           </ul>
         </div>
         <div>
-          <p className="eyebrow text-[var(--color-beige)] font-bold text-xs tracking-[0.2em] uppercase mb-4">Connect</p>
+          <p className="text-[#F5E8D0] font-bold text-xs tracking-[0.24em] uppercase mb-4 font-[var(--font-button)]">Connect</p>
           <div className="flex gap-4 mb-4">
-            <a href="#" aria-label="Instagram" className="p-2 border border-white/20 rounded-full hover:border-white transition-colors"><IconInstagram /></a>
-            <a href="#" aria-label="Facebook" className="p-2 border border-white/20 rounded-full hover:border-white transition-colors"><IconFacebook /></a>
-            <a href="#" aria-label="Twitter" className="p-2 border border-white/20 rounded-full hover:border-white transition-colors"><IconTwitter /></a>
+            <a href="#" aria-label="Instagram" className="p-2.5 border border-white/30 rounded-full hover:border-[#F5E8D0] hover:text-[#F5E8D0] transition-colors"><IconInstagram /></a>
+            <a href="#" aria-label="Facebook" className="p-2.5 border border-white/30 rounded-full hover:border-[#F5E8D0] hover:text-[#F5E8D0] transition-colors"><IconFacebook /></a>
+            <a href="#" aria-label="Twitter" className="p-2.5 border border-white/30 rounded-full hover:border-[#F5E8D0] hover:text-[#F5E8D0] transition-colors"><IconTwitter /></a>
           </div>
-          <p className="text-xs text-[var(--color-beige)]/70">
+          <p className="text-xs text-[#E2DACB] font-medium">
             Handcrafted with love by Keerthana Bapu.
           </p>
         </div>
       </div>
-      <div className="border-t border-white/15">
-        <div className="max-w-7xl mx-auto px-6 md:px-10 py-5 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-[var(--color-beige)]/80">
+      <div className="border-t border-white/15 bg-[#1B2317]">
+        <div className="max-w-7xl mx-auto px-6 md:px-10 py-5 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-[#E2DACB] font-medium">
           <p>© {new Date().getFullYear()} Lily Charm. All rights reserved.</p>
-          <Link to="/admin" className="opacity-80 hover:opacity-100 transition-opacity flex items-center gap-1 font-mono text-[0.7rem] bg-black/20 px-3 py-1 rounded border border-white/10">
-            🔒 Studio Admin Portal
-          </Link>
         </div>
       </div>
     </footer>

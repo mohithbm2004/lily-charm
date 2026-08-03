@@ -1,4 +1,5 @@
 import Hero from '../sections/Hero'
+import BrandIntro from '../sections/BrandIntro'
 import FeaturedCategories from '../sections/FeaturedCategories'
 import WideBanner from '../sections/WideBanner'
 import AboutArtist from '../sections/AboutArtist'
@@ -11,6 +12,7 @@ export default function Home() {
   return (
     <div className="space-y-4">
       <Hero />
+      <BrandIntro />
       <FeaturedCategories />
       <WideBanner />
       <AboutArtist />

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Heart, Plus } from 'lucide-react'
 import { formatPrice } from '../lib/format'
 import { useCart } from '../context/CartContext'
+import TiltCard3D from './TiltCard3D'
 
 export default function ProductCard({ product, index = 0 }) {
   const { addItem, openCart } = useCart()
@@ -20,13 +21,14 @@ export default function ProductCard({ product, index = 0 }) {
   const secondImg = allImages[1] || null
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.6, delay: (index % 4) * 0.06, ease: [0.16, 1, 0.3, 1] }}
-      className="group border border-[var(--color-line)] bg-[var(--color-card-bg)] p-3 flex flex-col justify-between hover:shadow-md transition-all relative text-center h-full"
-    >
+    <TiltCard3D intensity={10} className="h-full">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-40px' }}
+        transition={{ duration: 0.6, delay: (index % 4) * 0.06, ease: [0.16, 1, 0.3, 1] }}
+        className="group border border-[var(--color-line)] bg-[var(--color-card-bg)] p-3.5 flex flex-col justify-between shadow-md hover:shadow-xl transition-all relative text-center h-full"
+      >
       {/* Vertically Centered Image Section */}
       <div className="flex-1 flex flex-col justify-center items-center my-auto w-full py-2">
         <Link to={`/product/${product.id}`} className="block relative overflow-hidden border border-[var(--color-line)] bg-[var(--color-bg)] w-full">
@@ -110,5 +112,6 @@ export default function ProductCard({ product, index = 0 }) {
         </button>
       </div>
     </motion.div>
+    </TiltCard3D>
   )
 }
