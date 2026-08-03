@@ -279,13 +279,13 @@ export async function forgotPassword(req, res, next) {
     await user.save()
 
     const origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null)
-    let clientUrl = process.env.CLIENT_URL
+    let clientUrl = (process.env.CLIENT_URL || '').trim().replace(/[\r\n]+/g, '')
 
     if (!clientUrl || clientUrl.includes('localhost')) {
       if (origin && !origin.includes('localhost')) {
-        clientUrl = origin
+        clientUrl = origin.trim().replace(/[\r\n]+/g, '')
       } else {
-        clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
+        clientUrl = (process.env.CLIENT_URL || 'http://localhost:5173').trim().replace(/[\r\n]+/g, '')
       }
     }
 
