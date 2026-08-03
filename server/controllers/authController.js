@@ -278,7 +278,17 @@ export async function forgotPassword(req, res, next) {
     user.resetPasswordExpire = new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
     await user.save()
 
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
+    const origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null)
+    let clientUrl = process.env.CLIENT_URL
+
+    if (!clientUrl || clientUrl.includes('localhost')) {
+      if (origin && !origin.includes('localhost')) {
+        clientUrl = origin
+      } else {
+        clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
+      }
+    }
+
     const resetUrl = `${clientUrl}/reset-password?token=${resetToken}`
 
     // Send password reset email asynchronously in background
