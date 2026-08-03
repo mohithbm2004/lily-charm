@@ -25,31 +25,32 @@ function createTransporter() {
 }
 
 async function sendMailViaHttp({ to, subject, html, text }) {
-  const resendKey = process.env.RESEND_API_KEY || (process.env.EMAIL_PASS?.startsWith('re_') ? process.env.EMAIL_PASS : null)
   const brevoKey = process.env.BREVO_API_KEY || (process.env.EMAIL_PASS?.startsWith('xkeysib-') ? process.env.EMAIL_PASS : null)
+  const resendKey = process.env.RESEND_API_KEY || (process.env.EMAIL_PASS?.startsWith('re_') ? process.env.EMAIL_PASS : null)
 
-  // 1. Resend HTTPS REST API (Port 443)
-  if (resendKey) {
-    const res = await fetch('https://api.resend.com/emails', {
+  // 1. Brevo HTTPS REST API (Port 443 — Sends to ANY recipient email address)
+  if (brevoKey) {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendKey}`,
-        'Content-Type': 'application/json',
+        'accept': 'application/json',
+        'api-key': brevoKey,
+        'content-type': 'application/json',
       },
       body: JSON.stringify({
-        from: process.env.EMAIL_FROM || 'Lily Charm <onboarding@resend.dev>',
-        to,
+        sender: { name: 'Lily Charm', email: process.env.EMAIL_USER || 'lilycharm.store.in@gmail.com' },
+        to: [{ email: to }],
         subject,
-        html,
-        text,
+        htmlContent: html,
+        textContent: text,
       }),
     })
     const data = await res.json()
     if (!res.ok) {
-      console.error('[RESEND API ERROR]:', data)
-      throw new Error(`[RESEND API ERROR]: ${data.message || JSON.stringify(data)}`)
+      console.error('[BREVO API ERROR]:', data)
+      throw new Error(`[BREVO API ERROR]: ${data.message || JSON.stringify(data)}`)
     }
-    console.log('[RESEND API SUCCESS]:', data)
+    console.log('[BREVO API SUCCESS]:', data)
     return data
   }
 
