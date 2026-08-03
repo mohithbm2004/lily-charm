@@ -281,7 +281,8 @@ export async function forgotPassword(req, res, next) {
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
     const resetUrl = `${clientUrl}/reset-password?token=${resetToken}`
 
-    await sendPasswordResetEmail(cleanEmail, user.name, resetUrl)
+    // Send password reset email asynchronously in background
+    sendPasswordResetEmail(cleanEmail, user.name, resetUrl).catch(console.error)
 
     res.json({ message: 'Password reset link has been sent to your email address.' })
   } catch (err) {
