@@ -13,7 +13,7 @@ export default function Checkout() {
   const [processing, setProcessing] = useState(false)
   const [orderConfirmed, setOrderConfirmed] = useState(null)
 
-  const shipping = subtotal > 8000 || subtotal === 0 ? 0 : 250
+  const shipping = 0 // Free Shipping for testing
   const total = subtotal + shipping
 
   const [form, setForm] = useState({

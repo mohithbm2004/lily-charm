@@ -56,7 +56,7 @@ export async function createOrder(req, res, next) {
 
     const calcSubtotal = orderItems.reduce((sum, i) => sum + i.price * i.qty, 0)
     const subtotal = reqSubtotal || calcSubtotal
-    const shipping = reqShipping != null ? reqShipping : (subtotal > 8000 ? 0 : 250)
+    const shipping = reqShipping != null ? reqShipping : 0 // Free shipping for testing
     const total = reqTotal || (subtotal + shipping)
 
     const amountInPaise = Math.round(total * 100)
