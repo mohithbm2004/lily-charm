@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Sparkles, Upload, CheckCircle2, Search, Check, Ban } from 'lucide-react'
 import { formatPrice } from '../lib/format'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
 
 export default function CustomDesignModal({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState('submit') // 'submit' | 'check-quotes'

@@ -5,7 +5,7 @@ import { formatPrice } from '../lib/format'
 import Reveal from '../components/Reveal'
 import { CheckCircle2, ShoppingBag } from 'lucide-react'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
 
 export default function Checkout() {
   const { items, subtotal, clearCart } = useCart()

@@ -3,7 +3,7 @@ import { products as initialProducts, categories as initialCategories } from '..
 
 const StudioContext = createContext(null)
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
 
 const initialOrders = [
   {

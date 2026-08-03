@@ -5,7 +5,7 @@ import Reveal from '../components/Reveal'
 import { User, Package, MapPin, Sparkles, Upload, CheckCircle2, Search, Edit3, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
 
 const tabs = ['Profile Details', 'My Orders', 'Custom Price Quotes', 'Saved Addresses']
 

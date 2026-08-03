@@ -4,7 +4,7 @@ import { X, Lock, Mail, User, Phone, Sparkles, LogIn, UserPlus, CheckCircle2, Ey
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
   const { updateUserProfile } = useAuth()
