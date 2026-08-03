@@ -3,7 +3,7 @@ import Order from '../models/Order.js'
 import Product from '../models/Product.js'
 import razorpay from '../config/razorpay.js'
 
-// STEP 1: POST /api/create-order or /api/orders/create-razorpay-order
+// POST /api/create-order or /api/orders/create-razorpay-order
 export async function createRazorpayOrder(req, res, next) {
   try {
     const { amount, currency = 'INR', receipt } = req.body
@@ -12,12 +12,6 @@ export async function createRazorpayOrder(req, res, next) {
     if (isNaN(parsedAmount) || parsedAmount < 100) {
       return res.status(400).json({
         message: 'Invalid amount. Minimum amount must be at least 100 paise (₹1).',
-      })
-    }
-
-    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-      return res.status(401).json({
-        message: 'Razorpay API credentials are missing in server environment variables.',
       })
     }
 
@@ -83,24 +77,22 @@ export async function createOrder(req, res, next) {
 
     let razorpayOrderId = null
     try {
-      if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
-        const razorpayOrder = await razorpay.orders.create({
-          amount: amountInPaise,
-          currency: 'INR',
-          receipt: order._id.toString(),
-        })
-        razorpayOrderId = razorpayOrder.id
-        order.razorpayOrderId = razorpayOrder.id
-        await order.save()
-      }
+      const razorpayOrder = await razorpay.orders.create({
+        amount: amountInPaise,
+        currency: 'INR',
+        receipt: order._id.toString(),
+      })
+      razorpayOrderId = razorpayOrder.id
+      order.razorpayOrderId = razorpayOrder.id
+      await order.save()
     } catch (e) {
-      console.warn('Razorpay order creation skipped/errored:', e.message)
+      console.warn('Razorpay order creation error:', e.message)
     }
 
     res.status(201).json({
       ...order.toObject(),
       razorpayOrderId,
-      key_id: process.env.RAZORPAY_KEY_ID,
+      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_TLMD4P4BGZ6Qq8',
     })
   } catch (err) {
     next(err)

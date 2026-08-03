@@ -90,7 +90,34 @@ export default function Checkout() {
 
       const savedOrder = await res.json()
       const razorpayKey = savedOrder.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TLMD4P4BGZ6Qq8'
-      const razorpayOrderId = savedOrder.razorpayOrderId || savedOrder.order_id || savedOrder.id
+      let razorpayOrderId = savedOrder.razorpayOrderId || savedOrder.order_id || savedOrder.id
+
+      if (!razorpayOrderId) {
+        console.log('Fetching Razorpay order ID from /api/create-order...')
+        try {
+          const rzpRes = await fetch(`${API_URL}/create-order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              amount: Math.round(total * 100),
+              currency: 'INR',
+              receipt: savedOrder._id,
+            }),
+          })
+          if (rzpRes.ok) {
+            const rzpData = await rzpRes.json()
+            razorpayOrderId = rzpData.id || rzpData.order_id
+          }
+        } catch (e) {
+          console.error('Failed to create Razorpay order ID:', e)
+        }
+      }
+
+      if (!razorpayOrderId) {
+        alert('Could not initialize Razorpay payment. Please try again.')
+        setProcessing(false)
+        return
+      }
 
       // Open Razorpay Standard Checkout Modal
       const options = {
