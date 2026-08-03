@@ -416,3 +416,26 @@ export async function listUsers(req, res, next) {
     next(err)
   }
 }
+
+// GET /api/auth/test-email — Diagnostic endpoint to inspect live email delivery status
+export async function testEmail(req, res) {
+  try {
+    const targetEmail = req.query.email || 'bmmohith48@gmail.com'
+    const result = await sendOtpEmail(targetEmail, 'Test User', '998877')
+    res.json({
+      success: true,
+      emailHost: process.env.EMAIL_HOST,
+      emailUser: process.env.EMAIL_USER,
+      emailPassLength: process.env.EMAIL_PASS?.length || 0,
+      result,
+    })
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      errorName: err.name,
+      errorMessage: err.message,
+      errorCode: err.code,
+      stack: err.stack,
+    })
+  }
+}

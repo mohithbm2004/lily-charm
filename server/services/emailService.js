@@ -64,16 +64,18 @@ export async function sendOtpEmail(email, name, otp) {
   `
 
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM || `"${appName}" <${process.env.EMAIL_USER || 'noreply@lilycharm.com'}>`,
       to: email,
       subject: `🔐 ${otp} is your Lily Charm Verification Code`,
       text: `Your Lily Charm Verification OTP is ${otp}. It expires in 5 minutes.`,
       html,
     })
+    return info
   } catch (err) {
     console.error(`[SMTP ERROR - ${err.code || 'SEND_FAIL'}]: ${err.message}`)
     console.log(`[FALLBACK OTP CODE FOR ${email}]: ${otp}`)
+    throw err
   }
 }
 
