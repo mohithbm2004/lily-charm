@@ -8,13 +8,24 @@ import { CheckCircle2, ShoppingBag } from 'lucide-react'
 const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
 
 export default function Checkout() {
-  const { items, subtotal, clearCart } = useCart()
+  const { items, subtotal, coupon: activeCoupon, discountAmount, applyCoupon, removeCoupon, clearCart } = useCart()
   const navigate = useNavigate()
   const [processing, setProcessing] = useState(false)
   const [orderConfirmed, setOrderConfirmed] = useState(null)
+  const [couponInput, setCouponInput] = useState('')
+  const [couponMsg, setCouponMsg] = useState(null)
 
   const shipping = 0 // Free Shipping for testing
-  const total = subtotal + shipping
+  const total = Math.max(0, subtotal - discountAmount + shipping)
+
+  const handleApplyCoupon = (e) => {
+    e.preventDefault()
+    const res = applyCoupon(couponInput)
+    setCouponMsg(res)
+    if (res.success) {
+      setCouponInput('')
+    }
+  }
 
   const [form, setForm] = useState({
     name: '',
@@ -69,6 +80,8 @@ export default function Checkout() {
           pincode: form.pincode,
         },
         subtotal,
+        discountAmount,
+        couponCode: activeCoupon?.code || '',
         shipping,
         total,
         paymentMethod: 'Razorpay Prepaid',
@@ -271,9 +284,9 @@ export default function Checkout() {
       </Reveal>
 
       <Reveal delay={0.1}>
-        <div className="bg-[var(--color-beige)]/30 p-6 sticky top-28 border border-[var(--color-line)]">
-          <p className="eyebrow mb-5">Order Summary</p>
-          <div className="space-y-4 max-h-64 overflow-y-auto pr-1">
+        <div className="bg-[var(--color-beige)]/30 p-6 sticky top-28 border border-[var(--color-line)] space-y-5">
+          <p className="eyebrow mb-2">Order Summary</p>
+          <div className="space-y-4 max-h-56 overflow-y-auto pr-1">
             {items.map((item) => (
               <div key={item.id} className="flex gap-3">
                 <img src={item.image} alt={item.title} className="w-14 h-16 object-cover shrink-0 border border-[var(--color-line)]" />
@@ -285,11 +298,60 @@ export default function Checkout() {
               </div>
             ))}
           </div>
-          <div className="space-y-2 text-xs mt-6 pt-5 border-t border-[var(--color-line)]">
+
+          {/* Promo Code Entry Box */}
+          <div className="pt-3 border-t border-[var(--color-line)] space-y-2">
+            {activeCoupon ? (
+              <div className="bg-emerald-50 border border-emerald-300 p-2.5 text-xs flex justify-between items-center rounded">
+                <div>
+                  <p className="font-bold text-emerald-900 flex items-center gap-1">
+                    ✨ {activeCoupon.code}
+                  </p>
+                  <p className="text-[0.68rem] text-emerald-700">{activeCoupon.label}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={removeCoupon}
+                  className="text-rose-600 font-bold uppercase text-[0.65rem] hover:underline"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleApplyCoupon} className="space-y-1.5">
+                <div className="flex gap-2">
+                  <input
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)}
+                    placeholder="Promo code"
+                    className="flex-1 border border-[var(--color-line)] bg-white px-3 py-2 text-xs uppercase focus:outline-none focus:border-[var(--color-primary)] font-mono"
+                  />
+                  <button type="submit" className="btn-outline text-[0.68rem] uppercase font-bold text-[var(--color-ink)] px-3">
+                    Apply
+                  </button>
+                </div>
+                <p className="text-[0.65rem] text-[var(--color-ink-soft)]">Promo codes: <span className="font-mono font-bold text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('LILY10')}>LILY10</span> (10% OFF), <span className="font-mono font-bold text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('VELVET20')}>VELVET20</span> (20% OFF)</p>
+              </form>
+            )}
+
+            {couponMsg && (
+              <div className={`text-[0.68rem] p-2 rounded ${couponMsg.success ? 'bg-emerald-100 text-emerald-900 font-bold' : 'bg-rose-100 text-rose-800'}`}>
+                {couponMsg.message}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2 text-xs pt-3 border-t border-[var(--color-line)]">
             <div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between text-emerald-700 font-bold">
+                <span>Promo Discount ({activeCoupon?.code})</span>
+                <span>-{formatPrice(discountAmount)}</span>
+              </div>
+            )}
             <div className="flex justify-between"><span>Shipping</span><span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span></div>
             <div className="flex justify-between font-[var(--font-display)] text-lg font-bold pt-3 border-t border-[var(--color-line)] text-[var(--color-ink)]">
-              <span>Total</span><span className="text-[var(--color-primary)]">{formatPrice(total)}</span>
+              <span>Total Amount</span><span className="text-[var(--color-primary)]">{formatPrice(total)}</span>
             </div>
           </div>
         </div>

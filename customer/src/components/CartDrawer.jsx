@@ -6,9 +6,21 @@ import { useCart } from '../context/CartContext'
 import { formatPrice } from '../lib/format'
 
 export default function CartDrawer() {
-  const { items, open, closeCart, removeItem, setQty, subtotal } = useCart()
-  const [coupon, setCoupon] = useState('')
-  const shipping = items.length === 0 ? 0 : subtotal > 8000 ? 0 : 250
+  const { items, open, closeCart, removeItem, setQty, subtotal, coupon: activeCoupon, discountAmount, applyCoupon, removeCoupon } = useCart()
+  const [couponInput, setCouponInput] = useState('')
+  const [couponMsg, setCouponMsg] = useState(null)
+
+  const shipping = items.length === 0 ? 0 : subtotal > 8000 ? 0 : 0 // Free Shipping for testing
+  const grandTotal = Math.max(0, subtotal - discountAmount + shipping)
+
+  const handleApplyCoupon = (e) => {
+    e.preventDefault()
+    const res = applyCoupon(couponInput)
+    setCouponMsg(res)
+    if (res.success) {
+      setCouponInput('')
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -58,24 +70,60 @@ export default function CartDrawer() {
 
             {items.length > 0 && (
               <div className="border-t border-[var(--color-line)] px-6 py-6 space-y-4">
-                <div className="flex gap-2">
-                  <input
-                    value={coupon}
-                    onChange={(e) => setCoupon(e.target.value)}
-                    placeholder="Coupon code"
-                    className="flex-1 border border-[var(--color-line)] bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-[var(--color-primary)]"
-                  />
-                  <button className="btn-outline text-[var(--color-ink)]">Apply</button>
-                </div>
+                {/* Active Coupon Banner or Input Form */}
+                {activeCoupon ? (
+                  <div className="bg-emerald-50 border border-emerald-300 p-3 text-xs flex justify-between items-center rounded">
+                    <div>
+                      <p className="font-bold text-emerald-900 flex items-center gap-1">
+                        ✨ {activeCoupon.code} ({activeCoupon.label})
+                      </p>
+                      <p className="text-[0.68rem] text-emerald-700">Saved {formatPrice(activeCoupon.discountAmount)}</p>
+                    </div>
+                    <button
+                      onClick={removeCoupon}
+                      className="text-rose-600 font-bold uppercase text-[0.65rem] hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleApplyCoupon} className="space-y-1.5">
+                    <div className="flex gap-2">
+                      <input
+                        value={couponInput}
+                        onChange={(e) => setCouponInput(e.target.value)}
+                        placeholder="Promo code (e.g. LILY10)"
+                        className="flex-1 border border-[var(--color-line)] bg-transparent px-3 py-2 text-xs uppercase focus:outline-none focus:border-[var(--color-primary)] font-mono"
+                      />
+                      <button type="submit" className="btn-outline text-[0.7rem] uppercase font-bold text-[var(--color-ink)] px-4">
+                        Apply
+                      </button>
+                    </div>
+                    <p className="text-[0.65rem] text-[var(--color-ink-soft)] italic">Try code: <strong className="font-mono text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('LILY10')}>LILY10</strong> or <strong className="font-mono text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('VELVET20')}>VELVET20</strong></p>
+                  </form>
+                )}
+
+                {couponMsg && (
+                  <div className={`text-[0.7rem] p-2 rounded ${couponMsg.success ? 'bg-emerald-100 text-emerald-900 font-bold' : 'bg-rose-100 text-rose-800'}`}>
+                    {couponMsg.message}
+                  </div>
+                )}
+
                 <div className="space-y-1.5 text-sm">
                   <div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-emerald-700 font-bold">
+                      <span>Promo Discount ({activeCoupon?.code})</span>
+                      <span>-{formatPrice(discountAmount)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between"><span>Shipping</span><span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span></div>
-                  <div className="flex justify-between font-[var(--font-display)] text-lg pt-2 border-t border-[var(--color-line)]">
-                    <span>Total</span><span>{formatPrice(subtotal + shipping)}</span>
+                  <div className="flex justify-between font-[var(--font-display)] text-lg pt-2 border-t border-[var(--color-line)] text-[var(--color-ink)] font-bold">
+                    <span>Total</span><span className="text-[var(--color-primary)]">{formatPrice(grandTotal)}</span>
                   </div>
                 </div>
-                <Link to="/checkout" onClick={closeCart} className="btn-primary w-full text-center block">
-                  Checkout
+                <Link to="/checkout" onClick={closeCart} className="btn-primary w-full text-center block py-3 uppercase text-xs font-bold tracking-widest">
+                  Checkout ({formatPrice(grandTotal)})
                 </Link>
               </div>
             )}

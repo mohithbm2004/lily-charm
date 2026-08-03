@@ -234,7 +234,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                   </div>
                   <h2 className="text-2xl font-bold font-[var(--font-display)] uppercase">Request Submitted!</h2>
                   <p className="text-sm text-[var(--color-ink-soft)] max-w-md mx-auto leading-relaxed">
-                    Thank you, <strong className="text-[var(--color-ink)]">{formData.name}</strong>! Your reference photo has been uploaded to Cloudinary & saved to our studio database.
+                    Thank you, <strong className="text-[var(--color-ink)]">{formData.name}</strong>! Your reference photo has been uploaded & saved to our studio database.
                   </p>
                   <p className="text-xs text-[var(--color-primary)] font-semibold font-mono">
                     Our lead artisan will review your design and quote a price shortly! You can check your quote under the "Check Price Quotes" tab.
@@ -350,7 +350,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                       />
                       <Upload size={24} className="mx-auto text-[var(--color-ink-soft)] mb-1" />
                       <p className="font-bold uppercase text-[0.72rem]">Click or Drag & Drop Reference Photos</p>
-                      <p className="text-[0.65rem] text-[var(--color-ink-soft)]">PNG, JPG, WEBP up to 10MB (Uploaded to Cloudinary)</p>
+                      <p className="text-[0.65rem] text-[var(--color-ink-soft)]">PNG, JPG, WEBP up to 10MB</p>
                     </div>
                     {errors.image && <p className="text-[0.68rem] text-rose-600 font-bold mt-1">⚠️ {errors.image}</p>}
 
@@ -389,7 +389,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                     >
                       {isSubmitting ? (
                         <>
-                          <Sparkles size={14} className="animate-spin" /> Uploading to Cloudinary & Sending...
+                          <Sparkles size={14} className="animate-spin" /> Uploading & Sending...
                         </>
                       ) : (
                         'Submit Custom Design Request'
@@ -437,7 +437,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                     <CheckCircle2 size={18} className="text-emerald-700" /> Custom Order Placed Successfully!
                   </div>
                   <p className="text-xs">
-                    Order Number: <strong className="font-mono text-emerald-800">{acceptedSuccessDoc.orderNumber || acceptedSuccessDoc._id}</strong> — Total: {formatPrice(acceptedSuccessDoc.total)}. Your order has been placed in MongoDB and sent directly to Admin Order Delivery Tracking!
+                    Order Number: <strong className="font-mono text-emerald-800">{acceptedSuccessDoc.orderNumber || acceptedSuccessDoc._id}</strong> — Total: {formatPrice(acceptedSuccessDoc.total)}. Your order has been placed successfully and sent directly to Admin Order Delivery Tracking!
                   </p>
                 </div>
               )}
@@ -504,7 +504,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
 
                       {req.status === 'Accepted & Order Created' && (
                         <div className="p-2.5 bg-emerald-50 text-emerald-800 border border-emerald-200 text-[0.68rem] font-bold flex items-center gap-2">
-                          <CheckCircle2 size={14} /> Quote Accepted & Order Created in MongoDB Atlas! Total: {formatPrice(req.quotedPrice)}
+                          <CheckCircle2 size={14} /> Quote Accepted & Order Created! Total: {formatPrice(req.quotedPrice)}
                         </div>
                       )}
                     </div>

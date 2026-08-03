@@ -174,18 +174,42 @@ export function StudioProvider({ children }) {
     }
   }
 
+  const refreshSettingsFromApi = async () => {
+    try {
+      const res = await fetch(`${API_URL}/settings`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.offerCode) {
+          setActiveOffer({
+            code: data.offerCode,
+            discountPercent: data.discountPercent,
+            title: data.offerTitle || `${data.discountPercent}% OFF Studio Discount`,
+            isActive: data.isOfferActive !== false,
+          })
+        }
+        if (data.marqueeText) {
+          setMarqueeText(data.marqueeText)
+        }
+      }
+    } catch {
+      // offline safe
+    }
+  }
+
   useEffect(() => {
     refreshProductsFromApi()
     refreshCollectionsFromApi()
     refreshCustomRequestsFromApi()
     refreshOrdersFromApi()
     refreshUsersFromApi()
+    refreshSettingsFromApi()
     const interval = setInterval(() => {
       refreshProductsFromApi()
       refreshCollectionsFromApi()
       refreshCustomRequestsFromApi()
       refreshOrdersFromApi()
       refreshUsersFromApi()
+      refreshSettingsFromApi()
     }, 2000)
     return () => clearInterval(interval)
   }, [])
@@ -420,12 +444,35 @@ export function StudioProvider({ children }) {
     }
   }
 
-  const updateMarquee = (text) => {
+  const updateMarquee = async (text) => {
     setMarqueeText(text)
+    try {
+      await fetch(`${API_URL}/settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ marqueeText: text }),
+      })
+    } catch (e) {
+      console.error('Failed to update marquee text on server:', e)
+    }
   }
 
-  const updateOffer = (offerObj) => {
+  const updateOffer = async (offerObj) => {
     setActiveOffer(offerObj)
+    try {
+      await fetch(`${API_URL}/settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          offerCode: offerObj.code,
+          discountPercent: offerObj.discountPercent,
+          offerTitle: offerObj.title || `${offerObj.discountPercent}% OFF Studio Discount`,
+          isOfferActive: offerObj.isActive !== false,
+        }),
+      })
+    } catch (e) {
+      console.error('Failed to update offer settings on server:', e)
+    }
   }
 
   const updateCustomRequestStatus = async (id, status) => {

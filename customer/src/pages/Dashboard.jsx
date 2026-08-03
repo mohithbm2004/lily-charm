@@ -119,7 +119,7 @@ export default function Dashboard() {
         updateUserProfile(data.user)
         setAvatarPreview(data.user.profileImage || '')
         localStorage.setItem('lilycharm_user_profile', JSON.stringify(data.user))
-        setSaveSuccessMsg('✨ Profile created & updated successfully in MongoDB Atlas!')
+        setSaveSuccessMsg('✨ Profile updated successfully!')
         setTimeout(() => setSaveSuccessMsg(''), 4000)
       } else {
         alert('Failed to save profile. Please check details.')
@@ -151,8 +151,8 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-2 text-xs font-mono text-[var(--color-ink-soft)] bg-[var(--color-card-bg)] border border-[var(--color-line)] px-4 py-2 self-start">
-            <span>Customer Profile:</span>
-            <strong className="text-emerald-700">MongoDB Atlas Active</strong>
+            <span>Customer Account:</span>
+            <strong className="text-emerald-700">Verified & Active</strong>
           </div>
         </div>
 
@@ -191,7 +191,7 @@ export default function Dashboard() {
                   <User size={18} className="text-[var(--color-primary)]" /> User Profile Information
                 </h2>
                 <p className="text-xs text-[var(--color-ink-soft)]">
-                  Create and update your customer account profile in MongoDB Atlas database with Cloudinary avatar.
+                  Update your customer account details and shipping information for seamless checkout.
                 </p>
               </div>
 
@@ -203,7 +203,7 @@ export default function Dashboard() {
 
               {/* Avatar Upload */}
               <div>
-                <label className="block font-bold uppercase mb-2">Profile Avatar Photo (Cloudinary)</label>
+                <label className="block font-bold uppercase mb-2">Profile Avatar Photo</label>
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-full border border-[var(--color-line)] overflow-hidden bg-[var(--color-bg)] shrink-0 flex items-center justify-center">
                     {avatarPreview ? (
@@ -296,7 +296,7 @@ export default function Dashboard() {
                 disabled={isSavingProfile}
                 className="btn-primary w-full py-3 text-xs uppercase font-bold tracking-widest disabled:opacity-50"
               >
-                {isSavingProfile ? 'Saving Profile to MongoDB Atlas...' : 'Save Profile Changes'}
+                {isSavingProfile ? 'Saving Profile Changes...' : 'Save Profile Changes'}
               </button>
             </form>
           )}
@@ -309,7 +309,7 @@ export default function Dashboard() {
                   <Package size={18} className="text-[var(--color-primary)]" /> My Placed Orders
                 </h2>
                 <p className="text-xs text-[var(--color-ink-soft)]">
-                  Live order status tracking fetched from MongoDB Atlas.
+                  Live order status tracking for your purchases.
                 </p>
               </div>
 

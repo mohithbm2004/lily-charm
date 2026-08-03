@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Package,
   Truck,
@@ -21,6 +21,8 @@ import {
 import { useStudio } from '../context/StudioContext'
 import { formatPrice } from '../lib/format'
 import ImageFocusPicker from '../components/ImageFocusPicker'
+
+const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
 
 export default function AdminDashboard() {
   const {
@@ -97,6 +99,35 @@ export default function AdminDashboard() {
   // Marquee & Offer edit state
   const [tempMarquee, setTempMarquee] = useState(marqueeText)
   const [tempOffer, setTempOffer] = useState(() => activeOffer)
+
+  // Segment Coupons State
+  const [coupons, setCoupons] = useState([])
+  const [newCoupon, setNewCoupon] = useState({
+    code: '',
+    title: '',
+    discountType: 'percentage',
+    discountValue: 10,
+    minOrderAmount: 0,
+    maxDiscountCap: 0,
+    targetSegment: 'All Products',
+    isActive: true,
+  })
+
+  const fetchCouponsFromApi = async () => {
+    try {
+      const res = await fetch(`${API_URL}/coupons`)
+      if (res.ok) {
+        const data = await res.json()
+        setCoupons(data)
+      }
+    } catch (e) {
+      console.error('Failed to fetch coupons:', e)
+    }
+  }
+
+  useEffect(() => {
+    fetchCouponsFromApi()
+  }, [])
 
   // Field validation & preview states
   const [previewImageModal, setPreviewImageModal] = useState(null)
@@ -382,6 +413,61 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleCreateCoupon = async (e) => {
+    e.preventDefault()
+    if (!newCoupon.code) return
+    try {
+      const res = await fetch(`${API_URL}/coupons`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCoupon),
+      })
+      if (res.ok) {
+        alert(`✨ Segment Coupon "${newCoupon.code.toUpperCase()}" created successfully!`)
+        setNewCoupon({
+          code: '',
+          title: '',
+          discountType: 'percentage',
+          discountValue: 10,
+          minOrderAmount: 0,
+          maxDiscountCap: 0,
+          targetSegment: 'All Products',
+          isActive: true,
+        })
+        fetchCouponsFromApi()
+      } else {
+        const err = await res.json()
+        alert(`Error: ${err.message || 'Failed to create coupon'}`)
+      }
+    } catch (err) {
+      console.error('Failed to create coupon:', err)
+      alert('Server error creating coupon')
+    }
+  }
+
+  const handleDeleteCoupon = async (id, code) => {
+    if (!window.confirm(`Are you sure you want to delete coupon "${code}"?`)) return
+    try {
+      await fetch(`${API_URL}/coupons/${id}`, { method: 'DELETE' })
+      fetchCouponsFromApi()
+    } catch (err) {
+      console.error('Failed to delete coupon:', err)
+    }
+  }
+
+  const handleToggleCoupon = async (coupon) => {
+    try {
+      await fetch(`${API_URL}/coupons/${coupon._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !coupon.isActive }),
+      })
+      fetchCouponsFromApi()
+    } catch (err) {
+      console.error('Failed to toggle coupon status:', err)
+    }
+  }
+
   const handleSaveMarquee = (e) => {
     e.preventDefault()
     updateMarquee(tempMarquee)
@@ -531,7 +617,7 @@ export default function AdminDashboard() {
           <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5">
             <p className="eyebrow mb-1">Live Collections</p>
             <p className="text-2xl font-bold font-[var(--font-display)] text-emerald-800">{collections.length} Series</p>
-            <p className="text-xs text-[var(--color-ink-soft)] mt-1">MongoDB Collections</p>
+            <p className="text-xs text-[var(--color-ink-soft)] mt-1">Active Categories</p>
           </div>
           <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5">
             <p className="eyebrow mb-1">Total Orders</p>
@@ -707,7 +793,7 @@ export default function AdminDashboard() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (window.confirm('Are you sure you want to delete ALL collections from MongoDB and Storefront?')) {
+                      if (window.confirm('Are you sure you want to delete ALL collections from the Storefront?')) {
                         deleteAllCollections()
                       }
                     }}
@@ -815,7 +901,7 @@ export default function AdminDashboard() {
                   <Truck className="text-[var(--color-primary)]" size={20} /> Order Delivery & Fulfillment Manager
                 </h2>
                 <p className="text-xs text-[var(--color-ink-soft)] mt-0.5">
-                  Real-time customer orders placed via storefront, stored in MongoDB Atlas with Razorpay payment tracking.
+                  Real-time customer orders placed via storefront with payment & delivery tracking.
                 </p>
               </div>
               <div className="flex items-center gap-3 self-start">
@@ -825,7 +911,7 @@ export default function AdminDashboard() {
                 {orders.length > 0 && (
                   <button
                     onClick={() => {
-                      if (confirm('Are you sure you want to delete ALL orders from MongoDB?')) {
+                      if (confirm('Are you sure you want to delete ALL orders from studio database?')) {
                         deleteAllOrders()
                       }
                     }}
@@ -943,30 +1029,276 @@ export default function AdminDashboard() {
               </button>
             </form>
 
-            <form onSubmit={handleSaveOffer} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 space-y-4">
-              <h2 className="text-xl font-bold font-[var(--font-display)] uppercase">Promo Coupon Offer</h2>
+            <form onSubmit={handleSaveOffer} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3">
+                <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
+                  🏷️ Active Offer Code & Discount Percentage
+                </h2>
+                <span className={`text-[0.65rem] font-bold uppercase tracking-wider px-2.5 py-1 rounded border ${
+                  tempOffer.isActive !== false ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300'
+                }`}>
+                  {tempOffer.isActive !== false ? 'PROMO ACTIVE' : 'PROMO PAUSED'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5">Offer Promo Code *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. LILY10 or SUMMER25"
+                    value={tempOffer.code || ''}
+                    onChange={(e) => setTempOffer({ ...tempOffer, code: e.target.value.toUpperCase().trim() })}
+                    className="w-full border border-[var(--color-line)] p-2.5 text-xs font-mono font-bold uppercase focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)]"
+                  />
+                  <p className="text-[0.65rem] text-[var(--color-ink-soft)] mt-1">Customers enter this code at checkout to apply discount.</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5">Offer Discount Percentage (%) *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    required
+                    placeholder="e.g. 10, 20, 25"
+                    value={tempOffer.discountPercent || ''}
+                    onChange={(e) => setTempOffer({ ...tempOffer, discountPercent: Number(e.target.value) })}
+                    className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)]"
+                  />
+                  <p className="text-[0.65rem] text-[var(--color-ink-soft)] mt-1">Percentage off the cart subtotal (e.g. 25 = 25% OFF).</p>
+                </div>
+              </div>
+
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-2">Coupon Code</label>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5">Offer Title / Description</label>
                 <input
                   type="text"
-                  value={tempOffer.code}
-                  onChange={(e) => setTempOffer({ ...tempOffer, code: e.target.value })}
-                  className="w-full border border-[var(--color-line)] p-2.5 text-xs font-mono font-bold focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-2">Discount Percentage (%)</label>
-                <input
-                  type="number"
-                  value={tempOffer.discountPercent}
-                  onChange={(e) => setTempOffer({ ...tempOffer, discountPercent: Number(e.target.value) })}
+                  placeholder="e.g. 25% OFF Festive Special Offer"
+                  value={tempOffer.title || ''}
+                  onChange={(e) => setTempOffer({ ...tempOffer, title: e.target.value })}
                   className="w-full border border-[var(--color-line)] p-2.5 text-xs focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)]"
                 />
               </div>
-              <button type="submit" className="btn-primary py-2.5 px-4 text-xs">
-                Save Coupon Offer
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="isActiveOffer"
+                  checked={tempOffer.isActive !== false}
+                  onChange={(e) => setTempOffer({ ...tempOffer, isActive: e.target.checked })}
+                  className="w-4 h-4 accent-[var(--color-primary)] cursor-pointer"
+                />
+                <label htmlFor="isActiveOffer" className="text-xs font-bold uppercase cursor-pointer">
+                  Enable & Activate this offer code on Storefront
+                </label>
+              </div>
+
+              {/* Live Preview Box */}
+              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded text-xs space-y-1">
+                <span className="font-bold text-emerald-900 uppercase text-[0.68rem] tracking-wider block">Storefront Live Preview:</span>
+                <p className="text-emerald-800 font-medium">
+                  Code: <strong className="font-mono font-bold bg-white px-2 py-0.5 border border-emerald-300 rounded text-emerald-900">{tempOffer.code || 'LILY10'}</strong> ➔ <strong className="font-bold text-emerald-900">{tempOffer.discountPercent || 10}% OFF Discount</strong>
+                </p>
+              </div>
+
+              <button type="submit" className="btn-primary py-3 px-6 text-xs uppercase font-bold tracking-wider">
+                Save Main Banner Offer
               </button>
             </form>
+
+            {/* MULTI-SEGMENT COUPON MANAGER */}
+            <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 space-y-6 shadow-sm">
+              <div className="border-b border-[var(--color-line)] pb-4 space-y-1">
+                <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
+                  🎯 Segment Coupons (Minimum Spend, Discount Capping & Segment Targeting)
+                </h2>
+                <p className="text-xs text-[var(--color-ink-soft)]">
+                  Create customized promo codes with minimum order prices, maximum discount caps, and segment targeting.
+                </p>
+              </div>
+
+              {/* Coupon Creation Form */}
+              <form onSubmit={handleCreateCoupon} className="bg-[var(--color-bg)] p-5 border border-[var(--color-line)] space-y-4">
+                <h3 className="font-bold text-sm uppercase tracking-wider text-[var(--color-primary)]">➕ Create New Segment Coupon</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[0.7rem] font-bold uppercase mb-1">Coupon Promo Code *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. VELVET30"
+                      value={newCoupon.code}
+                      onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase().trim() })}
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-mono font-bold uppercase bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[0.7rem] font-bold uppercase mb-1">Discount Type *</label>
+                    <select
+                      value={newCoupon.discountType}
+                      onChange={(e) => setNewCoupon({ ...newCoupon, discountType: e.target.value })}
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                    >
+                      <option value="percentage">Percentage OFF (%)</option>
+                      <option value="flat">Flat Amount OFF (₹)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[0.7rem] font-bold uppercase mb-1">Discount Amount/Value *</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      placeholder="e.g. 20 for 20% or 500 for ₹500"
+                      value={newCoupon.discountValue}
+                      onChange={(e) => setNewCoupon({ ...newCoupon, discountValue: Number(e.target.value) })}
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[0.7rem] font-bold uppercase mb-1">Minimum Order Spend (₹)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0 = No Minimum Spend"
+                      value={newCoupon.minOrderAmount}
+                      onChange={(e) => setNewCoupon({ ...newCoupon, minOrderAmount: Number(e.target.value) })}
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                    />
+                    <p className="text-[0.62rem] text-[var(--color-ink-soft)] mt-0.5">Order subtotal must be at least this amount.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-[0.7rem] font-bold uppercase mb-1">Maximum Discount Cap (₹)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0 = No Cap (Uncapped)"
+                      value={newCoupon.maxDiscountCap}
+                      onChange={(e) => setNewCoupon({ ...newCoupon, maxDiscountCap: Number(e.target.value) })}
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                    />
+                    <p className="text-[0.62rem] text-[var(--color-ink-soft)] mt-0.5">Max discount limit (e.g. 500 = Max ₹500 OFF).</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-[0.7rem] font-bold uppercase mb-1">Target Segment / Category</label>
+                    <select
+                      value={newCoupon.targetSegment}
+                      onChange={(e) => setNewCoupon({ ...newCoupon, targetSegment: e.target.value })}
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                    >
+                      <option value="All Products">All Storefront Products</option>
+                      <option value="Pressed Flower Frames">Pressed Flower Frames</option>
+                      <option value="Resin Flower Art">Resin Flower Art</option>
+                      <option value="Wedding Collection">Wedding Collection</option>
+                      <option value="Velvet Sculptures">Velvet Sculptures</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[0.7rem] font-bold uppercase mb-1">Offer Title / Description</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 20% OFF Velvet Sculptures above ₹1,000 (Max ₹500 Cap)"
+                    value={newCoupon.title}
+                    onChange={(e) => setNewCoupon({ ...newCoupon, title: e.target.value })}
+                    className="w-full border border-[var(--color-line)] p-2.5 text-xs bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <label className="flex items-center gap-2 text-xs font-bold uppercase cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newCoupon.isActive}
+                      onChange={(e) => setNewCoupon({ ...newCoupon, isActive: e.target.checked })}
+                      className="w-4 h-4 accent-[var(--color-primary)] cursor-pointer"
+                    />
+                    Set Active Immediately
+                  </label>
+
+                  <button type="submit" className="btn-primary py-2.5 px-6 text-xs font-bold uppercase tracking-wider">
+                    Add Segment Coupon
+                  </button>
+                </div>
+              </form>
+
+              {/* Segment Coupons Table */}
+              <div className="space-y-3">
+                <h3 className="font-bold text-sm uppercase tracking-wider">Active Segment Coupons List ({coupons.length})</h3>
+                {coupons.length === 0 ? (
+                  <div className="border border-dashed border-[var(--color-line)] p-8 text-center text-xs text-[var(--color-ink-soft)] font-mono">
+                    No custom segment coupons created yet. Fill out the form above to add your first segment offer!
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto border border-[var(--color-line)]">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-[var(--color-bg)] uppercase text-[0.65rem] tracking-wider border-b border-[var(--color-line)] text-[var(--color-ink-soft)] font-bold">
+                        <tr>
+                          <th className="p-3">Code</th>
+                          <th className="p-3">Discount</th>
+                          <th className="p-3">Min Order Spend</th>
+                          <th className="p-3">Max Cap Limit</th>
+                          <th className="p-3">Segment</th>
+                          <th className="p-3">Status</th>
+                          <th className="p-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--color-line)]">
+                        {coupons.map((c) => (
+                          <tr key={c._id} className="hover:bg-[var(--color-card-bg)]">
+                            <td className="p-3 font-mono font-bold text-[var(--color-primary)]">{c.code}</td>
+                            <td className="p-3 font-bold">
+                              {c.discountValue}{c.discountType === 'percentage' ? '%' : '₹'} OFF
+                            </td>
+                            <td className="p-3 font-mono">
+                              {c.minOrderAmount > 0 ? `₹${c.minOrderAmount.toLocaleString('en-IN')}` : 'No Min Spend'}
+                            </td>
+                            <td className="p-3 font-mono">
+                              {c.maxDiscountCap > 0 ? `₹${c.maxDiscountCap.toLocaleString('en-IN')}` : 'Uncapped'}
+                            </td>
+                            <td className="p-3 font-semibold text-[var(--color-ink-soft)]">{c.targetSegment}</td>
+                            <td className="p-3">
+                              <span className={`px-2 py-0.5 text-[0.6rem] font-bold uppercase rounded border ${
+                                c.isActive !== false ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300'
+                              }`}>
+                                {c.isActive !== false ? 'Active' : 'Paused'}
+                              </span>
+                            </td>
+                            <td className="p-3 text-right space-x-2">
+                              <button
+                                onClick={() => handleToggleCoupon(c)}
+                                className={`text-[0.65rem] font-bold uppercase px-2 py-1 border ${
+                                  c.isActive ? 'border-amber-400 text-amber-900 bg-amber-50' : 'border-emerald-400 text-emerald-900 bg-emerald-50'
+                                }`}
+                              >
+                                {c.isActive ? 'Pause' : 'Activate'}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCoupon(c._id, c.code)}
+                                className="text-rose-600 hover:text-rose-900 text-[0.65rem] font-bold uppercase"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -979,7 +1311,7 @@ export default function AdminDashboard() {
                   <Sparkles className="text-[var(--color-primary)]" size={20} /> Customer Custom Design Requests
                 </h2>
                 <p className="text-xs text-[var(--color-ink-soft)] mt-0.5">
-                  Direct bespoke requests submitted by customers with custom reference photos uploaded to Cloudinary.
+                  Direct bespoke requests submitted by customers with custom reference photos.
                 </p>
               </div>
               <span className="bg-[var(--color-primary)] text-white text-xs font-bold font-mono px-3 py-1.5 rounded-full self-start">
@@ -1041,10 +1373,10 @@ export default function AdminDashboard() {
                           </div>
                         )}
 
-                        {/* Cloudinary Reference Photos */}
+                        {/* Reference Photos */}
                         {mainPhoto ? (
                           <div className="space-y-2">
-                            <span className="eyebrow text-[0.65rem]">Customer Reference Photo (Cloudinary)</span>
+                            <span className="eyebrow text-[0.65rem]">Customer Reference Photo</span>
                             <div
                               onClick={() => setPreviewImageModal(mainPhoto)}
                               className="relative h-44 border border-[var(--color-line)] overflow-hidden cursor-pointer group bg-[var(--color-bg)]"
@@ -1168,10 +1500,10 @@ export default function AdminDashboard() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--color-line)] pb-4">
               <div>
                 <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
-                  <Users className="text-[var(--color-primary)]" size={20} /> Registered Customer Profiles (MongoDB Atlas)
+                  <Users className="text-[var(--color-primary)]" size={20} /> Registered Customer Profiles
                 </h2>
                 <p className="text-xs text-[var(--color-ink-soft)] mt-0.5">
-                  Real-time customer account profiles created and stored directly in MongoDB Atlas database.
+                  Real-time customer account profiles and contact details.
                 </p>
               </div>
               <span className="bg-[var(--color-primary)] text-white text-xs font-bold font-mono px-3 py-1.5 rounded-full self-start">
@@ -1184,7 +1516,7 @@ export default function AdminDashboard() {
                 <Users size={32} className="mx-auto text-[var(--color-ink-soft)]" />
                 <p className="font-bold uppercase text-sm">No Registered User Profiles Yet</p>
                 <p className="text-xs text-[var(--color-ink-soft)]">
-                  When customers save their account profile on the storefront dashboard, their MongoDB user document will appear here!
+                  When customers save their account profile on the storefront dashboard, their user details will appear here!
                 </p>
               </div>
             ) : (
@@ -1232,7 +1564,7 @@ export default function AdminDashboard() {
               className="max-w-full max-h-[85vh] object-contain"
             />
             <p className="text-white text-xs font-mono text-center py-2 bg-black/80">
-              Cloudinary URL: {previewImageModal} (Click anywhere to close)
+              Reference Photo (Click anywhere to close)
             </p>
           </div>
         </div>

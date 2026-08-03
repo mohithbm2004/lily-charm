@@ -8,13 +8,11 @@ import { useAuth } from '../context/AuthContext'
 import CustomDesignModal from './CustomDesignModal'
 import AuthModal from './AuthModal'
 
-const leftLinks = [
+const navLinks = [
   { to: '/', label: 'HOME' },
-  { to: '/about', label: 'ABOUT' },
   { to: '/shop', label: 'SHOP' },
-]
-const rightLinks = [
   { to: '/collections', label: 'COLLECTIONS' },
+  { to: '/about', label: 'ABOUT' },
   { to: '/contact', label: 'CONTACT' },
   { to: '/journal', label: 'JOURNAL' },
 ]
@@ -53,15 +51,17 @@ export default function Navbar() {
       <header className="sticky top-0 z-50 bg-[var(--color-bg)] transition-shadow duration-300">
         {/* Top Main Navigation */}
         <div className="border-b border-[var(--color-line)] bg-[var(--color-bg)]">
-          <div className="max-w-7xl mx-auto px-6 md:px-10 h-16 md:h-20 flex items-center justify-between">
-            <nav className="hidden md:flex items-center gap-8 flex-1">
-              {leftLinks.map((l) => (
+          <div className="max-w-7xl mx-auto px-6 md:px-10 h-16 md:h-20 flex items-center justify-between gap-4">
+            
+            {/* Left Nav Links */}
+            <nav className="hidden lg:flex items-center gap-6 xl:gap-8 flex-1">
+              {navLinks.slice(0, 3).map((l) => (
                 <NavLink
                   key={l.label}
                   to={l.to}
                   end={l.to === '/'}
                   className={({ isActive }) =>
-                    `text-[0.72rem] tracking-[0.22em] uppercase font-[var(--font-button)] font-medium transition-colors ${
+                    `text-[0.72rem] tracking-[0.2em] uppercase font-[var(--font-button)] font-medium transition-colors ${
                       isActive ? 'text-[var(--color-primary)] font-bold underline underline-offset-4' : 'text-[var(--color-ink)] hover:text-[var(--color-primary)]'
                     }`
                   }
@@ -71,20 +71,22 @@ export default function Navbar() {
               ))}
             </nav>
 
+            {/* Center Brand Title */}
             <Link
               to="/"
-              className="flex-1 md:flex-none text-center font-[var(--font-display)] text-2xl md:text-3xl tracking-[0.18em] uppercase font-bold text-[var(--color-ink)] hover:opacity-85 transition-opacity"
+              className="font-[var(--font-display)] text-2xl md:text-3xl tracking-[0.2em] uppercase font-bold text-[var(--color-ink)] shrink-0 hover:opacity-85 transition-opacity py-2"
             >
               Lily Charm
             </Link>
 
-            <div className="hidden md:flex items-center gap-5 flex-1 justify-end">
-              {rightLinks.map((l) => (
+            {/* Right Nav Links & Actions */}
+            <div className="hidden lg:flex items-center gap-5 xl:gap-6 flex-1 justify-end">
+              {navLinks.slice(3).map((l) => (
                 <NavLink
                   key={l.label}
                   to={l.to}
                   className={({ isActive }) =>
-                    `text-[0.72rem] tracking-[0.22em] uppercase font-[var(--font-button)] font-medium transition-colors ${
+                    `text-[0.72rem] tracking-[0.2em] uppercase font-[var(--font-button)] font-medium transition-colors ${
                       isActive ? 'text-[var(--color-primary)] font-bold underline underline-offset-4' : 'text-[var(--color-ink)] hover:text-[var(--color-primary)]'
                     }`
                   }
@@ -95,7 +97,7 @@ export default function Navbar() {
 
               <button
                 onClick={() => setIsCustomModalOpen(true)}
-                className="bg-[var(--color-primary)] text-white text-[0.65rem] tracking-[0.14em] uppercase font-bold px-3 py-1.5 rounded flex items-center gap-1.5 hover:bg-[var(--color-primary)]/90 transition-all shadow-sm cursor-pointer"
+                className="bg-[var(--color-primary)] text-white text-[0.65rem] tracking-[0.14em] uppercase font-bold px-3 py-1.5 rounded flex items-center gap-1.5 hover:bg-[var(--color-primary)]/90 transition-all shadow-sm cursor-pointer whitespace-nowrap"
               >
                 <Sparkles size={12} /> Custom Design
               </button>
@@ -105,7 +107,7 @@ export default function Navbar() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => navigate('/dashboard')}
-                    className="text-[0.68rem] tracking-[0.14em] uppercase font-bold text-[var(--color-primary)] hover:underline flex items-center gap-1 bg-[var(--color-card-bg)] px-2.5 py-1 border border-[var(--color-line)]"
+                    className="text-[0.68rem] tracking-[0.14em] uppercase font-bold text-[var(--color-primary)] hover:underline flex items-center gap-1 bg-[var(--color-card-bg)] px-2.5 py-1 border border-[var(--color-line)] whitespace-nowrap"
                   >
                     <UserIcon size={13} /> {user.name?.split(' ')[0] || 'Account'}
                   </button>
@@ -120,7 +122,7 @@ export default function Navbar() {
               ) : (
                 <button
                   onClick={handleAccountClick}
-                  className="text-[0.72rem] tracking-[0.18em] uppercase font-bold text-[var(--color-ink)] hover:text-[var(--color-primary)] transition-colors flex items-center gap-1"
+                  className="text-[0.72rem] tracking-[0.18em] uppercase font-bold text-[var(--color-ink)] hover:text-[var(--color-primary)] transition-colors flex items-center gap-1 whitespace-nowrap"
                 >
                   <UserIcon size={14} /> Sign In
                 </button>
@@ -168,7 +170,7 @@ export default function Navbar() {
               className="md:hidden overflow-hidden bg-[var(--color-bg)] border-b border-[var(--color-line)]"
             >
               <div className="flex flex-col px-6 py-6 gap-4">
-                {[...leftLinks, ...rightLinks].map((l) => (
+                {navLinks.map((l) => (
                   <Link
                     key={l.label}
                     to={l.to}

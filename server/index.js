@@ -10,6 +10,9 @@ import orderRoutes from './routes/orderRoutes.js'
 import uploadRoutes from './routes/uploadRoutes.js'
 import collectionRoutes from './routes/collectionRoutes.js'
 import customRequestRoutes from './routes/customRequestRoutes.js'
+import settingRoutes from './routes/settingRoutes.js'
+import couponRoutes from './routes/couponRoutes.js'
+import { createRazorpayOrder, verifyPayment } from './controllers/orderController.js'
 import { startAutomaticDbCleanup } from './utils/dbCleanup.js'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
 
@@ -45,8 +48,6 @@ const apiLimiter = rateLimit({
 
 app.use('/api/', apiLimiter)
 
-import { createRazorpayOrder, verifyPayment } from './controllers/orderController.js'
-
 app.post('/api/create-order', createRazorpayOrder)
 app.post('/api/verify-payment', verifyPayment)
 
@@ -56,6 +57,8 @@ app.use('/api/orders', orderRoutes)
 app.use('/api/uploads', uploadRoutes)
 app.use('/api/collections', collectionRoutes)
 app.use('/api/custom-requests', customRequestRoutes)
+app.use('/api/settings', settingRoutes)
+app.use('/api/coupons', couponRoutes)
 
 app.use(notFound)
 app.use(errorHandler)
