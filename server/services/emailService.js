@@ -191,3 +191,38 @@ export async function sendPasswordResetEmail(email, name, resetUrl) {
     throw err
   }
 }
+
+export async function sendWelcomeEmail(email, name) {
+  const appName = 'Lily Charm Floral Studio'
+
+  const html = `
+    <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #FAF7F2; color: #2B2625; border: 1px solid #E6DDD0;">
+      <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #E6DDD0;">
+        <h1 style="font-size: 24px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #8C2D38;">${appName}</h1>
+        <p style="font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #736B65; margin-top: 4px;">Welcome to Lily Charm</p>
+      </div>
+
+      <div style="padding: 24px 0;">
+        <h2 style="font-size: 18px; margin-top: 0;">Welcome, ${name || 'Valued Customer'} 🎉</h2>
+        <p style="font-size: 14px; line-height: 1.6; color: #524B46;">
+          Your Lily Charm account has been verified successfully! Explore our handcrafted velvet floral arrangements, bespoke bridal collections, and custom orders.
+        </p>
+      </div>
+
+      <div style="border-top: 1px solid #E6DDD0; padding-top: 16px; text-align: center; font-size: 11px; color: #8C847D;">
+        <p>© 2026 ${appName}. Handcrafted Velvet Florals by Keerthana Bapu.</p>
+      </div>
+    </div>
+  `
+
+  try {
+    return await sendMailViaHttp({
+      to: email,
+      subject: `🌸 Welcome to Lily Charm Velvet Floral Studio!`,
+      text: `Welcome to Lily Charm, ${name}! Your account is active.`,
+      html,
+    })
+  } catch (err) {
+    console.error(`[WELCOME EMAIL FAIL]: ${err.message}`)
+  }
+}
