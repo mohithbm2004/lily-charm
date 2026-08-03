@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import {
   createOrder,
+  createRazorpayOrder,
   verifyPayment,
   myOrders,
   listAllOrders,
@@ -12,7 +13,10 @@ import {
 const router = Router()
 
 router.post('/', createOrder)
+router.post('/create-order', createRazorpayOrder)
+router.post('/create-razorpay-order', createRazorpayOrder)
 router.post('/verify', verifyPayment)
+router.post('/verify-payment', verifyPayment)
 router.get('/mine', myOrders)
 router.get('/', listAllOrders)
 router.patch('/:id/status', updateOrderStatus)

@@ -27,12 +27,30 @@ export default function Checkout() {
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) return resolve(true)
+      const script = document.createElement('script')
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+      script.onload = () => resolve(true)
+      script.onerror = () => resolve(false)
+      document.body.appendChild(script)
+    })
+  }
+
   const handlePay = async (e) => {
     e.preventDefault()
     if (processing) return
     setProcessing(true)
 
     try {
+      const isLoaded = await loadRazorpayScript()
+      if (!isLoaded) {
+        alert('Failed to load Razorpay SDK. Please check your internet connection.')
+        setProcessing(false)
+        return
+      }
+
       const payload = {
         items: items.map((i) => ({
           productId: i.id || i._id,
@@ -62,19 +80,81 @@ export default function Checkout() {
         body: JSON.stringify(payload),
       })
 
-      if (res.ok) {
-        const savedOrder = await res.json()
-        setOrderConfirmed(savedOrder)
-        clearCart()
-      } else {
+      if (!res.ok) {
         const errText = await res.text()
         console.error('Failed to create order:', res.status, errText)
-        alert('Payment processing failed. Please try again.')
+        alert('Failed to initialize order on server. Please try again.')
+        setProcessing(false)
+        return
       }
+
+      const savedOrder = await res.json()
+      const razorpayKey = savedOrder.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TLMD4P4BGZ6Qq8'
+      const razorpayOrderId = savedOrder.razorpayOrderId || savedOrder.order_id || savedOrder.id
+
+      // Open Razorpay Standard Checkout Modal
+      const options = {
+        key: razorpayKey,
+        amount: Math.round(total * 100),
+        currency: 'INR',
+        name: 'Lily Charm Floral Studio',
+        description: 'Handcrafted Velvet Floral Art Order',
+        order_id: razorpayOrderId,
+        prefill: {
+          name: form.name,
+          email: form.email,
+          contact: form.phone,
+        },
+        theme: {
+          color: '#882233',
+        },
+        handler: async function (response) {
+          setProcessing(true)
+          try {
+            const verifyRes = await fetch(`${API_URL}/verify-payment`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId: savedOrder._id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            })
+
+            const verifyData = await verifyRes.json()
+            if (verifyRes.ok && verifyData.success !== false) {
+              setOrderConfirmed(verifyData.order || savedOrder)
+              clearCart()
+            } else {
+              alert(`Payment Verification Failed: ${verifyData.message || 'Signature mismatch'}`)
+            }
+          } catch (verifyErr) {
+            console.error('Verification error:', verifyErr)
+            alert('Connection error while verifying payment.')
+          } finally {
+            setProcessing(false)
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setProcessing(false)
+            console.log('Razorpay payment modal closed by user.')
+          },
+        },
+      }
+
+      const rzp = new window.Razorpay(options)
+      rzp.on('payment.failed', function (response) {
+        console.error('Razorpay payment failed:', response.error)
+        alert(`Payment Failed: ${response.error.description || response.error.reason || 'Transaction could not be completed.'}`)
+        setProcessing(false)
+      })
+
+      rzp.open()
     } catch (err) {
       console.error('Checkout error:', err)
-      alert('Connection error. Please try again.')
-    } finally {
+      alert('Connection error during checkout. Please try again.')
       setProcessing(false)
     }
   }

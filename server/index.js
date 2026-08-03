@@ -45,6 +45,11 @@ const apiLimiter = rateLimit({
 
 app.use('/api/', apiLimiter)
 
+import { createRazorpayOrder, verifyPayment } from './controllers/orderController.js'
+
+app.post('/api/create-order', createRazorpayOrder)
+app.post('/api/verify-payment', verifyPayment)
+
 app.use('/api/auth', authRoutes)
 app.use('/api/products', productRoutes)
 app.use('/api/orders', orderRoutes)
