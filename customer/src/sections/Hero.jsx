@@ -35,11 +35,11 @@ export default function Hero() {
                 <p className="text-[var(--color-ink-soft)] text-sm md:text-base leading-relaxed font-serif italic font-medium">
                   Made with love, inspired by creativity.
                 </p>
-                <div className="flex items-center gap-4 pt-3">
-                  <Link to="/shop" className="btn-primary inline-flex items-center gap-2 shadow-md hover:scale-105 transition-transform">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-3 w-full">
+                  <Link to="/shop" className="btn-primary inline-flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-transform text-center">
                     EXPLORE SHOP <ArrowRight size={15} />
                   </Link>
-                  <Link to="/about" className="btn-outline inline-flex items-center gap-2 hover:scale-105 transition-transform">
+                  <Link to="/about" className="btn-outline inline-flex items-center justify-center gap-2 hover:scale-105 transition-transform text-center">
                     OUR STORY
                   </Link>
                 </div>

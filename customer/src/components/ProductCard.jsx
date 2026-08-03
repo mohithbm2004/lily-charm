@@ -106,7 +106,7 @@ export default function ProductCard({ product, index = 0 }) {
             addItem(product)
             openCart()
           }}
-          className="w-full btn-outline py-2.5 text-[0.68rem] flex items-center justify-center gap-1.5 cursor-pointer"
+          className="w-full btn-outline py-2 px-1 text-[0.62rem] sm:text-[0.68rem] tracking-wider uppercase font-bold flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis"
         >
           <Plus size={13} /> ADD TO CART
         </button>

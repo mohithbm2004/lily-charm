@@ -52,11 +52,11 @@ export default function BrandIntro() {
             </Reveal>
 
             <Reveal delay={0.2}>
-              <div className="flex items-center gap-4 pt-2">
-                <Link to="/about" className="btn-primary inline-flex items-center gap-2 shadow-md hover:scale-105 transition-transform">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2 w-full">
+                <Link to="/about" className="btn-primary inline-flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-transform text-center whitespace-nowrap">
                   <Heart size={14} fill="currentColor" /> OUR FULL STORY <ArrowRight size={15} />
                 </Link>
-                <Link to="/collections" className="btn-outline inline-flex items-center gap-2 hover:scale-105 transition-transform">
+                <Link to="/collections" className="btn-outline inline-flex items-center justify-center gap-2 hover:scale-105 transition-transform text-center whitespace-nowrap">
                   EXPLORE COLLECTIONS
                 </Link>
               </div>

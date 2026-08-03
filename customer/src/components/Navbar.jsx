@@ -127,13 +127,29 @@ export default function Navbar() {
               </button>
             </div>
 
-            <button
-              className="lg:hidden text-[var(--color-ink)]"
-              onClick={() => setMenuOpen((v) => !v)}
-              aria-label="Toggle menu"
-            >
-              {menuOpen ? <X size={22} strokeWidth={1.5} /> : <Menu size={22} strokeWidth={1.5} />}
-            </button>
+            {/* Mobile Header Actions (Cart Icon + Hamburger Menu) */}
+            <div className="flex lg:hidden items-center gap-3">
+              <button
+                onClick={openCart}
+                aria-label={`Open cart, ${count} items`}
+                className="relative p-1 text-[var(--color-ink)] hover:text-[var(--color-primary)] transition-colors"
+              >
+                <ShoppingBag size={22} strokeWidth={1.5} />
+                {count > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-[var(--color-primary)] text-white text-[0.6rem] w-4 h-4 rounded-full flex items-center justify-center font-sans font-bold shadow-sm">
+                    {count}
+                  </span>
+                )}
+              </button>
+
+              <button
+                className="p-1 text-[var(--color-ink)]"
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-label="Toggle menu"
+              >
+                {menuOpen ? <X size={24} strokeWidth={1.5} /> : <Menu size={24} strokeWidth={1.5} />}
+              </button>
+            </div>
           </div>
         </div>
 
