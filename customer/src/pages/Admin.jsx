@@ -186,7 +186,7 @@ export default function Admin() {
               Lily Charm Admin Portal
             </h1>
             <p className="text-xs text-[var(--color-ink-soft)]">
-              Protected manager access for Keerthana Bapu to update products, offers, and delivery orders.
+              Protected manager access to update products, offers, and delivery orders.
             </p>
           </div>
 
@@ -219,7 +219,7 @@ export default function Admin() {
               }}
               className="text-xs text-[var(--color-primary)] hover:underline font-semibold"
             >
-              ⚡ Quick One-Click Unlock for Keerthana
+              ⚡ Quick One-Click Studio Unlock
             </button>
             <br />
             <RouterLink to="/" className="inline-block text-xs text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">
@@ -271,7 +271,7 @@ export default function Admin() {
                 <span className="eyebrow">Studio Management Panel</span>
               </div>
               <h1 className="text-3xl md:text-4xl font-bold font-[var(--font-display)] uppercase text-[var(--color-ink)]">
-                Welcome Back, Keerthana!
+                Welcome Back, Studio Manager!
               </h1>
               <p className="text-[var(--color-ink-soft)] text-sm mt-1">
                 Manage your handcrafted flower catalog, update offers, and track delivery orders.

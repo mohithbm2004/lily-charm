@@ -185,7 +185,7 @@ export const products = [
     price: 5499,
     image: '/images/products/flower-10-1.jpg',
     images: ['/images/products/flower-10-1.jpg', '/images/products/flower-10-2.jpg'],
-    description: 'Keerthana Bapu’s master creation featuring an opulent arrangement of lilies, tulips, and sunflowers.',
+    description: 'A studio master creation featuring an opulent arrangement of lilies, tulips, and sunflowers.',
     materials: 'Hand-sculpted velvet, pearl accents, luxury ribbon, gift packaging',
     dimensions: '50 cm height x 40 cm width',
     isBestSeller: true,
@@ -196,7 +196,7 @@ export const products = [
 
 export const reviews = [
   { id: 'r1', name: 'Ananya R.', quote: 'The velvet lily bouquet arrived in perfect shape — every pearl and petal is crafted with incredible precision!', rating: 5 },
-  { id: 'r2', name: 'Devika M.', quote: 'Keerthana’s creations from Lily Charm are true works of art. The golden sunflower will last forever.', rating: 5 },
+  { id: 'r2', name: 'Devika M.', quote: 'The creations from Lily Charm are true works of art. The golden sunflower will last forever.', rating: 5 },
 ]
 
 export const galleryImages = [

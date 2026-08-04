@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Shipped - Lily Charm</title>
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FAF7F2; color: #2B2625; }
+    .container { max-width: 600px; margin: 20px auto; background-color: #FFFFFF; border: 1px solid #E6DDD0; border-radius: 8px; overflow: hidden; }
+    .header { background-color: #212B1C; color: #FFFFFF; text-align: center; padding: 30px 20px; }
+    .header h1 { margin: 0; font-size: 26px; letter-spacing: 3px; font-weight: 300; text-transform: uppercase; color: #FAF7F2; }
+    .content { padding: 32px 24px; text-align: center; }
+    .badge { display: inline-block; background-color: #E3F2FD; color: #1565C0; font-size: 11px; font-weight: bold; padding: 6px 16px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+    .tracking-box { background-color: #FAF7F2; border: 1px solid #E6DDD0; padding: 20px; border-radius: 6px; margin: 24px 0; text-align: left; font-size: 13px; }
+    .btn { display: inline-block; background-color: #212B1C; color: #FFFFFF; text-decoration: none; padding: 12px 28px; font-size: 12px; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase; border-radius: 4px; margin-top: 10px; }
+    .footer { border-top: 1px solid #E6DDD0; background-color: #FAF7F2; padding: 20px; text-align: center; font-size: 11px; color: #8C847D; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>LILY CHARM</h1>
+      <p style="margin: 4px 0 0; font-size: 11px; letter-spacing: 2px; color: #E8DCC4;">Botanical Art Dispatch Service</p>
+    </div>
+    <div class="content">
+      <span class="badge">🚚 {{statusTitle}}</span>
+      <h2 style="font-size: 20px; color: #212B1C; margin: 0 0 12px;">Your Order is On Its Way!</h2>
+      <p style="font-size: 14px; color: #524B46; line-height: 1.6; text-align: left;">Hi <strong>{{customerName}}</strong>, your order <strong>{{orderNumber}}</strong> has been dispatched from our studio and is currently in transit.</p>
+      
+      <div class="tracking-box">
+        <p style="margin: 0 0 8px;"><strong>Courier Partner:</strong> {{carrier}}</p>
+        <p style="margin: 0 0 8px;"><strong>Tracking Number:</strong> <span style="font-family: monospace; font-weight: bold; color: #8C2D38;">{{trackingNumber}}</span></p>
+        <p style="margin: 0; color: #736B65; font-style: italic;">{{note}}</p>
+      </div>
+
+      <a href="{{trackingUrl}}" class="btn" target="_blank">Track Shipment Live</a>
+    </div>
+    <div class="footer">
+      <p>© 2026 Lily Charm Studio. Handcrafted Botanical Creations.</p>
+    </div>
+  </div>
+</body>
+</html>

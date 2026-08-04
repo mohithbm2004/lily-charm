@@ -56,7 +56,7 @@ export default function Footer() {
             <a href="#" aria-label="Twitter" className="p-2.5 border border-white/30 rounded-full hover:border-[#F5E8D0] hover:text-[#F5E8D0] transition-colors"><IconTwitter /></a>
           </div>
           <p className="text-xs text-[#E2DACB] font-medium">
-            Handcrafted with love by Keerthana Bapu.
+            Handcrafted with love by Lily Charm Studio.
           </p>
         </div>
       </div>

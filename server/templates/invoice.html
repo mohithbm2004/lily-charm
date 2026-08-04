@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tax Invoice - Lily Charm</title>
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FAF7F2; color: #2B2625; }
+    .container { max-width: 600px; margin: 20px auto; background-color: #FFFFFF; border: 1px solid #E6DDD0; border-radius: 8px; overflow: hidden; }
+    .header { background-color: #212B1C; color: #FFFFFF; text-align: center; padding: 30px 20px; }
+    .header h1 { margin: 0; font-size: 26px; letter-spacing: 3px; font-weight: 300; text-transform: uppercase; color: #FAF7F2; }
+    .content { padding: 32px 24px; }
+    .invoice-title { font-size: 20px; color: #212B1C; margin-top: 0; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 2px solid #212B1C; padding-bottom: 8px; }
+    .meta-table { width: 100%; font-size: 13px; margin: 16px 0; border-collapse: collapse; }
+    .meta-table td { padding: 4px 0; vertical-align: top; }
+    .table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
+    .table th { background-color: #FAF7F2; border: 1px solid #E6DDD0; padding: 8px; text-align: left; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; color: #736B65; }
+    .table td { border: 1px solid #E6DDD0; padding: 10px 8px; }
+    .footer { border-top: 1px solid #E6DDD0; background-color: #FAF7F2; padding: 20px; text-align: center; font-size: 11px; color: #8C847D; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>LILY CHARM</h1>
+      <p style="margin: 4px 0 0; font-size: 11px; letter-spacing: 2px; color: #E8DCC4;">Official Tax Invoice & Payment Receipt</p>
+    </div>
+    <div class="content">
+      <h2 class="invoice-title">Tax Invoice</h2>
+      <table class="meta-table">
+        <tr>
+          <td><strong>Invoice Date:</strong> {{invoiceDate}}</td>
+          <td style="text-align: right;"><strong>Invoice No:</strong> INV-{{orderNumber}}</td>
+        </tr>
+        <tr>
+          <td><strong>Billed To:</strong> {{customerName}}</td>
+          <td style="text-align: right;"><strong>Payment Method:</strong> {{paymentMethod}}</td>
+        </tr>
+        <tr>
+          <td><strong>Email:</strong> {{customerEmail}}</td>
+          <td style="text-align: right;"><strong>Payment ID:</strong> <span style="font-family: monospace;">{{paymentId}}</span></td>
+        </tr>
+      </table>
+
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th style="text-align: center;">Qty</th>
+            <th style="text-align: right;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{itemsHtml}}
+        </tbody>
+      </table>
+
+      <div style="float: right; width: 220px; font-size: 13px; margin-top: 10px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span>Subtotal:</span> <span>₹{{subtotal}}</span></div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span>Discount:</span> <span>-₹{{discount}}</span></div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span>Shipping:</span> <span>₹{{shipping}}</span></div>
+        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 15px; color: #212B1C; border-top: 2px solid #212B1C; padding-top: 6px; margin-top: 6px;"><span>Total:</span> <span>₹{{grandTotal}}</span></div>
+      </div>
+      <div style="clear: both;"></div>
+
+      <p style="font-size: 12px; color: #736B65; margin-top: 30px; text-align: center;">This is a computer-generated tax invoice for your purchase at Lily Charm Atelier.</p>
+    </div>
+    <div class="footer">
+      <p>© 2026 Lily Charm Studio. Registered Tax Invoice.</p>
+    </div>
+  </div>
+</body>
+</html>

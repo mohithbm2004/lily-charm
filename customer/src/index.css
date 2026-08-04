@@ -114,7 +114,6 @@
     font-size: 0.62rem;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: var(--color-ink-soft);
   }
   .arch-frame {
     border-top-left-radius: 9999px;

@@ -116,6 +116,7 @@ export async function acceptQuoteAndCreateOrder(req, res, next) {
     const total = price + shipping
 
     const newOrder = await Order.create({
+      orderNumber: `LC-CQ-${Date.now().toString().slice(-6)}`,
       items: [
         {
           title: itemTitle,
@@ -133,10 +134,13 @@ export async function acceptQuoteAndCreateOrder(req, res, next) {
         pincode: customRequest.pincode || '560001',
       },
       subtotal: price,
-      shipping,
-      total,
+      shippingCharge: shipping,
+      grandTotal: total,
+      total: total,
       paymentMethod: 'Custom Quote Approved (Razorpay Prepaid)',
-      status: 'Handcrafting',
+      paymentStatus: 'Paid',
+      status: 'Confirmed',
+      statusHistory: [{ status: 'Confirmed', note: 'Custom design price quote accepted by customer.' }],
     })
 
     customRequest.status = 'Accepted & Order Created'

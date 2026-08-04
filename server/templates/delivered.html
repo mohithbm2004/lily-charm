@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Delivered - Lily Charm</title>
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FAF7F2; color: #2B2625; }
+    .container { max-width: 600px; margin: 20px auto; background-color: #FFFFFF; border: 1px solid #E6DDD0; border-radius: 8px; overflow: hidden; }
+    .header { background-color: #212B1C; color: #FFFFFF; text-align: center; padding: 30px 20px; }
+    .header h1 { margin: 0; font-size: 26px; letter-spacing: 3px; font-weight: 300; text-transform: uppercase; color: #FAF7F2; }
+    .content { padding: 36px 24px; text-align: center; }
+    .badge { display: inline-block; background-color: #E8F5E9; color: #2E7D32; font-size: 11px; font-weight: bold; padding: 6px 16px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+    .btn { display: inline-block; background-color: #212B1C; color: #FFFFFF; text-decoration: none; padding: 12px 28px; font-size: 12px; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase; border-radius: 4px; margin-top: 20px; }
+    .footer { border-top: 1px solid #E6DDD0; background-color: #FAF7F2; padding: 20px; text-align: center; font-size: 11px; color: #8C847D; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>LILY CHARM</h1>
+      <p style="margin: 4px 0 0; font-size: 11px; letter-spacing: 2px; color: #E8DCC4;">Handcrafted Botanical Sculptures</p>
+    </div>
+    <div class="content">
+      <span class="badge">🎁 Delivered Successfully</span>
+      <h2 style="font-size: 22px; color: #212B1C; margin: 0 0 12px;">Your Botanical Package Has Arrived!</h2>
+      <p style="font-size: 14px; color: #524B46; line-height: 1.6; text-align: left;">Hi <strong>{{customerName}}</strong>, your order <strong>{{orderNumber}}</strong> was successfully delivered to your shipping address.</p>
+      <p style="font-size: 14px; color: #524B46; line-height: 1.6; text-align: left;">We hope your handcrafted velvet arrangements bring warmth, beauty, and timeless joy to your home.</p>
+
+      <a href="{{reviewUrl}}" class="btn" target="_blank">Share Your Feedback & Review</a>
+    </div>
+    <div class="footer">
+      <p>© 2026 Lily Charm Studio. Thank you for choosing handcrafted botanical art ✨</p>
+    </div>
+  </div>
+</body>
+</html>

@@ -47,7 +47,7 @@ export function StudioProvider({ children }) {
 
   const [marqueeText, setMarqueeText] = useState(() => {
     const saved = localStorage.getItem('lilycharm_marquee')
-    return saved || 'FREE DELIVERY ON ORDERS ABOVE ₹2500 • HANDCRAFTED VELVET FLORALS BY KEERTHANA BAPU • USE CODE LILY10 FOR 10% OFF'
+    return saved || 'FREE DELIVERY ON ORDERS ABOVE ₹2500 • HANDCRAFTED VELVET BOTANICAL FLORALS • USE CODE LILY10 FOR 10% OFF'
   })
 
   const [activeOffer, setActiveOffer] = useState(() => {

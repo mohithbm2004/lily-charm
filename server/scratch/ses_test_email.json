@@ -1,0 +1,21 @@
+{
+  "FromEmailAddress": "lilycharm.store.in@gmail.com",
+  "Destination": {
+    "ToAddresses": ["lilycharm.store.in@gmail.com"]
+  },
+  "Content": {
+    "Simple": {
+      "Subject": {
+        "Data": "Lily Charm Official Store - Self Test Transactional Email"
+      },
+      "Body": {
+        "Text": {
+          "Data": "Hello! Your official store email (lilycharm.store.in@gmail.com) is verified and sending transactional emails via Amazon SES!"
+        },
+        "Html": {
+          "Data": "<div style=\"font-family: sans-serif; padding: 24px; background-color: #faf7f2; border: 1px solid #e0d8cc; border-radius: 12px; max-width: 600px;\"><h2 style=\"color: #212b1c; font-size: 22px;\">🌸 Lily Charm — Store Email Active!</h2><p style=\"color: #4a5568; font-size: 15px; line-height: 1.6;\">Your official store address <strong>lilycharm.store.in@gmail.com</strong> is verified in Amazon SES (Mumbai - ap-south-1). Transactional order confirmations, invoices, and shipping updates will now be dispatched seamlessly through AWS SES!</p></div>"
+        }
+      }
+    }
+  }
+}

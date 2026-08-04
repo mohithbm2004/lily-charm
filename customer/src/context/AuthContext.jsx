@@ -73,6 +73,28 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const loginWithGoogle = async (googleTokenOrCredential) => {
+    try {
+      const res = await fetch(`${API_URL}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ googleToken: googleTokenOrCredential, credential: googleTokenOrCredential }),
+      })
+
+      const data = await res.json()
+      if (res.ok) {
+        setUser(data.user)
+        setToken(data.token)
+        return { ok: true, user: data.user, token: data.token }
+      } else {
+        return { ok: false, error: data.message || 'Google Authentication failed' }
+      }
+    } catch (err) {
+      console.error('Google Auth error:', err)
+      return { ok: false, error: 'Network error during Google Sign-In.' }
+    }
+  }
+
   const logout = () => {
     setUser(null)
     setToken('')
@@ -86,7 +108,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, updateUserProfile }}>
+    <AuthContext.Provider value={{ user, token, login, register, loginWithGoogle, logout, updateUserProfile }}>
       {children}
     </AuthContext.Provider>
   )

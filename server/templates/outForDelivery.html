@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Out for Delivery - Lily Charm</title>
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FAF7F2; color: #2B2625; }
+    .container { max-width: 600px; margin: 20px auto; background-color: #FFFFFF; border: 1px solid #E6DDD0; border-radius: 8px; overflow: hidden; }
+    .header { background-color: #212B1C; color: #FFFFFF; text-align: center; padding: 30px 20px; }
+    .header h1 { margin: 0; font-size: 26px; letter-spacing: 3px; font-weight: 300; text-transform: uppercase; color: #FAF7F2; }
+    .header p { margin: 6px 0 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #E8DCC4; }
+    .content { padding: 32px 28px; }
+    .title { font-size: 20px; color: #212B1C; margin-top: 0; margin-bottom: 12px; font-weight: 600; }
+    .text { font-size: 14px; line-height: 1.6; color: #524B46; margin-bottom: 24px; }
+    .badge { display: inline-block; background-color: #FFF3E0; color: #E65100; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 13px; margin-bottom: 20px; }
+    .footer { border-top: 1px solid #E6DDD0; background-color: #FAF7F2; padding: 20px; text-align: center; font-size: 11px; color: #8C847D; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>LILY CHARM</h1>
+      <p>Handcrafted Botanical Art & Velvet Sculptures</p>
+    </div>
+    <div class="content">
+      <span class="badge">🚚 Arriving Today</span>
+      <h2 class="title">Your Package is Out for Delivery</h2>
+      <p class="text">Hello {{customerName}} 👋,</p>
+      <p class="text">Your order <strong>#{{orderNumber}}</strong> is with our delivery agent and will arrive at your address today!</p>
+      <p class="text"><strong>Delivery Address:</strong><br/>{{shippingAddress}}</p>
+      <p class="text">Please ensure someone is available at the destination to receive your handcrafted floral art package.</p>
+    </div>
+    <div class="footer">
+      <p>© 2026 Lily Charm Studio & Botanical Atelier. All rights reserved.</p>
+      <p>Bengaluru, Karnataka, India</p>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Package,
   Truck,
@@ -17,6 +17,8 @@ import {
   Sparkles,
   Users,
   User,
+  Eye,
+  Download,
 } from 'lucide-react'
 import { useStudio } from '../context/StudioContext'
 import { formatPrice } from '../lib/format'
@@ -131,6 +133,305 @@ export default function AdminDashboard() {
 
   // Field validation & preview states
   const [previewImageModal, setPreviewImageModal] = useState(null)
+  const [userSearchQuery, setUserSearchQuery] = useState('')
+  const [selectedUserModal, setSelectedUserModal] = useState(null)
+  const [requestFilter, setRequestFilter] = useState('all') // 'all' | 'accepted' | 'rejected' | 'pending'
+
+  // Categorize Custom Requests into Accepted, Rejected, and Pending columns
+  const acceptedRequests = useMemo(() => {
+    return (customRequests || []).filter(
+      (r) =>
+        r.status === 'Accepted & Order Created' ||
+        r.status === 'Approved' ||
+        r.status === 'Completed' ||
+        r.isAccepted === true
+    )
+  }, [customRequests])
+
+  const rejectedRequests = useMemo(() => {
+    return (customRequests || []).filter(
+      (r) =>
+        r.status === 'Rejected' ||
+        r.status === 'Quote Declined' ||
+        r.status === 'Declined' ||
+        r.isDeclined === true
+    )
+  }, [customRequests])
+
+  const pendingRequests = useMemo(() => {
+    return (customRequests || []).filter(
+      (r) =>
+        r.status !== 'Accepted & Order Created' &&
+        r.status !== 'Approved' &&
+        r.status !== 'Completed' &&
+        r.status !== 'Rejected' &&
+        r.status !== 'Quote Declined' &&
+        r.status !== 'Declined' &&
+        !r.isAccepted &&
+        !r.isDeclined
+    )
+  }, [customRequests])
+
+  const renderRequestCard = (req) => {
+    const reqImages = Array.isArray(req.images) && req.images.length > 0
+      ? req.images
+      : (req.image ? [req.image] : [])
+    const mainPhoto = req.image || reqImages[0] || ''
+
+    return (
+      <div
+        key={req._id}
+        className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5 space-y-4 shadow-sm relative flex flex-col justify-between hover:shadow-md transition-shadow"
+      >
+        <div className="space-y-3">
+          <div className="flex items-start justify-between gap-2 border-b border-[var(--color-line)] pb-3">
+            <div>
+              <h3 className="font-bold text-base font-[var(--font-display)]">{req.name}</h3>
+              <p className="text-xs text-[var(--color-primary)] font-semibold">{req.email}</p>
+              {req.phone && <p className="text-[0.7rem] text-[var(--color-ink-soft)] font-mono">{req.phone}</p>}
+            </div>
+            <span className={`text-[0.62rem] font-bold uppercase tracking-wider px-2.5 py-1 rounded border ${
+              req.status === 'Completed' || req.status === 'Accepted & Order Created'
+                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                : req.status === 'Approved'
+                ? 'bg-blue-100 text-blue-800 border-blue-300'
+                : req.status === 'In Review'
+                ? 'bg-amber-100 text-amber-800 border-amber-300'
+                : req.status === 'Rejected' || req.status === 'Quote Declined'
+                ? 'bg-rose-100 text-rose-800 border-rose-300'
+                : 'bg-amber-100 text-amber-800 border-amber-300'
+            }`}>
+              {req.status || 'Pending'}
+            </span>
+          </div>
+
+          {/* Style Preference */}
+          <div>
+            <span className="eyebrow text-[0.65rem]">Preferred Style</span>
+            <p className="text-xs font-bold">{req.stylePreference || 'Custom Arrangement'}</p>
+          </div>
+
+          {/* Customer Notes */}
+          {req.notes && (
+            <div className="bg-[var(--color-bg)] p-3 border border-[var(--color-line)] text-xs text-[var(--color-ink-soft)] italic leading-relaxed">
+              "{req.notes}"
+            </div>
+          )}
+
+          {/* Reference Photos */}
+          {mainPhoto ? (
+            <div className="space-y-2">
+              <span className="eyebrow text-[0.65rem]">Customer Reference Photo</span>
+              <div
+                onClick={() => setPreviewImageModal(mainPhoto)}
+                className="relative h-44 border border-[var(--color-line)] overflow-hidden cursor-pointer group bg-[var(--color-bg)]"
+              >
+                <img
+                  src={mainPhoto}
+                  alt="Custom reference design"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
+                  <ExternalLink size={14} /> Click to View Full High-Res
+                </div>
+              </div>
+
+              {/* Additional images row */}
+              {reqImages.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pt-1">
+                  {reqImages.map((img, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setPreviewImageModal(img)}
+                      className="w-12 h-12 border border-[var(--color-line)] overflow-hidden shrink-0 hover:scale-105 transition-transform"
+                    >
+                      <img src={img} alt={`Thumb ${i}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-[var(--color-ink-soft)] italic font-mono">No Reference Photo Attached</p>
+          )}
+        </div>
+
+        {/* Admin Quoted Price Form */}
+        <div className="pt-3 border-t border-[var(--color-line)] bg-[var(--color-bg)] p-3 space-y-2">
+          <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-primary)]">Admin Price Quote (₹ INR)</span>
+          {req.quotedPrice ? (
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-emerald-800">{formatPrice(req.quotedPrice)}</p>
+              {req.adminNotes && <p className="text-[0.68rem] text-[var(--color-ink-soft)] italic">Note: {req.adminNotes}</p>}
+            </div>
+          ) : (
+            <p className="text-[0.68rem] text-rose-600 font-bold">⚠️ Quote Pending from Admin</p>
+          )}
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              const priceVal = e.target.priceInput.value
+              const notesVal = e.target.notesInput.value
+              if (priceVal && Number(priceVal) > 0) {
+                quoteCustomPrice(req._id, Number(priceVal), notesVal)
+              }
+            }}
+            className="space-y-2 pt-1"
+          >
+            <div className="flex gap-2">
+              <input
+                name="priceInput"
+                type="number"
+                placeholder="e.g. 4999"
+                defaultValue={req.quotedPrice || ''}
+                required
+                className="border border-[var(--color-line)] p-1.5 text-xs bg-[var(--color-bg)] font-bold text-emerald-900 w-full"
+              />
+              <button type="submit" className="btn-primary px-3 py-1.5 text-[0.65rem] uppercase font-bold shrink-0">
+                Quote Price
+              </button>
+            </div>
+            <input
+              name="notesInput"
+              type="text"
+              placeholder="Optional quote details or breakdown..."
+              defaultValue={req.adminNotes || ''}
+              className="border border-[var(--color-line)] p-1.5 text-[0.68rem] bg-[var(--color-bg)] w-full"
+            />
+          </form>
+        </div>
+
+        {/* Card Actions Footer */}
+        <div className="pt-3 border-t border-[var(--color-line)] space-y-2.5">
+          <div className="flex items-center justify-between text-xs">
+            <label className="font-bold text-[0.68rem] uppercase">Status:</label>
+            <select
+              value={req.status || 'Quote Pending'}
+              onChange={(e) => updateCustomRequestStatus(req._id, e.target.value)}
+              className="border border-[var(--color-line)] bg-[var(--color-bg)] p-1.5 text-xs font-semibold"
+            >
+              <option value="Quote Pending">Quote Pending</option>
+              <option value="Quoted">Quoted</option>
+              <option value="Accepted & Order Created">Accepted & Order Created</option>
+              <option value="Quote Declined">Quote Declined</option>
+              <option value="Completed">Completed</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
+
+          <div className="flex justify-between items-center pt-1 text-[0.65rem] text-[var(--color-ink-soft)] font-mono">
+            <span>Received: {new Date(req.createdAt).toLocaleDateString()}</span>
+            <button
+              onClick={() => deleteCustomRequest(req._id)}
+              className="text-rose-600 hover:text-rose-800 font-bold flex items-center gap-1 hover:underline"
+            >
+              <Trash2 size={12} /> Delete Request
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Merge users array with customers extracted from orders & custom requests safely
+  const mergedUsers = useMemo(() => {
+    const customerMap = new Map()
+    const registeredUserIds = new Set()
+    const registeredEmails = new Set()
+
+    ;(users || []).forEach((u) => {
+      if (u && u.email) {
+        const cleanEmail = u.email.toLowerCase().trim()
+        registeredEmails.add(cleanEmail)
+        if (u._id) registeredUserIds.add(u._id.toString())
+        if (Array.isArray(u.alternateEmails)) {
+          u.alternateEmails.forEach((alt) => {
+            if (alt) registeredEmails.add(alt.toLowerCase().trim())
+          })
+        }
+
+        customerMap.set(cleanEmail, {
+          _id: u._id || `user-${cleanEmail}`,
+          name: u.name || 'Customer',
+          email: u.email,
+          alternateEmails: u.alternateEmails || [],
+          phone: u.phone || '',
+          address: u.address || '',
+          city: u.city || '',
+          pincode: u.pincode || '',
+          createdAt: u.createdAt || Date.now(),
+          profileImage: u.profileImage || '',
+          isRegistered: true,
+        })
+      }
+    })
+
+    ;(orders || []).forEach((o) => {
+      const oUserId = (o.user?._id || o.user)?.toString()
+      const oEmail = (o.email || o.shippingAddress?.email || '').toLowerCase().trim()
+
+      // Skip creating a separate card if this order belongs to a registered user or matching registered email
+      if ((oUserId && registeredUserIds.has(oUserId)) || (oEmail && registeredEmails.has(oEmail))) {
+        return
+      }
+
+      if (oEmail && !customerMap.has(oEmail)) {
+        customerMap.set(oEmail, {
+          _id: `ord-cust-${o._id || o.id || oEmail}`,
+          name: o.shippingAddress?.name || 'Store Customer',
+          email: oEmail,
+          phone: o.shippingAddress?.phone || '',
+          address: o.shippingAddress?.address || o.shippingAddress?.line1 || '',
+          city: o.shippingAddress?.city || '',
+          pincode: o.shippingAddress?.pincode || '',
+          createdAt: o.createdAt || Date.now(),
+          profileImage: '',
+          isRegistered: false,
+        })
+      }
+    })
+
+    ;(customRequests || []).forEach((r) => {
+      const rUserId = (r.user?._id || r.user)?.toString()
+      const rEmail = (r.email || '').toLowerCase().trim()
+
+      if ((rUserId && registeredUserIds.has(rUserId)) || (rEmail && registeredEmails.has(rEmail))) {
+        return
+      }
+
+      if (rEmail && !customerMap.has(rEmail)) {
+        customerMap.set(rEmail, {
+          _id: `req-cust-${r._id || rEmail}`,
+          name: r.name || 'Custom Design Client',
+          email: rEmail,
+          phone: r.phone || '',
+          address: r.address || '',
+          city: r.city || '',
+          pincode: r.pincode || '',
+          createdAt: r.createdAt || Date.now(),
+          profileImage: '',
+          isRegistered: false,
+        })
+      }
+    })
+
+    return Array.from(customerMap.values())
+  }, [users, orders, customRequests])
+
+  const filteredUsers = useMemo(() => {
+    const q = (userSearchQuery || '').toLowerCase().trim()
+    if (!q) return mergedUsers
+    return mergedUsers.filter(
+      (u) =>
+        u.name?.toLowerCase().includes(q) ||
+        u.email?.toLowerCase().includes(q) ||
+        u.phone?.toLowerCase().includes(q) ||
+        u.city?.toLowerCase().includes(q) ||
+        u.pincode?.toLowerCase().includes(q)
+    )
+  }, [mergedUsers, userSearchQuery])
   const [addFlowerErrors, setAddFlowerErrors] = useState({})
   const [editFlowerErrors, setEditFlowerErrors] = useState({})
   const [addColErrors, setAddColErrors] = useState({})
@@ -533,6 +834,7 @@ export default function AdminDashboard() {
 
           <div className="pt-4 border-t border-[var(--color-line)] text-center space-y-2">
             <button
+              type="button"
               onClick={() => {
                 setPinInput('1234')
                 setIsUnlocked(true)
@@ -540,7 +842,7 @@ export default function AdminDashboard() {
               }}
               className="text-xs text-[var(--color-primary)] hover:underline font-semibold"
             >
-              ⚡ Quick One-Click Unlock for Keerthana
+              ⚡ Quick One-Click Studio Unlock
             </button>
           </div>
         </div>
@@ -586,7 +888,7 @@ export default function AdminDashboard() {
           <div>
             <span className="eyebrow block mb-1">Standalone Admin Application</span>
             <h1 className="text-3xl font-bold font-[var(--font-display)] uppercase tracking-wider text-[var(--color-ink)]">
-              Welcome back, Keerthana!
+              Welcome back, Studio Manager!
             </h1>
             <p className="text-xs text-[var(--color-ink-soft)] mt-1">
               Manage your handcrafted flower catalog, collections, update offers, edit prices, and track delivery orders.
@@ -1392,12 +1694,57 @@ export default function AdminDashboard() {
                   <Sparkles className="text-[var(--color-primary)]" size={20} /> Customer Custom Design Requests
                 </h2>
                 <p className="text-xs text-[var(--color-ink-soft)] mt-0.5">
-                  Direct bespoke requests submitted by customers with custom reference photos.
+                  Inspect and manage custom requests in dedicated columns for Accepted, Rejected, and Pending orders.
                 </p>
               </div>
-              <span className="bg-[var(--color-primary)] text-white text-xs font-bold font-mono px-3 py-1.5 rounded-full self-start">
-                {customRequests.length} Requests Received
-              </span>
+
+              {/* Column Filter Tabs */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setRequestFilter('all')}
+                  className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border ${
+                    requestFilter === 'all'
+                      ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                      : 'bg-[var(--color-card-bg)] text-[var(--color-ink-soft)] border-[var(--color-line)] hover:text-[var(--color-ink)]'
+                  }`}
+                >
+                  All ({customRequests.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRequestFilter('accepted')}
+                  className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border ${
+                    requestFilter === 'accepted'
+                      ? 'bg-emerald-700 text-white border-emerald-700'
+                      : 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                  }`}
+                >
+                  ✓ Accepted ({acceptedRequests.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRequestFilter('rejected')}
+                  className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border ${
+                    requestFilter === 'rejected'
+                      ? 'bg-rose-700 text-white border-rose-700'
+                      : 'bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100'
+                  }`}
+                >
+                  ✕ Rejected ({rejectedRequests.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRequestFilter('pending')}
+                  className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border ${
+                    requestFilter === 'pending'
+                      ? 'bg-amber-700 text-white border-amber-700'
+                      : 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
+                  }`}
+                >
+                  ⏱️ Pending ({pendingRequests.length})
+                </button>
+              </div>
             </div>
 
             {customRequests.length === 0 ? (
@@ -1409,223 +1756,217 @@ export default function AdminDashboard() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {customRequests.map((req) => {
-                  const reqImages = Array.isArray(req.images) && req.images.length > 0
-                    ? req.images
-                    : (req.image ? [req.image] : [])
-                  const mainPhoto = req.image || reqImages[0] || ''
-
-                  return (
-                    <div
-                      key={req._id}
-                      className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5 space-y-4 shadow-sm relative flex flex-col justify-between"
-                    >
-                      <div className="space-y-3">
-                        <div className="flex items-start justify-between gap-2 border-b border-[var(--color-line)] pb-3">
-                          <div>
-                            <h3 className="font-bold text-base font-[var(--font-display)]">{req.name}</h3>
-                            <p className="text-xs text-[var(--color-primary)] font-semibold">{req.email}</p>
-                            {req.phone && <p className="text-[0.7rem] text-[var(--color-ink-soft)] font-mono">{req.phone}</p>}
-                          </div>
-                          <span className={`text-[0.62rem] font-bold uppercase tracking-wider px-2.5 py-1 rounded border ${
-                            req.status === 'Completed'
-                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                              : req.status === 'Approved'
-                              ? 'bg-blue-100 text-blue-800 border-blue-300'
-                              : req.status === 'In Review'
-                              ? 'bg-amber-100 text-amber-800 border-amber-300'
-                              : 'bg-rose-100 text-rose-800 border-rose-300'
-                          }`}>
-                            {req.status || 'Pending'}
-                          </span>
-                        </div>
-
-                        {/* Style Preference */}
-                        <div>
-                          <span className="eyebrow text-[0.65rem]">Preferred Style</span>
-                          <p className="text-xs font-bold">{req.stylePreference || 'Custom Arrangement'}</p>
-                        </div>
-
-                        {/* Customer Notes */}
-                        {req.notes && (
-                          <div className="bg-[var(--color-bg)] p-3 border border-[var(--color-line)] text-xs text-[var(--color-ink-soft)] italic leading-relaxed">
-                            "{req.notes}"
-                          </div>
-                        )}
-
-                        {/* Reference Photos */}
-                        {mainPhoto ? (
-                          <div className="space-y-2">
-                            <span className="eyebrow text-[0.65rem]">Customer Reference Photo</span>
-                            <div
-                              onClick={() => setPreviewImageModal(mainPhoto)}
-                              className="relative h-44 border border-[var(--color-line)] overflow-hidden cursor-pointer group bg-[var(--color-bg)]"
-                            >
-                              <img
-                                src={mainPhoto}
-                                alt="Custom reference design"
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                              />
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
-                                <ExternalLink size={14} /> Click to View Full High-Res
-                              </div>
-                            </div>
-
-                            {/* Additional images row */}
-                            {reqImages.length > 1 && (
-                              <div className="flex gap-2 overflow-x-auto pt-1">
-                                {reqImages.map((img, i) => (
-                                  <button
-                                    key={i}
-                                    type="button"
-                                    onClick={() => setPreviewImageModal(img)}
-                                    className="w-12 h-12 border border-[var(--color-line)] overflow-hidden shrink-0 hover:scale-105 transition-transform"
-                                  >
-                                    <img src={img} alt={`Thumb ${i}`} className="w-full h-full object-cover" />
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-[var(--color-ink-soft)] italic font-mono">No Reference Photo Attached</p>
-                        )}
+              <div className="space-y-10">
+                {/* COLUMN 1: ACCEPTED & CREATED ORDERS */}
+                {(requestFilter === 'all' || requestFilter === 'accepted') && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between border-b-2 border-emerald-600 pb-2 bg-emerald-50/50 p-3 rounded-t">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3.5 h-3.5 rounded-full bg-emerald-600 inline-block" />
+                        <h3 className="font-bold text-sm uppercase tracking-wider text-emerald-950 font-[var(--font-display)]">
+                          Accepted & Created Custom Orders Column ({acceptedRequests.length})
+                        </h3>
                       </div>
-
-                      {/* Admin Quoted Price Form */}
-                      <div className="pt-3 border-t border-[var(--color-line)] bg-[var(--color-bg)] p-3 space-y-2">
-                        <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-primary)]">Admin Price Quote (₹ INR)</span>
-                        {req.quotedPrice ? (
-                          <div className="space-y-1">
-                            <p className="text-sm font-bold text-emerald-800">{formatPrice(req.quotedPrice)}</p>
-                            {req.adminNotes && <p className="text-[0.68rem] text-[var(--color-ink-soft)] italic">Note: {req.adminNotes}</p>}
-                          </div>
-                        ) : (
-                          <p className="text-[0.68rem] text-rose-600 font-bold">⚠️ Quote Pending from Admin</p>
-                        )}
-
-                        <form
-                          onSubmit={(e) => {
-                            e.preventDefault()
-                            const priceVal = e.target.priceInput.value
-                            const notesVal = e.target.notesInput.value
-                            if (priceVal && Number(priceVal) > 0) {
-                              quoteCustomPrice(req._id, Number(priceVal), notesVal)
-                            }
-                          }}
-                          className="space-y-2 pt-1"
-                        >
-                          <div className="flex gap-2">
-                            <input
-                              name="priceInput"
-                              type="number"
-                              placeholder="e.g. 4999"
-                              defaultValue={req.quotedPrice || ''}
-                              required
-                              className="border border-[var(--color-line)] p-1.5 text-xs bg-[var(--color-bg)] font-bold text-emerald-900 w-full"
-                            />
-                            <button type="submit" className="btn-primary px-3 py-1.5 text-[0.65rem] uppercase font-bold shrink-0">
-                              Quote Price
-                            </button>
-                          </div>
-                          <input
-                            name="notesInput"
-                            type="text"
-                            placeholder="Optional quote details or breakdown..."
-                            defaultValue={req.adminNotes || ''}
-                            className="border border-[var(--color-line)] p-1.5 text-[0.68rem] bg-[var(--color-bg)] w-full"
-                          />
-                        </form>
-                      </div>
-
-                      {/* Card Actions Footer */}
-                      <div className="pt-3 border-t border-[var(--color-line)] space-y-2.5">
-                        <div className="flex items-center justify-between text-xs">
-                          <label className="font-bold text-[0.68rem] uppercase">Status:</label>
-                          <select
-                            value={req.status || 'Quote Pending'}
-                            onChange={(e) => updateCustomRequestStatus(req._id, e.target.value)}
-                            className="border border-[var(--color-line)] bg-[var(--color-bg)] p-1.5 text-xs font-semibold"
-                          >
-                            <option value="Quote Pending">Quote Pending</option>
-                            <option value="Quoted">Quoted</option>
-                            <option value="Accepted & Order Created">Accepted & Order Created</option>
-                            <option value="Quote Declined">Quote Declined</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Rejected">Rejected</option>
-                          </select>
-                        </div>
-
-                        <div className="flex justify-between items-center pt-1 text-[0.65rem] text-[var(--color-ink-soft)] font-mono">
-                          <span>Received: {new Date(req.createdAt).toLocaleDateString()}</span>
-                          <button
-                            onClick={() => deleteCustomRequest(req._id)}
-                            className="text-rose-600 hover:text-rose-800 font-bold flex items-center gap-1 hover:underline"
-                          >
-                            <Trash2 size={12} /> Delete Request
-                          </button>
-                        </div>
-                      </div>
+                      <span className="text-[0.68rem] font-bold text-emerald-800 uppercase bg-emerald-200/60 px-2.5 py-0.5 rounded border border-emerald-300">
+                        Accepted Quotes
+                      </span>
                     </div>
-                  )
-                })}
+
+                    {acceptedRequests.length === 0 ? (
+                      <div className="border border-dashed border-emerald-300 bg-emerald-50/30 p-6 text-center text-xs text-emerald-800 italic">
+                        No accepted custom quotes in this column yet.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {acceptedRequests.map((req) => renderRequestCard(req))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* COLUMN 2: REJECTED & DECLINED ORDERS */}
+                {(requestFilter === 'all' || requestFilter === 'rejected') && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between border-b-2 border-rose-600 pb-2 bg-rose-50/50 p-3 rounded-t">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3.5 h-3.5 rounded-full bg-rose-600 inline-block" />
+                        <h3 className="font-bold text-sm uppercase tracking-wider text-rose-950 font-[var(--font-display)]">
+                          Rejected & Declined Custom Orders Column ({rejectedRequests.length})
+                        </h3>
+                      </div>
+                      <span className="text-[0.68rem] font-bold text-rose-800 uppercase bg-rose-200/60 px-2.5 py-0.5 rounded border border-rose-300">
+                        Declined / Rejected
+                      </span>
+                    </div>
+
+                    {rejectedRequests.length === 0 ? (
+                      <div className="border border-dashed border-rose-300 bg-rose-50/30 p-6 text-center text-xs text-rose-800 italic">
+                        No rejected or declined requests in this column yet.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {rejectedRequests.map((req) => renderRequestCard(req))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* COLUMN 3: PENDING & IN REVIEW QUOTES */}
+                {(requestFilter === 'all' || requestFilter === 'pending') && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between border-b-2 border-amber-600 pb-2 bg-amber-50/50 p-3 rounded-t">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3.5 h-3.5 rounded-full bg-amber-600 inline-block" />
+                        <h3 className="font-bold text-sm uppercase tracking-wider text-amber-950 font-[var(--font-display)]">
+                          Pending Quotes & In Review Inquiries Column ({pendingRequests.length})
+                        </h3>
+                      </div>
+                      <span className="text-[0.68rem] font-bold text-amber-800 uppercase bg-amber-200/60 px-2.5 py-0.5 rounded border border-amber-300">
+                        Pending Admin Action
+                      </span>
+                    </div>
+
+                    {pendingRequests.length === 0 ? (
+                      <div className="border border-dashed border-amber-300 bg-amber-50/30 p-6 text-center text-xs text-amber-800 italic">
+                        No pending custom design requests in this column right now.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {pendingRequests.map((req) => renderRequestCard(req))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
         )}
 
-        {/* TAB 6: REGISTERED USER PROFILES */}
+        {/* TAB 6: REGISTERED USER PROFILES & ORDER HISTORY */}
         {activeTab === 'users' && (
           <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--color-line)] pb-4">
               <div>
                 <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
-                  <Users className="text-[var(--color-primary)]" size={20} /> Registered Customer Profiles
+                  <Users className="text-[var(--color-primary)]" size={20} /> Registered Customer Profiles & Order History
                 </h2>
                 <p className="text-xs text-[var(--color-ink-soft)] mt-0.5">
-                  Real-time customer account profiles and contact details.
+                  Inspect customer accounts, lifetime order histories, and bespoke custom design requests.
                 </p>
               </div>
-              <span className="bg-[var(--color-primary)] text-white text-xs font-bold font-mono px-3 py-1.5 rounded-full self-start">
-                {users.length} Total Users
-              </span>
+              
+              {/* Search Bar */}
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-3 text-[var(--color-ink-soft)]" />
+                  <input
+                    type="text"
+                    placeholder="Search users by name, email, phone, city..."
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    className="pl-8 pr-4 py-2 border border-[var(--color-line)] bg-[var(--color-card-bg)] text-xs font-semibold focus:outline-none focus:border-[var(--color-primary)] w-72"
+                  />
+                  {userSearchQuery && (
+                    <button
+                      onClick={() => setUserSearchQuery('')}
+                      className="absolute right-2.5 top-2.5 text-[0.65rem] font-bold text-[var(--color-ink-soft)] hover:text-black uppercase"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                <span className="bg-[var(--color-primary)] text-white text-xs font-bold font-mono px-3 py-2 rounded shadow-sm shrink-0">
+                  {mergedUsers.length} Customers
+                </span>
+              </div>
             </div>
 
-            {users.length === 0 ? (
+            {filteredUsers.length === 0 ? (
               <div className="border border-dashed border-[var(--color-line)] bg-[var(--color-card-bg)] p-12 text-center space-y-2">
                 <Users size={32} className="mx-auto text-[var(--color-ink-soft)]" />
-                <p className="font-bold uppercase text-sm">No Registered User Profiles Yet</p>
+                <p className="font-bold uppercase text-sm">
+                  {userSearchQuery ? `No Users Found Matching "${userSearchQuery}"` : 'No Registered User Profiles Yet'}
+                </p>
                 <p className="text-xs text-[var(--color-ink-soft)]">
-                  When customers save their account profile on the storefront dashboard, their user details will appear here!
+                  {userSearchQuery ? 'Try clearing your search query to view all users.' : 'Registered user accounts from the storefront will appear here.'}
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {users.map((u) => (
-                  <div key={u._id} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5 space-y-4 shadow-sm">
-                    <div className="flex items-center gap-3 border-b border-[var(--color-line)] pb-3">
-                      <div className="w-12 h-12 rounded-full border border-[var(--color-line)] overflow-hidden bg-[var(--color-bg)] shrink-0 flex items-center justify-center">
-                        {u.profileImage ? (
-                          <img src={u.profileImage} alt={u.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <User size={24} className="text-[var(--color-primary)]" />
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-base font-[var(--font-display)]">{u.name}</h3>
-                        <p className="text-xs text-[var(--color-primary)] font-semibold">{u.email}</p>
-                        {u.phone && <p className="text-[0.68rem] text-[var(--color-ink-soft)] font-mono">{u.phone}</p>}
-                      </div>
-                    </div>
+                {filteredUsers.map((u) => {
+                  const uEmail = u.email?.toLowerCase().trim()
+                  const uIdStr = u._id ? u._id.toString() : ''
 
-                    <div className="space-y-1 text-xs text-[var(--color-ink-soft)]">
-                      <p><strong>Shipping Address:</strong> {u.address || 'Not specified'}</p>
-                      <p><strong>City & PIN:</strong> {u.city ? `${u.city} - ${u.pincode}` : 'Not specified'}</p>
-                      <p className="font-mono text-[0.65rem] pt-1">Registered: {new Date(u.createdAt).toLocaleDateString()}</p>
+                  const userOrdersList = (orders || []).filter((o) => {
+                    const oUserId = (o.user?._id || o.user)?.toString()
+                    const oEmail = (o.email || o.shippingAddress?.email)?.toLowerCase().trim()
+                    if (uIdStr && oUserId && oUserId === uIdStr) return true
+                    if (uEmail && oEmail && oEmail === uEmail) return true
+                    if (Array.isArray(u.alternateEmails) && oEmail && u.alternateEmails.some((alt) => alt.toLowerCase().trim() === oEmail)) return true
+                    return false
+                  })
+
+                  const totalSpent = userOrdersList.reduce((sum, o) => sum + (o.grandTotal || o.total || 0), 0)
+
+                  const userRequestsList = (customRequests || []).filter((r) => {
+                    const rUserId = (r.user?._id || r.user)?.toString()
+                    const rEmail = r.email?.toLowerCase().trim()
+                    if (uIdStr && rUserId && rUserId === uIdStr) return true
+                    if (uEmail && rEmail && rEmail === uEmail) return true
+                    if (Array.isArray(u.alternateEmails) && rEmail && u.alternateEmails.some((alt) => alt.toLowerCase().trim() === rEmail)) return true
+                    return false
+                  })
+
+                  return (
+                    <div key={u._id} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3 border-b border-[var(--color-line)] pb-3">
+                          <div className="w-12 h-12 rounded-full border border-[var(--color-line)] overflow-hidden bg-[var(--color-bg)] shrink-0 flex items-center justify-center">
+                            {u.profileImage ? (
+                              <img src={u.profileImage} alt={u.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <User size={24} className="text-[var(--color-primary)]" />
+                            )}
+                          </div>
+                          <div className="overflow-hidden">
+                            <h3 className="font-bold text-base font-[var(--font-display)] truncate">{u.name}</h3>
+                            <p className="text-xs text-[var(--color-primary)] font-bold truncate">{u.email}</p>
+                            {u.phone && <p className="text-[0.68rem] text-[var(--color-ink-soft)] font-mono">{u.phone}</p>}
+                          </div>
+                        </div>
+
+                        <div className="space-y-1 text-xs text-[var(--color-ink-soft)]">
+                          <p className="truncate"><strong>Shipping Address:</strong> {u.address || 'Not specified'}</p>
+                          <p><strong>City & PIN:</strong> {u.city ? `${u.city} - ${u.pincode}` : 'Not specified'}</p>
+                          <p className="font-mono text-[0.65rem] pt-1">Registered: {new Date(u.createdAt).toLocaleDateString()}</p>
+                        </div>
+
+                        {/* Summary Chips */}
+                        <div className="pt-2 border-t border-[var(--color-line)] flex flex-wrap gap-2 text-[0.65rem] font-bold uppercase">
+                          <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded font-mono">
+                            📦 {userOrdersList.length} Orders
+                          </span>
+                          <span className="px-2.5 py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded font-mono">
+                            💰 {formatPrice(totalSpent)} Spent
+                          </span>
+                          {userRequestsList.length > 0 && (
+                            <span className="px-2.5 py-1 bg-purple-100 text-purple-800 border border-purple-300 rounded font-mono">
+                              🎨 {userRequestsList.length} Quotes
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setSelectedUserModal({ user: u, userOrdersList, userRequestsList, totalSpent })}
+                        className="btn-primary w-full py-2.5 text-[0.68rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 mt-3"
+                      >
+                        <Eye size={13} /> View Profile & Order History ➔
+                      </button>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
@@ -1647,6 +1988,152 @@ export default function AdminDashboard() {
             <p className="text-white text-xs font-mono text-center py-2 bg-black/80">
               Reference Photo (Click anywhere to close)
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* USER PROFILE & ORDER HISTORY MODAL */}
+      {selectedUserModal && (
+        <div className="fixed inset-0 bg-black/80 z-[150] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex justify-between items-start border-b border-[var(--color-line)] pb-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full border-2 border-[var(--color-primary)] overflow-hidden bg-[var(--color-bg)] flex items-center justify-center shrink-0">
+                  {selectedUserModal.user.profileImage ? (
+                    <img src={selectedUserModal.user.profileImage} alt={selectedUserModal.user.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={32} className="text-[var(--color-primary)]" />
+                  )}
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold font-[var(--font-display)]">{selectedUserModal.user.name}</h2>
+                  <p className="text-xs text-[var(--color-primary)] font-bold">{selectedUserModal.user.email}</p>
+                  <p className="text-xs text-[var(--color-ink-soft)] font-mono">{selectedUserModal.user.phone || 'No phone recorded'}</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setSelectedUserModal(null)}
+                className="p-2 hover:bg-black/10 text-[var(--color-ink-soft)] font-bold uppercase text-xs"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            {/* Customer Details & Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs bg-[var(--color-bg)] p-4 border border-[var(--color-line)]">
+              <div>
+                <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-ink-soft)]">Shipping Address</span>
+                <p className="font-bold text-xs mt-1">{selectedUserModal.user.address || 'Not specified'}</p>
+                <p className="text-[var(--color-ink-soft)]">{selectedUserModal.user.city ? `${selectedUserModal.user.city} - ${selectedUserModal.user.pincode}` : ''}</p>
+              </div>
+
+              <div>
+                <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-ink-soft)]">Account Registration</span>
+                <p className="font-bold font-mono text-xs mt-1">
+                  {new Date(selectedUserModal.user.createdAt).toLocaleDateString('en-IN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </p>
+                <span className="inline-block mt-1 px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[0.62rem] font-bold uppercase rounded border border-emerald-300">
+                  Verified Account
+                </span>
+              </div>
+
+              <div>
+                <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-ink-soft)]">Lifetime Value</span>
+                <p className="text-lg font-bold font-mono text-emerald-800 mt-0.5">{formatPrice(selectedUserModal.totalSpent)}</p>
+                <p className="text-[0.68rem] text-[var(--color-ink-soft)] font-mono">{selectedUserModal.userOrdersList.length} Orders Placed</p>
+              </div>
+            </div>
+
+            {/* ORDER HISTORY SECTION */}
+            <div className="space-y-4">
+              <h3 className="font-bold text-base font-[var(--font-display)] uppercase border-b border-[var(--color-line)] pb-2 flex items-center justify-between">
+                <span>Customer Order History ({selectedUserModal.userOrdersList.length})</span>
+              </h3>
+
+              {selectedUserModal.userOrdersList.length === 0 ? (
+                <div className="border border-dashed border-[var(--color-line)] p-6 text-center text-xs text-[var(--color-ink-soft)] font-mono">
+                  No orders placed by this user yet.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {selectedUserModal.userOrdersList.map((o) => (
+                    <div key={o._id || o.id} className="border border-[var(--color-line)] bg-white p-4 space-y-3 shadow-sm">
+                      <div className="flex flex-wrap justify-between items-start border-b border-[var(--color-line)] pb-2 gap-2 text-xs">
+                        <div>
+                          <p className="font-mono font-bold text-sm text-[var(--color-primary)]">{o.id || o.orderNumber || o._id}</p>
+                          <p className="text-[0.68rem] text-[var(--color-ink-soft)]">Placed on: {new Date(o.createdAt || Date.now()).toLocaleDateString('en-IN')}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold uppercase px-2.5 py-1 text-[0.62rem] rounded bg-[#212B1C] text-[#F5E8D0] border border-black">
+                            {o.status || o.orderStatus || 'Confirmed'}
+                          </span>
+                          <span className="font-mono font-bold uppercase px-2.5 py-1 text-[0.62rem] rounded bg-emerald-800 text-white border border-emerald-950">
+                            {o.paymentStatus || 'Paid'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Items */}
+                      <div className="space-y-2">
+                        {o.items?.map((item, idx) => (
+                          <div key={idx} className="flex items-center gap-3 text-xs border-b border-dashed border-stone-200 pb-2">
+                            {item.image && (
+                              <img src={item.image} alt={item.title} className="w-10 h-10 object-cover border border-[var(--color-line)] shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold truncate">{item.title}</p>
+                              <p className="text-[0.68rem] text-[var(--color-ink-soft)] font-mono">Qty: {item.qty} × {formatPrice(item.price)}</p>
+                            </div>
+                            <span className="font-bold font-mono text-xs">{formatPrice((item.price || 0) * (item.qty || 1))}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex justify-between items-center pt-1 text-xs">
+                        <span className="font-bold text-sm font-mono text-emerald-800">Total: {formatPrice(o.grandTotal || o.total || 0)}</span>
+                        <button
+                          onClick={() => window.open(`${API_URL}/orders/${o.mongoId || o._id}/invoice`, '_blank')}
+                          className="btn-outline py-1.5 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center gap-1"
+                        >
+                          <Download size={12} /> Download PDF Invoice
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* CUSTOM DESIGN REQUESTS SECTION */}
+            {selectedUserModal.userRequestsList.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <h3 className="font-bold text-base font-[var(--font-display)] uppercase border-b border-[var(--color-line)] pb-2">
+                  Bespoke Custom Requests ({selectedUserModal.userRequestsList.length})
+                </h3>
+                <div className="space-y-3">
+                  {selectedUserModal.userRequestsList.map((req) => (
+                    <div key={req._id} className="border border-[var(--color-line)] bg-amber-50/50 p-4 text-xs space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold font-[var(--font-display)] text-sm">{req.stylePreference || 'Custom Botanical Artwork'}</span>
+                        <span className="font-mono text-[0.65rem] font-bold uppercase px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded">
+                          {req.status}
+                        </span>
+                      </div>
+                      {req.notes && <p className="italic text-[var(--color-ink-soft)]">"{req.notes}"</p>}
+                      {req.quotedPrice > 0 && (
+                        <p className="font-bold text-emerald-800 font-mono">Quoted Price: {formatPrice(req.quotedPrice)}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -133,7 +133,7 @@ export const products = [
     price: 5499,
     image: '/images/products/flower-10-1.jpg',
     images: ['/images/products/flower-10-1.jpg', '/images/products/flower-10-2.jpg'],
-    description: 'Keerthana Bapu’s master creation featuring an opulent arrangement of lilies, tulips, and sunflowers.',
+    description: 'A studio master creation featuring an opulent arrangement of lilies, tulips, and sunflowers.',
     materials: 'Hand-sculpted velvet, pearl accents, luxury ribbon, gift packaging',
     dimensions: '50 cm height x 40 cm width',
   },

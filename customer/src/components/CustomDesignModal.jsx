@@ -1,23 +1,38 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Sparkles, Upload, CheckCircle2, Search, Check, Ban } from 'lucide-react'
+import { X, Sparkles, Upload, CheckCircle2, Search, Check, Ban, Link as LinkIcon } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { formatPrice } from '../lib/format'
+import { useAuth } from '../context/AuthContext'
 
 const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
 
 export default function CustomDesignModal({ isOpen, onClose }) {
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('submit') // 'submit' | 'check-quotes'
 
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    pincode: '',
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    address: user?.address || '',
+    city: user?.city || '',
+    pincode: user?.pincode || '',
     stylePreference: 'Velvet Lilies & Wildflowers',
     notes: '',
   })
+
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        name: prev.name || user.name || '',
+        email: prev.email || user.email || '',
+        phone: prev.phone || user.phone || '',
+      }))
+      setSearchEmail(user.email || '')
+    }
+  }, [user])
   const [selectedImages, setSelectedImages] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submittedSuccess, setSubmittedSuccess] = useState(false)
@@ -264,7 +279,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                       <label className="block font-bold uppercase mb-1">Your Full Name *</label>
                       <input
                         type="text"
-                        placeholder="e.g. Keerthana Bapu"
+                        placeholder="e.g. Eleanor Vance"
                         value={formData.name}
                         onChange={(e) => {
                           setFormData({ ...formData, name: e.target.value })
@@ -281,7 +296,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                       <label className="block font-bold uppercase mb-1">Email Address *</label>
                       <input
                         type="email"
-                        placeholder="e.g. keerthana@example.com"
+                        placeholder="e.g. customer@example.com"
                         value={formData.email}
                         onChange={(e) => {
                           setFormData({ ...formData, email: e.target.value })
@@ -420,7 +435,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
               >
                 <input
                   type="email"
-                  placeholder="Enter your email (e.g. keerthana@example.com)..."
+                  placeholder="Enter your email (e.g. customer@example.com)..."
                   value={searchEmail}
                   onChange={(e) => setSearchEmail(e.target.value)}
                   required
@@ -503,8 +518,17 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                       )}
 
                       {req.status === 'Accepted & Order Created' && (
-                        <div className="p-2.5 bg-emerald-50 text-emerald-800 border border-emerald-200 text-[0.68rem] font-bold flex items-center gap-2">
-                          <CheckCircle2 size={14} /> Quote Accepted & Order Created! Total: {formatPrice(req.quotedPrice)}
+                        <div className="p-3 bg-emerald-50 text-emerald-900 border border-emerald-300 text-xs font-bold space-y-2">
+                          <p className="flex items-center gap-2">
+                            <CheckCircle2 size={16} className="text-emerald-700" /> Quote Accepted & Converted to Order! Total: {formatPrice(req.quotedPrice)}
+                          </p>
+                          <Link
+                            to="/dashboard"
+                            onClick={onClose}
+                            className="btn-primary py-2 px-4 text-[0.65rem] font-bold uppercase tracking-wider inline-flex items-center gap-1.5"
+                          >
+                            <Package size={13} /> View Order in My Orders Tab ➔
+                          </Link>
                         </div>
                       )}
                     </div>

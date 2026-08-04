@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Refund Update - Lily Charm</title>
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FAF7F2; color: #2B2625; }
+    .container { max-width: 600px; margin: 20px auto; background-color: #FFFFFF; border: 1px solid #E6DDD0; border-radius: 8px; overflow: hidden; }
+    .header { background-color: #212B1C; color: #FFFFFF; text-align: center; padding: 30px 20px; }
+    .header h1 { margin: 0; font-size: 26px; letter-spacing: 3px; font-weight: 300; text-transform: uppercase; color: #FAF7F2; }
+    .content { padding: 32px 24px; }
+    .status-badge { display: inline-block; font-size: 11px; font-weight: bold; padding: 6px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+    .approved { background-color: #E8F5E9; color: #2E7D32; }
+    .rejected { background-color: #FFEBEE; color: #C62828; }
+    .info-box { background-color: #FAF7F2; border: 1px solid #E6DDD0; padding: 18px; border-radius: 6px; margin: 20px 0; font-size: 13px; }
+    .footer { border-top: 1px solid #E6DDD0; background-color: #FAF7F2; padding: 20px; text-align: center; font-size: 11px; color: #8C847D; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>LILY CHARM</h1>
+      <p style="margin: 4px 0 0; font-size: 11px; letter-spacing: 2px; color: #E8DCC4;">Customer Support & Refund Desk</p>
+    </div>
+    <div class="content">
+      <span class="status-badge {{badgeClass}}">{{badgeText}}</span>
+      <h2 style="font-size: 20px; color: #212B1C; margin: 0 0 10px;">Refund Request Update</h2>
+      <p style="font-size: 14px; color: #524B46; line-height: 1.6;">Hi <strong>{{customerName}}</strong>, this email is regarding your refund request for order <strong>{{orderNumber}}</strong>.</p>
+      
+      <div class="info-box">
+        <p style="margin: 0 0 8px;"><strong>Refund Status:</strong> <span style="font-weight: bold; text-transform: uppercase;">{{refundStatus}}</span></p>
+        <p style="margin: 0 0 8px;"><strong>Refund Amount:</strong> ₹{{refundAmount}}</p>
+        {{reasonHtml}}
+      </div>
+
+      <p style="font-size: 13px; color: #524B46; line-height: 1.6;">{{additionalNote}}</p>
+    </div>
+    <div class="footer">
+      <p>© 2026 Lily Charm Studio. Customer Care Department.</p>
+    </div>
+  </div>
+</body>
+</html>

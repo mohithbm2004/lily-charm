@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 import { formatPrice } from '../lib/format'
 import Reveal from '../components/Reveal'
 import { CheckCircle2, ShoppingBag } from 'lucide-react'
@@ -9,6 +10,7 @@ const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' &
 
 export default function Checkout() {
   const { items, subtotal, coupon: activeCoupon, discountAmount, applyCoupon, removeCoupon, clearCart } = useCart()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const [processing, setProcessing] = useState(false)
   const [orderConfirmed, setOrderConfirmed] = useState(null)
@@ -28,13 +30,26 @@ export default function Checkout() {
   }
 
   const [form, setForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    pincode: '',
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    address: user?.address || '',
+    city: user?.city || '',
+    pincode: user?.pincode || '',
   })
+
+  useEffect(() => {
+    if (user) {
+      setForm((prev) => ({
+        name: prev.name || user.name || '',
+        email: prev.email || user.email || '',
+        phone: prev.phone || user.phone || '',
+        address: prev.address || user.address || '',
+        city: prev.city || user.city || '',
+        pincode: prev.pincode || user.pincode || '',
+      }))
+    }
+  }, [user])
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
@@ -89,7 +104,10 @@ export default function Checkout() {
 
       const res = await fetch(`${API_URL}/orders`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload),
       })
 

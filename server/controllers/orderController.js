@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import Order from '../models/Order.js'
+import User from '../models/User.js'
 import Payment from '../models/Payment.js'
 import Product from '../models/Product.js'
 import razorpay from '../config/razorpay.js'
@@ -54,27 +55,32 @@ export async function createOrder(req, res, next) {
       couponCode = '',
       shippingCharge: reqShipping = 0,
       tax: reqTax = 0,
-      grandTotal: reqGrandTotal,
       paymentMethod = 'Razorpay Prepaid',
     } = req.body
 
     if (!items?.length) return res.status(400).json({ message: 'Cart is empty' })
 
-    const orderItems = items.map((i) => ({
-      product: i.productId || i.id || i._id || null,
-      title: i.title || 'Botanical Artwork',
-      price: Number(i.price) || 0,
-      qty: Number(i.qty) || 1,
-      image: i.image || (Array.isArray(i.images) ? i.images[0] : '') || '',
-      specimen: i.specimen || 'Specimen',
-    }))
+    const isValidObjectId = (str) => typeof str === 'string' && /^[0-9a-fA-F]{24}$/.test(str)
+
+    const orderItems = items.map((i) => {
+      const pId = i.productId || i.id || i._id
+      return {
+        product: isValidObjectId(pId) ? pId : null,
+        title: i.title || 'Botanical Artwork',
+        price: Number(i.price) || 0,
+        qty: Number(i.qty) || 1,
+        image: i.image || (Array.isArray(i.images) ? i.images[0] : '') || '',
+        specimen: i.specimen || 'Specimen',
+      }
+    })
 
     const calcSubtotal = orderItems.reduce((sum, i) => sum + i.price * i.qty, 0)
     const subtotal = reqSubtotal || calcSubtotal
     const discountAmount = Number(reqDiscount) || 0
     const shippingCharge = Number(reqShipping) || 0
     const tax = Number(reqTax) || 0
-    const grandTotal = reqGrandTotal || Math.max(0, subtotal - discountAmount + shippingCharge + tax)
+    const reqGrandTotal = req.body.grandTotal !== undefined ? req.body.grandTotal : req.body.total
+    const grandTotal = reqGrandTotal !== undefined ? Number(reqGrandTotal) : Math.max(0, subtotal - discountAmount + shippingCharge + tax)
 
     const amountInPaise = Math.round(grandTotal * 100)
     if (amountInPaise < 100) {
@@ -83,8 +89,45 @@ export async function createOrder(req, res, next) {
 
     const orderNumber = `LC-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`
 
+    let orderUser = req.user?._id || null
+    let matchedUser = null
+
+    if (orderUser) {
+      matchedUser = await User.findById(orderUser)
+    }
+
+    const shipEmail = shippingAddress?.email ? shippingAddress.email.toLowerCase().trim() : ''
+    const shipPhone = shippingAddress?.phone ? shippingAddress.phone.replace(/\D/g, '') : ''
+
+    if (!matchedUser && shipEmail) {
+      matchedUser = await User.findOne({
+        $or: [
+          { email: shipEmail },
+          { alternateEmails: shipEmail },
+        ],
+      })
+    }
+
+    if (!matchedUser && shipPhone && shipPhone.length >= 10) {
+      matchedUser = await User.findOne({
+        phone: { $regex: shipPhone.slice(-10) },
+      })
+    }
+
+    if (matchedUser) {
+      orderUser = matchedUser._id
+      if (shipEmail && shipEmail !== matchedUser.email && !matchedUser.alternateEmails?.includes(shipEmail)) {
+        matchedUser.alternateEmails = matchedUser.alternateEmails || []
+        matchedUser.alternateEmails.push(shipEmail)
+        if (shippingAddress?.phone && !matchedUser.phone) {
+          matchedUser.phone = shippingAddress.phone
+        }
+        await matchedUser.save()
+      }
+    }
+
     const order = await Order.create({
-      user: req.user?._id || null,
+      user: orderUser,
       orderNumber,
       items: orderItems,
       shippingAddress,
@@ -103,28 +146,36 @@ export async function createOrder(req, res, next) {
 
     let razorpayOrderId = null
     try {
-      const razorpayOrder = await razorpay.orders.create({
-        amount: amountInPaise,
-        currency: 'INR',
-        receipt: order.orderNumber,
-      })
-      razorpayOrderId = razorpayOrder.id
-      order.razorpayOrderId = razorpayOrder.id
-      await order.save()
+      if (razorpay && razorpay.orders) {
+        const razorpayOrder = await razorpay.orders.create({
+          amount: amountInPaise,
+          currency: 'INR',
+          receipt: order.orderNumber,
+        })
+        razorpayOrderId = razorpayOrder.id
+        order.razorpayOrderId = razorpayOrderId
+        await order.save()
+      }
+    } catch (rzpErr) {
+      console.warn('[RAZORPAY ORDER INITIALIZATION NOTICE]:', rzpErr.message || rzpErr)
+    }
 
-      // Record pending ledger
-      await Payment.create({
-        order: order._id,
-        user: req.user?._id || null,
-        orderNumber: order.orderNumber,
-        razorpayOrderId: razorpayOrder.id,
-        amount: grandTotal,
-        currency: 'INR',
-        paymentMethod,
-        status: 'pending',
-      })
-    } catch (e) {
-      console.warn('Razorpay order creation error:', e.message)
+    // Record pending ledger
+    if (razorpayOrderId) {
+      try {
+        await Payment.create({
+          order: order._id,
+          user: req.user?._id || null,
+          orderNumber: order.orderNumber,
+          razorpayOrderId,
+          amount: grandTotal,
+          currency: 'INR',
+          paymentMethod,
+          status: 'pending',
+        })
+      } catch (e) {
+        console.warn('Payment record creation notice:', e.message)
+      }
     }
 
     res.status(201).json({
@@ -227,20 +278,43 @@ export async function verifyPayment(req, res, next) {
   }
 }
 
-// GET /api/orders/my-orders — Customer order history
+// GET /api/orders/my-orders or /api/orders/mine — Customer order history
 export async function getMyOrders(req, res, next) {
   try {
     const userId = req.user?._id
-    if (!userId) {
-      // If customer is unauthenticated, allow searching by email query or return empty
-      const email = req.query.email
-      if (email) {
-        const orders = await Order.find({ 'shippingAddress.email': email.toLowerCase().trim() }).sort({ createdAt: -1 })
-        return res.json(orders)
+    const rawEmail = (req.query.email || req.user?.email || '').toLowerCase().trim()
+
+    const queryConditions = []
+    if (userId) queryConditions.push({ user: userId })
+
+    if (rawEmail) {
+      const emailRegex = new RegExp(`^${rawEmail}$`, 'i')
+      queryConditions.push({ 'shippingAddress.email': emailRegex })
+      queryConditions.push({ email: emailRegex })
+
+      const matchingUser = await User.findOne({
+        $or: [
+          { email: emailRegex },
+          { alternateEmails: emailRegex },
+        ],
+      })
+
+      if (matchingUser) {
+        queryConditions.push({ user: matchingUser._id })
+        if (Array.isArray(matchingUser.alternateEmails)) {
+          matchingUser.alternateEmails.forEach((alt) => {
+            if (alt) {
+              const altRegex = new RegExp(`^${alt}$`, 'i')
+              queryConditions.push({ 'shippingAddress.email': altRegex })
+            }
+          })
+        }
       }
-      return res.json([])
     }
-    const orders = await Order.find({ user: userId }).sort({ createdAt: -1 })
+
+    if (queryConditions.length === 0) return res.json([])
+
+    const orders = await Order.find({ $or: queryConditions }).sort({ createdAt: -1 })
     res.json(orders)
   } catch (err) {
     next(err)

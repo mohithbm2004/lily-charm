@@ -20,8 +20,8 @@ export default function Dashboard() {
   // User profile state
   const [userProfile, setUserProfile] = useState(() => {
     return user || {
-      name: 'Keerthana Bapu',
-      email: 'keerthana@example.com',
+      name: 'Valued Customer',
+      email: 'customer@example.com',
       phone: '+91 98765 43210',
       address: '123 Atelier Studio Street',
       city: 'Bengaluru',
@@ -42,6 +42,7 @@ export default function Dashboard() {
   const [userOrders, setUserOrders] = useState([])
   const [userCustomRequests, setUserCustomRequests] = useState([])
   const [selectedOrder, setSelectedOrder] = useState(null)
+  const [quoteSearchEmail, setQuoteSearchEmail] = useState('')
 
   const fetchProfileFromApi = async (email) => {
     if (!email) return
@@ -241,7 +242,7 @@ export default function Dashboard() {
                     value={userProfile.name}
                     onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })}
                     className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] p-3 font-bold"
-                    placeholder="e.g. Keerthana Bapu"
+                    placeholder="e.g. Eleanor Vance"
                   />
                 </div>
 
@@ -253,7 +254,7 @@ export default function Dashboard() {
                     value={userProfile.email}
                     onChange={(e) => setUserProfile({ ...userProfile, email: e.target.value })}
                     className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] p-3 font-semibold"
-                    placeholder="e.g. keerthana@example.com"
+                    placeholder="e.g. customer@example.com"
                   />
                 </div>
               </div>
@@ -350,10 +351,27 @@ export default function Dashboard() {
                           <p className="text-[0.68rem] text-[var(--color-ink-soft)]">Placed on: {new Date(o.createdAt).toLocaleDateString('en-IN')}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="specimen-tag bg-[var(--color-primary)] text-white font-mono uppercase px-2 py-0.5 text-[0.62rem]">
+                          <span
+                            className={`font-mono font-bold uppercase px-2.5 py-1 text-[0.65rem] rounded tracking-wider shadow-sm border ${
+                              o.status === 'Cancelled'
+                                ? 'bg-rose-800 text-white border-rose-950'
+                                : o.status === 'Delivered'
+                                ? 'bg-emerald-800 text-white border-emerald-950'
+                                : o.status === 'Shipped' || o.status === 'Out For Delivery'
+                                ? 'bg-blue-800 text-white border-blue-950'
+                                : 'bg-[#212B1C] text-[#F5E8D0] border-[#141A11]'
+                            }`}
+                          >
                             {o.status || 'Confirmed'}
                           </span>
-                          <span className="specimen-tag bg-emerald-800 text-white font-mono uppercase px-2 py-0.5 text-[0.62rem]">
+
+                          <span
+                            className={`font-mono font-bold uppercase px-2.5 py-1 text-[0.65rem] rounded tracking-wider shadow-sm border ${
+                              o.paymentStatus === 'Failed'
+                                ? 'bg-rose-800 text-white border-rose-950'
+                                : 'bg-emerald-800 text-white border-emerald-950'
+                            }`}
+                          >
                             {o.paymentStatus || 'Paid'}
                           </span>
                         </div>
@@ -413,13 +431,21 @@ export default function Dashboard() {
           {/* TAB 3: CUSTOM PRICE QUOTES */}
           {tab === 'Custom Price Quotes' && (
             <div className="space-y-4 text-xs">
-              <div className="border-b border-[var(--color-line)] pb-3">
-                <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
-                  <Sparkles size={18} className="text-[var(--color-primary)]" /> Custom Design Price Quotes
-                </h2>
-                <p className="text-xs text-[var(--color-ink-soft)]">
-                  Price quotes from lead artisan for your bespoke design requests.
-                </p>
+              <div className="border-b border-[var(--color-line)] pb-3 flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
+                    <Sparkles size={18} className="text-[var(--color-primary)]" /> Custom Design Price Quotes
+                  </h2>
+                  <p className="text-xs text-[var(--color-ink-soft)]">
+                    Price quotes from lead artisan for your bespoke design requests ({userProfile.name}).
+                  </p>
+                </div>
+                <button
+                  onClick={() => fetchUserOrdersAndRequests(userProfile.email)}
+                  className="p-2 border border-[var(--color-line)] bg-[var(--color-card-bg)] hover:bg-black/5 flex items-center gap-1 font-bold text-[0.65rem] uppercase"
+                >
+                  <RefreshCw size={12} /> Refresh Quotes
+                </button>
               </div>
 
               {userCustomRequests.length === 0 ? (
@@ -430,19 +456,99 @@ export default function Dashboard() {
               ) : (
                 <div className="space-y-4">
                   {userCustomRequests.map((req) => (
-                    <div key={req._id} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4 space-y-3">
-                      <div className="flex justify-between items-start border-b border-[var(--color-line)] pb-2">
+                    <div key={req._id} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5 space-y-4 shadow-sm">
+                      <div className="flex flex-wrap justify-between items-start border-b border-[var(--color-line)] pb-3 gap-2">
                         <div>
-                          <h4 className="font-bold text-sm font-[var(--font-display)]">{req.stylePreference}</h4>
-                          <p className="text-[0.68rem] text-[var(--color-ink-soft)]">Submitted: {new Date(req.createdAt).toLocaleDateString()}</p>
+                          <h4 className="font-bold text-sm font-[var(--font-display)]">{req.stylePreference || 'Custom Botanical Artwork'}</h4>
+                          <p className="text-[0.68rem] text-[var(--color-ink-soft)]">Submitted: {new Date(req.createdAt).toLocaleDateString('en-IN')}</p>
                         </div>
-                        <span className="specimen-tag font-mono uppercase">{req.status}</span>
+                        <span
+                          className={`font-mono font-bold uppercase px-2.5 py-1 text-[0.62rem] rounded tracking-wider shadow-sm border ${
+                            req.status?.includes('Accepted')
+                              ? 'bg-emerald-800 text-white border-emerald-950'
+                              : req.status?.includes('Declined')
+                              ? 'bg-rose-800 text-white border-rose-950'
+                              : 'bg-amber-700 text-white border-amber-900'
+                          }`}
+                        >
+                          {req.status}
+                        </span>
                       </div>
+
+                      {req.notes && (
+                        <p className="text-xs text-[var(--color-ink-soft)] italic bg-[var(--color-bg)] p-2.5 border border-[var(--color-line)]">
+                          "{req.notes}"
+                        </p>
+                      )}
+
                       {req.quotedPrice > 0 && (
-                        <div className="p-3 bg-amber-50 border border-amber-200 space-y-1">
-                          <span className="eyebrow text-[0.65rem]">Quoted Price</span>
-                          <p className="text-base font-bold text-emerald-800">{formatPrice(req.quotedPrice)}</p>
-                          {req.adminNotes && <p className="text-[0.68rem] italic text-amber-900">{req.adminNotes}</p>}
+                        <div className="p-4 bg-amber-50 border border-amber-200 space-y-2">
+                          <span className="eyebrow text-[0.65rem] font-bold text-amber-900 uppercase">Studio Quoted Price</span>
+                          <p className="text-xl font-bold font-mono text-emerald-800">{formatPrice(req.quotedPrice)}</p>
+                          {req.adminNotes && <p className="text-xs italic text-amber-900 font-medium">Studio Note: {req.adminNotes}</p>}
+
+                          {/* Accept / Decline Action Bar if status is Quoted */}
+                          {req.status === 'Quoted' && (
+                            <div className="pt-2 flex flex-wrap gap-2">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const res = await fetch(`${API_URL}/custom-requests/${req._id}/accept`, {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        shippingAddress: {
+                                          name: req.name,
+                                          email: req.email,
+                                          phone: req.phone || '',
+                                          address: req.address || 'Custom Address',
+                                          city: req.city || 'Bengaluru',
+                                          pincode: req.pincode || '560001',
+                                        },
+                                      }),
+                                    })
+                                    if (res.ok) {
+                                      fetchUserOrdersAndRequests(userProfile.email)
+                                      setTab('My Orders')
+                                    } else {
+                                      alert('Failed to accept quote. Please try again.')
+                                    }
+                                  } catch (e) {
+                                    console.error('Error accepting quote:', e)
+                                  }
+                                }}
+                                className="btn-primary py-2 px-4 text-[0.65rem] font-bold uppercase tracking-wider"
+                              >
+                                Accept Quote & Place Order
+                              </button>
+
+                              <button
+                                onClick={async () => {
+                                  if (!confirm('Decline this price quote?')) return
+                                  try {
+                                    await fetch(`${API_URL}/custom-requests/${req._id}/decline`, { method: 'PATCH' })
+                                    fetchUserOrdersAndRequests(userProfile.email)
+                                  } catch (e) {
+                                    console.error('Error declining quote:', e)
+                                  }
+                                }}
+                                className="px-4 py-2 border border-rose-300 text-rose-700 hover:bg-rose-50 text-[0.65rem] font-bold uppercase"
+                              >
+                                Decline Quote
+                              </button>
+                            </div>
+                          )}
+
+                          {req.status?.includes('Accepted') && (
+                            <div className="pt-2">
+                              <button
+                                onClick={() => setTab('My Orders')}
+                                className="btn-primary py-2 px-4 text-[0.65rem] font-bold uppercase tracking-wider flex items-center gap-1.5"
+                              >
+                                <Package size={13} /> View Order in My Orders Tab ➔
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

@@ -109,7 +109,7 @@ export default function Collections() {
           Handcrafted Velvet Floral Art
         </h1>
         <p className="text-[var(--color-ink-soft)] mt-4 max-w-xl leading-relaxed text-sm md:text-base">
-          Explore our signature handcrafted series — from plush pearl-encrusted velvet lilies to radiant golden sunflowers, delicate heart bouquets, and studio wicker basket arrangements by Keerthana Bapu.
+          Explore our signature handcrafted series — from plush pearl-encrusted velvet lilies to radiant golden sunflowers, delicate heart bouquets, and studio wicker basket arrangements by Lily Charm Lead Artisans.
         </p>
       </Reveal>
 
@@ -166,7 +166,7 @@ export default function Collections() {
                 ) : (
                   <div className="mt-6 border border-dashed border-[var(--color-line)] p-4 bg-[var(--color-card-bg)]/50 flex items-center justify-between">
                     <p className="text-xs text-[var(--color-ink-soft)] font-medium">
-                      ✨ New pieces for {c.title} are being handcrafted in studio by Keerthana Bapu.
+                      ✨ New pieces for {c.title} are being handcrafted in studio by Lily Charm Lead Artisans.
                     </p>
                     <Link to={`/shop?category=${slug}`} className="text-xs text-[var(--color-primary)] font-bold hover:underline">
                       View Category →

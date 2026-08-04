@@ -1,13 +1,38 @@
-import jwt from 'jsonwebtoken'
+import { OAuth2Client } from 'google-auth-library'
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
 export async function verifyGoogleToken(idTokenOrAccessToken) {
   if (!idTokenOrAccessToken) {
-    throw new Error('Google token is required')
+    throw new Error('Google authentication token is required')
   }
 
-  // 1. Try fetching Google UserInfo directly if it's an OAuth access token
+  // 1. Try verifying Google ID Token (from @react-oauth/google GoogleLogin or credential)
   try {
-    const res = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${idTokenOrAccessToken}`)
+    const googleClientId = process.env.GOOGLE_CLIENT_ID
+    const ticket = await client.verifyIdToken({
+      idToken: idTokenOrAccessToken,
+      audience: googleClientId && !googleClientId.includes('your-google-client-id') ? googleClientId : undefined,
+    })
+    const payload = ticket.getPayload()
+    if (payload && payload.email) {
+      return {
+        googleId: payload.sub,
+        email: payload.email.toLowerCase().trim(),
+        name: payload.name || payload.email.split('@')[0],
+        avatar: payload.picture || '',
+        profilePicture: payload.picture || '',
+      }
+    }
+  } catch (err) {
+    console.warn('[GOOGLE ID TOKEN VERIFY NOTICE]: Trying access_token / userinfo fallback:', err.message)
+  }
+
+  // 2. Try fetching Google UserInfo endpoint (if frontend used OAuth access_token from popup)
+  try {
+    const res = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${idTokenOrAccessToken}`, {
+      headers: { Authorization: `Bearer ${idTokenOrAccessToken}` },
+    })
     if (res.ok) {
       const data = await res.json()
       if (data.email) {
@@ -16,37 +41,13 @@ export async function verifyGoogleToken(idTokenOrAccessToken) {
           email: data.email.toLowerCase().trim(),
           name: data.name || data.email.split('@')[0],
           avatar: data.picture || '',
+          profilePicture: data.picture || '',
         }
       }
     }
-  } catch {
-    // try fallback decoding
+  } catch (err) {
+    console.warn('[GOOGLE USERINFO FETCH NOTICE]:', err.message)
   }
 
-  // 2. Try decoding ID Token payload
-  try {
-    const decoded = jwt.decode(idTokenOrAccessToken)
-    if (decoded && decoded.email) {
-      return {
-        googleId: decoded.sub || decoded.user_id || '',
-        email: decoded.email.toLowerCase().trim(),
-        name: decoded.name || decoded.email.split('@')[0],
-        avatar: decoded.picture || '',
-      }
-    }
-  } catch {
-    // fallback
-  }
-
-  // 3. Fallback mock decoder for test environments if custom payload passed
-  if (typeof idTokenOrAccessToken === 'string' && idTokenOrAccessToken.includes('@')) {
-    return {
-      googleId: 'google_' + Date.now(),
-      email: idTokenOrAccessToken.toLowerCase().trim(),
-      name: idTokenOrAccessToken.split('@')[0],
-      avatar: 'https://lh3.googleusercontent.com/a/default-user',
-    }
-  }
-
-  throw new Error('Invalid Google token payload')
+  throw new Error('Failed to verify Google Authentication Token.')
 }

@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Lock, Mail, User, Phone, Sparkles, LogIn, UserPlus, CheckCircle2, Eye, EyeOff, KeyRound, ShieldCheck, RefreshCw, Clock } from 'lucide-react'
+import { useGoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
 const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
-  const { updateUserProfile } = useAuth()
+  const { updateUserProfile, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
 
   const [mode, setMode] = useState(initialMode) // 'login' | 'register' | 'forgot' | 'otp'
@@ -175,41 +176,36 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
     }
   }
 
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true)
-    setErrorMessage('')
-    try {
-      const emailPrompt = prompt('Enter your Google Account email to authorize Google OAuth login:')
-      if (!emailPrompt) {
+  const handleGoogleSignIn = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setIsLoading(true)
+      setErrorMessage('')
+      try {
+        const tokenOrCode = tokenResponse.access_token || tokenResponse.credential
+        const result = await loginWithGoogle(tokenOrCode)
+        if (result.ok) {
+          updateUserProfile(result.user)
+          setSuccessMessage('🎉 Google OAuth Authentication successful!')
+          setTimeout(() => {
+            onClose()
+            navigate('/dashboard')
+          }, 800)
+        } else {
+          setErrorMessage(result.error || 'Google authentication failed.')
+        }
+      } catch (err) {
+        console.error('[GOOGLE SIGNIN ERROR]:', err)
+        setErrorMessage('Connection error during Google Sign In.')
+      } finally {
         setIsLoading(false)
-        return
       }
-
-      const res = await fetch(`${API_URL}/auth/google`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ googleToken: emailPrompt }),
-      })
-
-      const data = await res.json()
-      if (res.ok) {
-        updateUserProfile(data.user)
-        if (data.token) localStorage.setItem('lilycharm_token', data.token)
-        setSuccessMessage('🎉 Google OAuth Authentication successful!')
-        setTimeout(() => {
-          onClose()
-          navigate('/dashboard')
-        }, 800)
-      } else {
-        setErrorMessage(data.message || 'Google authentication failed.')
-      }
-    } catch (err) {
-      console.error('Google Auth error:', err)
-      setErrorMessage('Connection error during Google Sign In.')
-    } finally {
+    },
+    onError: (errorResponse) => {
+      console.error('[GOOGLE POPUP CLOSED / CANCELLED]:', errorResponse)
+      setErrorMessage('Google popup login was cancelled or closed.')
       setIsLoading(false)
-    }
-  }
+    },
+  })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -497,7 +493,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Keerthana Bapu"
+                        placeholder="e.g. Eleanor Vance"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] pl-10 pr-3 py-3 font-semibold"
@@ -513,7 +509,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                     <input
                       type="email"
                       required
-                      placeholder="e.g. keerthana@example.com"
+                      placeholder="e.g. customer@example.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] pl-10 pr-3 py-3 font-semibold"

@@ -46,26 +46,32 @@ export function StudioProvider({ children }) {
   })
 
   const [customRequests, setCustomRequests] = useState([])
-  const [users, setUsers] = useState([])
+  const [users, setUsers] = useState(() => {
+    const saved = localStorage.getItem('lilycharm_users')
+    return saved ? JSON.parse(saved) : []
+  })
 
   const refreshUsersFromApi = async () => {
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 3000)
+      const timeoutId = setTimeout(() => controller.abort(), 6000)
       const res = await fetch(`${API_URL}/auth/users`, { signal: controller.signal })
       clearTimeout(timeoutId)
       if (res.ok) {
         const data = await res.json()
-        if (Array.isArray(data)) setUsers(data)
+        if (Array.isArray(data)) {
+          setUsers(data)
+          localStorage.setItem('lilycharm_users', JSON.stringify(data))
+        }
       }
-    } catch {
-      // offline safe
+    } catch (e) {
+      console.error('Failed to fetch users:', e)
     }
   }
 
   const [marqueeText, setMarqueeText] = useState(() => {
     const saved = localStorage.getItem('lilycharm_marquee')
-    return saved || 'FREE DELIVERY ON ORDERS ABOVE ₹2500 • HANDCRAFTED VELVET FLORALS BY KEERTHANA BAPU • USE CODE LILY10 FOR 10% OFF'
+    return saved || 'FREE DELIVERY ON ORDERS ABOVE ₹2500 • HANDCRAFTED VELVET BOTANICAL FLORALS • USE CODE LILY10 FOR 10% OFF'
   })
 
   const [activeOffer, setActiveOffer] = useState(() => {

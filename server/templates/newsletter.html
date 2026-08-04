@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{subject}} - Lily Charm</title>
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FAF7F2; color: #2B2625; }
+    .container { max-width: 600px; margin: 20px auto; background-color: #FFFFFF; border: 1px solid #E6DDD0; border-radius: 8px; overflow: hidden; }
+    .header { background-color: #212B1C; color: #FFFFFF; text-align: center; padding: 36px 20px; }
+    .header h1 { margin: 0; font-size: 28px; letter-spacing: 4px; font-weight: 300; text-transform: uppercase; color: #FAF7F2; }
+    .header p { margin: 8px 0 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #E8DCC4; }
+    .content { padding: 36px 28px; }
+    .title { font-size: 22px; color: #212B1C; margin-top: 0; margin-bottom: 16px; font-weight: 600; text-align: center; }
+    .text { font-size: 14px; line-height: 1.7; color: #524B46; margin-bottom: 24px; }
+    .btn-container { text-align: center; margin: 32px 0; }
+    .btn { display: inline-block; background-color: #212B1C; color: #FAF7F2; padding: 14px 32px; border-radius: 4px; text-decoration: none; font-weight: 600; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
+    .footer { border-top: 1px solid #E6DDD0; background-color: #FAF7F2; padding: 24px; text-align: center; font-size: 11px; color: #8C847D; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>LILY CHARM</h1>
+      <p>Handcrafted Botanical Art & Velvet Sculptures</p>
+    </div>
+    <div class="content">
+      <h2 class="title">{{heading}}</h2>
+      <p class="text">Hello {{customerName}} 👋,</p>
+      <div class="text">{{messageBody}}</div>
+      <div class="btn-container">
+        <a href="{{ctaUrl}}" class="btn">{{ctaText}}</a>
+      </div>
+    </div>
+    <div class="footer">
+      <p>© 2026 Lily Charm Studio & Botanical Atelier. All rights reserved.</p>
+      <p>Bengaluru, Karnataka, India</p>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmation - Lily Charm</title>
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FAF7F2; color: #2B2625; }
+    .container { max-width: 600px; margin: 20px auto; background-color: #FFFFFF; border: 1px solid #E6DDD0; border-radius: 8px; overflow: hidden; }
+    .header { background-color: #212B1C; color: #FFFFFF; text-align: center; padding: 30px 20px; }
+    .header h1 { margin: 0; font-size: 26px; letter-spacing: 3px; font-weight: 300; text-transform: uppercase; color: #FAF7F2; }
+    .header p { margin: 6px 0 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #E8DCC4; }
+    .content { padding: 32px 24px; }
+    .status-badge { display: inline-block; background-color: #E8F5E9; color: #2E7D32; font-size: 11px; font-weight: bold; padding: 6px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+    .table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    .table th { background-color: #FAF7F2; border-bottom: 2px solid #E6DDD0; text-align: left; padding: 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #736B65; }
+    .table td { padding: 12px 10px; border-bottom: 1px solid #E6DDD0; font-size: 13px; color: #2B2625; }
+    .summary-box { background-color: #FAF7F2; padding: 16px; border-radius: 6px; margin-top: 20px; font-size: 13px; }
+    .summary-row { flex justify-content: space-between; display: flex; margin-bottom: 6px; }
+    .total-row { font-size: 16px; font-weight: bold; color: #212B1C; border-top: 1px solid #E6DDD0; pt: 10px; margin-top: 10px; display: flex; justify-content: space-between; }
+    .footer { border-top: 1px solid #E6DDD0; background-color: #FAF7F2; padding: 20px; text-align: center; font-size: 11px; color: #8C847D; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>LILY CHARM</h1>
+      <p>Handcrafted Botanical Art & Velvet Sculptures</p>
+    </div>
+    <div class="content">
+      <span class="status-badge">✓ Order Placed & Confirmed</span>
+      <h2 style="font-size: 20px; color: #212B1C; margin: 0 0 10px;">Thank You for Your Order!</h2>
+      <p style="font-size: 14px; color: #524B46; line-height: 1.6;">Hi <strong>{{customerName}}</strong>, we have received your payment and our master florists are preparing your order with delicate care.</p>
+      
+      <p style="font-size: 13px; font-weight: bold; color: #212B1C; margin-top: 20px;">Order Reference: <span style="font-family: monospace;">{{orderNumber}}</span></p>
+
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Item Details</th>
+            <th style="text-align: center;">Qty</th>
+            <th style="text-align: right;">Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{itemsHtml}}
+        </tbody>
+      </table>
+
+      <div class="summary-box">
+        <div class="summary-row"><span>Subtotal:</span> <span>₹{{subtotal}}</span></div>
+        <div class="summary-row"><span>Discount:</span> <span>-₹{{discount}}</span></div>
+        <div class="summary-row"><span>Shipping:</span> <span>₹{{shipping}}</span></div>
+        <div class="total-row"><span>Grand Total Paid:</span> <span>₹{{grandTotal}}</span></div>
+      </div>
+
+      <div style="margin-top: 24px; font-size: 13px; background-color: #FAF7F2; p: 16px; padding: 14px; border-left: 4px solid #212B1C;">
+        <strong>Shipping Address:</strong><br/>
+        {{shippingAddress}}
+      </div>
+    </div>
+    <div class="footer">
+      <p>Questions? Contact us at support@lilycharm.com</p>
+      <p>© 2026 Lily Charm Studio. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

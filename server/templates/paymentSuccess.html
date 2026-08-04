@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Successful - Lily Charm</title>
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FAF7F2; color: #2B2625; }
+    .container { max-width: 600px; margin: 20px auto; background-color: #FFFFFF; border: 1px solid #E6DDD0; border-radius: 8px; overflow: hidden; }
+    .header { background-color: #212B1C; color: #FFFFFF; text-align: center; padding: 30px 20px; }
+    .header h1 { margin: 0; font-size: 26px; letter-spacing: 3px; font-weight: 300; text-transform: uppercase; color: #FAF7F2; }
+    .header p { margin: 6px 0 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #E8DCC4; }
+    .content { padding: 32px 28px; }
+    .title { font-size: 20px; color: #212B1C; margin-top: 0; margin-bottom: 12px; font-weight: 600; }
+    .text { font-size: 14px; line-height: 1.6; color: #524B46; margin-bottom: 24px; }
+    .badge { display: inline-block; background-color: #E8F5E9; color: #2E7D32; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 13px; margin-bottom: 20px; }
+    .info-box { background-color: #FAF7F2; padding: 20px; border-radius: 6px; border: 1px solid #E6DDD0; margin-bottom: 24px; }
+    .info-row { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; color: #524B46; }
+    .footer { border-top: 1px solid #E6DDD0; background-color: #FAF7F2; padding: 20px; text-align: center; font-size: 11px; color: #8C847D; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>LILY CHARM</h1>
+      <p>Handcrafted Botanical Art & Velvet Sculptures</p>
+    </div>
+    <div class="content">
+      <span class="badge">✓ Payment Authorized</span>
+      <h2 class="title">Payment Received Successfully</h2>
+      <p class="text">Hello {{customerName}} 👋,</p>
+      <p class="text">Thank you for your purchase! We have successfully received your payment for order <strong>#{{orderNumber}}</strong>.</p>
+      <div class="info-box">
+        <div class="info-row"><span><strong>Order Number:</strong> #{{orderNumber}}</span></div>
+        <div class="info-row"><span><strong>Payment ID:</strong> {{paymentId}}</span></div>
+        <div class="info-row"><span><strong>Amount Paid:</strong> ₹{{amountPaid}}</span></div>
+        <div class="info-row"><span><strong>Payment Method:</strong> {{paymentMethod}}</span></div>
+      </div>
+      <p class="text">Our artisans are now carefully preparing your floral creation. You will receive tracking updates as soon as your package ships.</p>
+    </div>
+    <div class="footer">
+      <p>© 2026 Lily Charm Studio & Botanical Atelier. All rights reserved.</p>
+      <p>Bengaluru, Karnataka, India</p>
+    </div>
+  </div>
+</body>
+</html>
