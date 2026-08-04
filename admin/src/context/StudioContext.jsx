@@ -145,32 +145,31 @@ export function StudioProvider({ children }) {
   const refreshOrdersFromApi = async () => {
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 3000)
+      const timeoutId = setTimeout(() => controller.abort(), 4000)
       const res = await fetch(`${API_URL}/orders`, { signal: controller.signal })
       clearTimeout(timeoutId)
       if (res.ok) {
         const data = await res.json()
-        if (Array.isArray(data) && data.length > 0) {
-          const mapped = data.map((o) => ({
-            ...o,
-            id: o.orderNumber || o._id || o.id,
-            mongoId: o._id,
-            customerName: o.shippingAddress?.name || 'Customer',
-            email: o.shippingAddress?.email || '',
-            phone: o.shippingAddress?.phone || '',
-            address: o.shippingAddress?.address || o.shippingAddress?.line1 || '',
-            city: o.shippingAddress?.city || '',
-            pincode: o.shippingAddress?.pincode || '',
-            paymentStatus: 'Paid',
-            orderStatus: o.status || 'Handcrafting',
-            date: new Date(o.createdAt).toLocaleDateString(),
-          }))
-          setOrders(mapped)
-          localStorage.setItem('lilycharm_orders', JSON.stringify(mapped))
-        }
+        const rawList = Array.isArray(data) ? data : (data.orders || [])
+        const mapped = rawList.map((o) => ({
+          ...o,
+          id: o.orderNumber || o._id || o.id,
+          mongoId: o._id,
+          customerName: o.shippingAddress?.name || 'Customer',
+          email: o.shippingAddress?.email || '',
+          phone: o.shippingAddress?.phone || '',
+          address: o.shippingAddress?.address || o.shippingAddress?.line1 || '',
+          city: o.shippingAddress?.city || '',
+          pincode: o.shippingAddress?.pincode || '',
+          paymentStatus: o.paymentStatus || 'Paid',
+          orderStatus: o.status || 'Confirmed',
+          date: new Date(o.createdAt || Date.now()).toLocaleDateString(),
+        }))
+        setOrders(mapped)
+        localStorage.setItem('lilycharm_orders', JSON.stringify(mapped))
       }
-    } catch {
-      // offline safe
+    } catch (e) {
+      console.error('Failed to fetch orders from API:', e)
     }
   }
 

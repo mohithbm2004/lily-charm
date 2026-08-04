@@ -62,25 +62,35 @@ export default function Dashboard() {
     if (!email) return
     try {
       const [ordRes, reqRes] = await Promise.all([
-        fetch(`${API_URL}/orders`),
+        fetch(`${API_URL}/orders/mine?email=${encodeURIComponent(email)}`),
         fetch(`${API_URL}/custom-requests`),
       ])
       if (ordRes.ok) {
-        const ords = await ordRes.json()
-        const myOrds = ords.filter(
-          (o) => o.shippingAddress?.email?.toLowerCase().trim() === email.toLowerCase().trim()
-        )
-        setUserOrders(myOrds)
+        const ordData = await ordRes.json()
+        const rawOrders = Array.isArray(ordData) ? ordData : (ordData.orders || [])
+        setUserOrders(rawOrders)
+      } else {
+        // Fallback to fetch all orders and filter
+        const fallbackRes = await fetch(`${API_URL}/orders`)
+        if (fallbackRes.ok) {
+          const fallbackData = await fallbackRes.json()
+          const rawOrders = Array.isArray(fallbackData) ? fallbackData : (fallbackData.orders || [])
+          const filtered = rawOrders.filter(
+            (o) => o.shippingAddress?.email?.toLowerCase().trim() === email.toLowerCase().trim()
+          )
+          setUserOrders(filtered)
+        }
       }
+
       if (reqRes.ok) {
         const reqs = await reqRes.json()
-        const myReqs = reqs.filter(
+        const myReqs = (Array.isArray(reqs) ? reqs : []).filter(
           (r) => r.email?.toLowerCase().trim() === email.toLowerCase().trim()
         )
         setUserCustomRequests(myReqs)
       }
-    } catch {
-      // offline safe
+    } catch (e) {
+      console.error('Failed to fetch user orders from API:', e)
     }
   }
 

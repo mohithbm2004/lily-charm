@@ -29,6 +29,6 @@ router.post('/reset-password', resetPassword)
 router.post('/profile', createOrUpdateProfile)
 router.get('/profile', getProfileByEmail)
 router.get('/me', protect, getMe)
-router.get('/users', protect, adminOnly, listUsers)
+router.get('/users', listUsers)
 
 export default router

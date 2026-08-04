@@ -365,14 +365,16 @@ export async function listAllOrders(req, res, next) {
       .skip(skip)
       .limit(Number(limit))
 
-    const totalOrders = await Order.countDocuments(query)
+    if (req.query.paginated === 'true') {
+      return res.json({
+        orders,
+        totalOrders,
+        page: Number(page),
+        pages: Math.ceil(totalOrders / Number(limit)),
+      })
+    }
 
-    res.json({
-      orders,
-      totalOrders,
-      page: Number(page),
-      pages: Math.ceil(totalOrders / Number(limit)),
-    })
+    res.json(orders)
   } catch (err) {
     next(err)
   }
