@@ -181,7 +181,7 @@ export async function createOrder(req, res, next) {
     res.status(201).json({
       ...order.toObject(),
       razorpayOrderId,
-      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_TLMD4P4BGZ6Qq8',
+      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_TLoEPV6mAmj7q5',
     })
   } catch (err) {
     next(err)

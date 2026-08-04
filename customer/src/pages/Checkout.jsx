@@ -120,7 +120,7 @@ export default function Checkout() {
       }
 
       const savedOrder = await res.json()
-      const razorpayKey = savedOrder.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TLMD4P4BGZ6Qq8'
+      const razorpayKey = savedOrder.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TLoEPV6mAmj7q5'
       let razorpayOrderId = savedOrder.razorpayOrderId || savedOrder.order_id || savedOrder.id
 
       if (!razorpayOrderId) {
