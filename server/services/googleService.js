@@ -7,11 +7,20 @@ export async function verifyGoogleToken(idTokenOrAccessToken) {
     throw new Error('Google authentication token is required')
   }
 
-  // 1. Try verifying Google ID Token (from @react-oauth/google GoogleLogin or credential)
+  // Extract raw token string if object was passed
+  const token = typeof idTokenOrAccessToken === 'object' 
+    ? (idTokenOrAccessToken.access_token || idTokenOrAccessToken.credential || idTokenOrAccessToken.id_token || idTokenOrAccessToken.token)
+    : String(idTokenOrAccessToken).trim()
+
+  if (!token) {
+    throw new Error('Invalid Google authentication payload format.')
+  }
+
+  // 1. Try verifying Google ID Token (from @react-oauth/google GoogleLogin credential)
   try {
     const googleClientId = process.env.GOOGLE_CLIENT_ID
     const ticket = await client.verifyIdToken({
-      idToken: idTokenOrAccessToken,
+      idToken: token,
       audience: googleClientId && !googleClientId.includes('your-google-client-id') ? googleClientId : undefined,
     })
     const payload = ticket.getPayload()
@@ -28,10 +37,10 @@ export async function verifyGoogleToken(idTokenOrAccessToken) {
     console.warn('[GOOGLE ID TOKEN VERIFY NOTICE]: Trying access_token / userinfo fallback:', err.message)
   }
 
-  // 2. Try fetching Google UserInfo endpoint (if frontend used OAuth access_token from popup)
+  // 2. Try fetching Google UserInfo endpoint (for OAuth access_token from popup flow)
   try {
-    const res = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${idTokenOrAccessToken}`, {
-      headers: { Authorization: `Bearer ${idTokenOrAccessToken}` },
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${token}` },
     })
     if (res.ok) {
       const data = await res.json()

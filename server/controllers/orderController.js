@@ -181,7 +181,7 @@ export async function createOrder(req, res, next) {
     res.status(201).json({
       ...order.toObject(),
       razorpayOrderId,
-      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_TLoEPV6mAmj7q5',
+      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_live_TM3OIytJulDUON',
     })
   } catch (err) {
     next(err)
@@ -263,9 +263,9 @@ export async function verifyPayment(req, res, next) {
         }
       )
 
-      // Send Confirmation Emails asynchronously
-      sendOrderConfirmationEmail(updatedOrder)
-      sendAdminNewOrderNotification(updatedOrder)
+      // Send Confirmation Emails asynchronously without blocking request or throwing unhandled rejections
+      sendOrderConfirmationEmail(updatedOrder).catch((e) => console.warn('[ORDER CONFIRMATION EMAIL NOTICE]:', e.message))
+      sendAdminNewOrderNotification(updatedOrder).catch((e) => console.warn('[ADMIN ORDER NOTIFICATION NOTICE]:', e.message))
     }
 
     return res.status(200).json({

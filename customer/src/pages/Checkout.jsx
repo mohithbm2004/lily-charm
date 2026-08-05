@@ -120,7 +120,7 @@ export default function Checkout() {
       }
 
       const savedOrder = await res.json()
-      const razorpayKey = savedOrder.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TLoEPV6mAmj7q5'
+      const razorpayKey = savedOrder.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_TM3OIytJulDUON'
       let razorpayOrderId = savedOrder.razorpayOrderId || savedOrder.order_id || savedOrder.id
 
       if (!razorpayOrderId) {
@@ -239,7 +239,7 @@ export default function Checkout() {
           </div>
           <div className="flex justify-between pt-1 border-t border-[var(--color-line)] font-bold text-sm">
             <span>Total Paid:</span>
-            <span className="text-[var(--color-primary)]">{formatPrice(orderConfirmed.total || total)}</span>
+            <span className="text-[var(--color-primary)]">{formatPrice(orderConfirmed.grandTotal ?? orderConfirmed.total ?? total)}</span>
           </div>
         </div>
         <div className="pt-4">
