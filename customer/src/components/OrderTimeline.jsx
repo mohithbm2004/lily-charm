@@ -10,16 +10,42 @@ const STAGES = [
   { key: 'Delivered', label: 'Delivered', icon: Home },
 ]
 
-export default function OrderTimeline({ status = 'Confirmed', history = [] }) {
-  if (['Cancelled', 'Refund Requested', 'Refund Approved', 'Refund Rejected', 'Returned', 'Payment Failed'].includes(status)) {
+export default function OrderTimeline({ status = 'Confirmed', history = [], notes = '', refundId = '', cancellationFee = 0, refundAmount = 0 }) {
+  if (['Cancelled', 'Cancelled & Refunded', 'Refund Requested', 'Refund Approved', 'Refund Rejected', 'Returned', 'Payment Failed'].includes(status)) {
+    const cancelEntry = (history || []).slice().reverse().find(h => h.status?.includes('Cancel') || h.note)
+    const rawReason = cancelEntry?.note || notes || ''
+    const cleanReason = rawReason
+      ? rawReason.replace(/^Cancellation Reason:\s*/i, '').replace(/\|\s*Razorpay Refund ID:.*$/i, '').trim()
+      : (status.includes('Refund') ? 'Refund request is being processed by studio admin.' : 'Order was cancelled by customer or studio admin.')
+
     return (
-      <div className="p-4 bg-rose-50 border border-rose-200 rounded flex items-center gap-3 text-xs text-rose-900 font-medium">
-        <AlertTriangle size={18} className="text-rose-600 shrink-0" />
-        <div>
-          <span className="font-bold uppercase tracking-wider block">Order Status: {status}</span>
-          <span className="text-[0.7rem] text-rose-700">
-            {status.includes('Refund') ? 'Refund request is being processed by studio admin.' : 'This order has been cancelled or experienced a payment error.'}
+      <div className="p-4 bg-rose-50 border border-rose-200 rounded flex items-start gap-3 text-xs text-rose-900 font-medium">
+        <AlertTriangle size={20} className="text-rose-600 shrink-0 mt-0.5" />
+        <div className="space-y-1 w-full">
+          <span className="font-bold uppercase tracking-wider block text-rose-950">Order Status: {status}</span>
+          <span className="text-[0.72rem] text-rose-900 font-semibold block">
+            Reason: <span className="font-mono text-rose-950 font-bold">{cleanReason}</span>
           </span>
+
+          {/* Refund & Fee Financial Breakdown */}
+          {cancellationFee > 0 && (
+            <div className="pt-1.5 border-t border-rose-200 text-[0.68rem] font-mono space-y-0.5">
+              <p className="text-rose-900">• Customer Cancellation Fee (3%): <strong>-₹{cancellationFee}</strong></p>
+              <p className="text-emerald-900 font-bold">• Net Refunded via Razorpay (97%): <strong>₹{refundAmount}</strong></p>
+            </div>
+          )}
+
+          {cancellationFee === 0 && refundAmount > 0 && (
+            <div className="pt-1 border-t border-rose-200 text-[0.68rem] text-emerald-900 font-mono font-bold">
+              • Studio Admin Cancellation (100% Full Refund: ₹{refundAmount})
+            </div>
+          )}
+
+          {refundId && (
+            <span className="text-[0.65rem] text-emerald-800 font-mono font-bold block pt-0.5">
+              ✨ Razorpay Refund Ref: {refundId}
+            </span>
+          )}
         </div>
       </div>
     )

@@ -4,11 +4,13 @@ import { X, Sparkles, Upload, CheckCircle2, Search, Check, Ban, Link as LinkIcon
 import { Link } from 'react-router-dom'
 import { formatPrice } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
+import { useAlert } from '../context/AlertContext'
 
 const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
 
 export default function CustomDesignModal({ isOpen, onClose }) {
   const { user } = useAuth()
+  const { showAlert, showConfirm } = useAlert()
   const [activeTab, setActiveTab] = useState('submit') // 'submit' | 'check-quotes'
 
   const [formData, setFormData] = useState({
@@ -114,6 +116,17 @@ export default function CustomDesignModal({ isOpen, onClose }) {
     }
   }
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) return resolve(true)
+      const script = document.createElement('script')
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+      script.onload = () => resolve(true)
+      script.onerror = () => resolve(false)
+      document.body.appendChild(script)
+    })
+  }
+
   const fetchCustomerQuotes = async (emailToSearch) => {
     if (!emailToSearch || !emailToSearch.trim()) return
     setIsSearchingQuotes(true)
@@ -121,8 +134,10 @@ export default function CustomDesignModal({ isOpen, onClose }) {
       const res = await fetch(`${API_URL}/custom-requests`)
       if (res.ok) {
         const allData = await res.json()
-        const filtered = allData.filter(
-          (r) => r.email.toLowerCase().trim() === emailToSearch.toLowerCase().trim()
+        const rawList = Array.isArray(allData) ? allData : []
+        const cleanSearch = emailToSearch.toLowerCase().trim()
+        const filtered = rawList.filter(
+          (r) => r?.email && r.email.toLowerCase().trim() === cleanSearch
         )
         setMyRequests(filtered)
       }
@@ -136,45 +151,136 @@ export default function CustomDesignModal({ isOpen, onClose }) {
   const handleAcceptQuote = async (reqDoc) => {
     setAcceptingId(reqDoc._id)
     try {
-      const res = await fetch(`${API_URL}/custom-requests/${reqDoc._id}/accept`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          shippingAddress: {
-            name: reqDoc.name,
-            email: reqDoc.email,
-            phone: reqDoc.phone || '',
-            address: reqDoc.address || 'Bespoke Custom Address',
-            city: reqDoc.city || 'Bengaluru',
-            pincode: reqDoc.pincode || '560001',
-          },
-        }),
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        setAcceptedSuccessDoc(data.order)
-        fetchCustomerQuotes(searchEmail || reqDoc.email)
-      } else {
-        alert('Failed to accept quote. Please try again.')
+      const isLoaded = await loadRazorpayScript()
+      if (!isLoaded) {
+        alert('Failed to load Razorpay SDK. Please check your internet connection.')
+        return
       }
+
+      const shipping = (reqDoc.quotedPrice || 0) > 8000 ? 0 : 250
+      const totalAmount = (reqDoc.quotedPrice || 0) + shipping
+
+      // 1. Fetch Razorpay Order ID (amount in paise)
+      let rzpOrderData = null
+      try {
+        const rzpOrderRes = await fetch(`${API_URL}/create-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: Math.round(totalAmount * 100), currency: 'INR' }),
+        })
+        if (rzpOrderRes.ok) {
+          rzpOrderData = await rzpOrderRes.json()
+        }
+      } catch (e) {
+        console.error('Failed to create Razorpay order ID:', e)
+      }
+
+      if (!rzpOrderData || !rzpOrderData.id) {
+        try {
+          const fallbackRes = await fetch(`${API_URL}/orders/create-razorpay-order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: Math.round(totalAmount * 100), currency: 'INR' }),
+          })
+          if (fallbackRes.ok) {
+            rzpOrderData = await fallbackRes.json()
+          }
+        } catch (e) {
+          console.error('Failed fallback Razorpay order creation:', e)
+        }
+      }
+
+      const razorpayOrderId = rzpOrderData?.id || rzpOrderData?.order_id
+      if (!razorpayOrderId) {
+        alert('Could not initialize Razorpay payment. Please try again.')
+        return
+      }
+
+      // 2. Open Razorpay Payment Gateway Modal
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TNMb3FlCzDPhzo',
+        amount: Math.round(totalAmount * 100),
+        currency: 'INR',
+        name: 'Lily Charm Flower Studio',
+        description: `Payment for Custom Artwork Quote #${reqDoc._id.slice(-6)}`,
+        order_id: razorpayOrderId,
+        prefill: {
+          name: reqDoc.name || user?.name || '',
+          email: reqDoc.email || user?.email || '',
+          contact: reqDoc.phone || user?.phone || '',
+        },
+        theme: { color: '#2B3925' },
+        handler: async function (response) {
+          try {
+            const acceptRes = await fetch(`${API_URL}/custom-requests/${reqDoc._id}/accept`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+                shippingAddress: {
+                  name: reqDoc.name,
+                  email: reqDoc.email,
+                  phone: reqDoc.phone || '',
+                  address: reqDoc.address || 'Bespoke Custom Address',
+                  city: reqDoc.city || 'Bengaluru',
+                  pincode: reqDoc.pincode || '560001',
+                },
+              }),
+            })
+            const data = await acceptRes.json()
+            if (acceptRes.ok) {
+              setAcceptedSuccessDoc(data.order)
+              fetchCustomerQuotes(searchEmail || reqDoc.email)
+            } else {
+              alert(data.message || 'Failed to record custom order payment.')
+            }
+          } catch (err) {
+            console.error('Error recording payment:', err)
+            alert('Connection error recording payment.')
+          }
+        },
+      }
+
+      const rzp = new window.Razorpay(options)
+      rzp.open()
     } catch (e) {
-      console.error('Error accepting quote:', e)
+      console.error('Error accepting quote with Razorpay:', e)
+      alert('Error initializing payment.')
     } finally {
       setAcceptingId(null)
     }
   }
 
-  const handleDeclineQuote = async (reqDoc) => {
-    if (!confirm('Are you sure you want to decline this price quote?')) return
-    try {
-      await fetch(`${API_URL}/custom-requests/${reqDoc._id}/decline`, {
-        method: 'PATCH',
-      })
-      fetchCustomerQuotes(searchEmail || reqDoc.email)
-    } catch (e) {
-      console.error('Error declining quote:', e)
-    }
+  const handleDeclineQuote = (reqDoc) => {
+    showConfirm({
+      title: 'Decline Price Quote',
+      type: 'warning',
+      message: `Are you sure you want to decline the custom design price quote of ${formatPrice(reqDoc.quotedPrice)}?`,
+      confirmText: 'Decline Quote',
+      cancelText: 'Keep Quote',
+      onConfirm: async () => {
+        try {
+          await fetch(`${API_URL}/custom-requests/${reqDoc._id}/decline`, {
+            method: 'PATCH',
+          })
+          showAlert({
+            title: 'Quote Declined',
+            type: 'info',
+            message: 'Price quote has been declined.',
+          })
+          fetchCustomerQuotes(searchEmail || reqDoc.email)
+        } catch (e) {
+          console.error('Error declining quote:', e)
+          showAlert({
+            title: 'Error',
+            type: 'error',
+            message: 'Failed to decline price quote.',
+          })
+        }
+      },
+    })
   }
 
   const handleResetAndClose = () => {
@@ -338,6 +444,44 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                     </div>
                   </div>
 
+                  {/* Delivery Shipping Address Fields */}
+                  <div>
+                    <label className="block font-bold uppercase mb-1">Delivery Street Address</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Flat 402, Lotus Bloom Residences, 12th Main Rd"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      className="w-full border border-[var(--color-line)] p-3 bg-[var(--color-card-bg)]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold uppercase mb-1">City / District</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Bengaluru"
+                        value={formData.city}
+                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                        className="w-full border border-[var(--color-line)] p-3 bg-[var(--color-card-bg)] font-semibold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold uppercase mb-1">PIN Code (6 digits)</label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        inputMode="numeric"
+                        placeholder="e.g. 560001"
+                        value={formData.pincode}
+                        onChange={(e) => setFormData({ ...formData, pincode: e.target.value.replace(/\D/g, '') })}
+                        className="w-full border border-[var(--color-line)] p-3 bg-[var(--color-card-bg)] font-mono"
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block font-bold uppercase mb-1">Custom Design Instructions & Color Requirements</label>
                     <textarea
@@ -447,13 +591,55 @@ export default function CustomDesignModal({ isOpen, onClose }) {
               </form>
 
               {acceptedSuccessDoc && (
-                <div className="p-4 bg-emerald-50 border border-emerald-300 text-emerald-900 space-y-2 rounded">
-                  <div className="flex items-center gap-2 font-bold text-sm">
-                    <CheckCircle2 size={18} className="text-emerald-700" /> Custom Order Placed Successfully!
+                <div className="p-6 md:p-8 bg-[var(--color-bg)] border border-[var(--color-line)] text-center space-y-4 rounded shadow-sm">
+                  <div className="w-16 h-16 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle2 size={36} />
                   </div>
-                  <p className="text-xs">
-                    Order Number: <strong className="font-mono text-emerald-800">{acceptedSuccessDoc.orderNumber || acceptedSuccessDoc._id}</strong> — Total: {formatPrice(acceptedSuccessDoc.total)}. Your order has been placed successfully and sent directly to Admin Order Delivery Tracking!
+                  <h3 className="text-2xl font-bold font-[var(--font-display)] uppercase">ORDER CONFIRMED!</h3>
+                  <p className="text-xs text-[var(--color-ink-soft)] max-w-sm mx-auto">
+                    Thank you for your order, <strong className="text-[var(--color-ink)]">{acceptedSuccessDoc.shippingAddress?.name || searchEmail}</strong>! Your order number is{' '}
+                    <strong className="text-[var(--color-primary)] font-mono">{acceptedSuccessDoc.orderNumber || acceptedSuccessDoc._id}</strong>.
                   </p>
+                  <div className="bg-[var(--color-card-bg)] p-4 border border-[var(--color-line)] max-w-md mx-auto text-left text-xs space-y-2">
+                    <div className="flex justify-between border-b border-[var(--color-line)] pb-2 font-bold uppercase">
+                      <span>Payment Status</span>
+                      <span className="text-emerald-700 font-mono">PAID (RAZORPAY)</span>
+                    </div>
+                    <div className="flex justify-between pt-1">
+                      <span>Shipping To:</span>
+                      <span className="font-semibold text-right">
+                        {acceptedSuccessDoc.shippingAddress?.address}, {acceptedSuccessDoc.shippingAddress?.city} - {acceptedSuccessDoc.shippingAddress?.pincode}
+                      </span>
+                    </div>
+                    <div className="flex justify-between pt-1 border-t border-[var(--color-line)] font-bold text-sm">
+                      <span>Total Paid:</span>
+                      <span className="text-[var(--color-primary)]">
+                        {formatPrice(acceptedSuccessDoc.grandTotal ?? acceptedSuccessDoc.total ?? 0)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="pt-2 flex justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleResetAndClose()
+                        navigate('/dashboard')
+                      }}
+                      className="btn-primary px-6 py-2.5 text-xs uppercase tracking-widest font-bold"
+                    >
+                      View in My Orders
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleResetAndClose()
+                        navigate('/shop')
+                      }}
+                      className="btn-outline px-6 py-2.5 text-xs uppercase tracking-widest font-bold"
+                    >
+                      Continue Shopping
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -471,7 +657,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                       <div className="flex justify-between items-start border-b border-[var(--color-line)] pb-2">
                         <div>
                           <h4 className="font-bold text-sm font-[var(--font-display)]">{req.stylePreference}</h4>
-                          <p className="text-[0.68rem] text-[var(--color-ink-soft)]">Submitted: {new Date(req.createdAt).toLocaleDateString()}</p>
+                          <p className="text-[0.68rem] text-[var(--color-ink-soft)]">Submitted: {req.createdAt && !isNaN(new Date(req.createdAt)) ? new Date(req.createdAt).toLocaleDateString() : 'Recently Submitted'}</p>
                         </div>
                         <span className={`px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-wider rounded border ${
                           req.status === 'Accepted & Order Created'

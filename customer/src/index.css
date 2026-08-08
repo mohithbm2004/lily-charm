@@ -44,22 +44,34 @@
 }
 
 @layer base {
+  :root {
+    color-scheme: light;
+  }
   * {
     border-color: var(--color-line);
   }
-  html {
-    scroll-behavior: smooth;
-  }
-  body {
+  html, body, #root {
+    color-scheme: light;
     background-color: var(--color-bg);
     color: var(--color-ink);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+    min-height: 100vh;
   }
-  h1, h2, h3, h4 {
+  input, select, textarea, option {
+    color-scheme: light;
+    color: var(--color-ink);
+  }
+  input::placeholder, textarea::placeholder {
+    color: var(--color-ink-soft);
+    opacity: 0.85;
+  }
+  h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     font-weight: 600;
     letter-spacing: -0.01em;
+    color: var(--color-ink);
   }
   ::selection {
     background: var(--color-primary);

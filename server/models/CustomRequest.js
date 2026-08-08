@@ -18,7 +18,18 @@ const customRequestSchema = new mongoose.Schema(
     status: {
       type: String,
       default: 'Quote Pending',
-      enum: ['Quote Pending', 'Quoted', 'Accepted & Order Created', 'Quote Declined', 'Completed', 'Rejected'],
+      enum: [
+        'Quote Pending',
+        'In Review',
+        'Quoted',
+        'Accepted & Order Created',
+        'Paid & Order Placed',
+        'Paid & Confirmed',
+        'Quote Declined',
+        'Declined',
+        'Completed',
+        'Rejected',
+      ],
     },
   },
   { timestamps: true }

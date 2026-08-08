@@ -5,23 +5,7 @@ const StudioContext = createContext(null)
 
 const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
 
-const initialOrders = [
-  {
-    id: 'LC-2026-101',
-    customerName: 'Ananya Sharma',
-    email: 'ananya@gmail.com',
-    phone: '+91 98765 43210',
-    address: 'Flat 402, Lotus Apartments, MG Road',
-    city: 'Bengaluru',
-    pincode: '560001',
-    items: [],
-    total: 3499,
-    paymentMethod: 'Razorpay Prepaid',
-    paymentStatus: 'Paid',
-    orderStatus: 'Handcrafting',
-    date: '02 Aug 2026',
-  },
-]
+const initialOrders = []
 
 export function StudioProvider({ children }) {
   const [products, setProducts] = useState(() => {
@@ -59,6 +43,45 @@ export function StudioProvider({ children }) {
       enabled: true,
     }
   })
+
+  const [shippingSettings, setShippingSettings] = useState(() => {
+    const saved = localStorage.getItem('lilycharm_shipping_settings')
+    return saved !== null ? JSON.parse(saved) : {
+      shippingFeeEnabled: true,
+      standardShippingFee: 100,
+      freeShippingThreshold: 2500,
+    }
+  })
+
+  const refreshSettingsFromApi = async () => {
+    try {
+      const res = await fetch(`${API_URL}/settings`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.marqueeText) setMarqueeText(data.marqueeText)
+        setShippingSettings((prev) => {
+          const newFeeEnabled = data.shippingFeeEnabled ?? true
+          const newStandardFee = data.standardShippingFee ?? 100
+          const newThreshold = data.freeShippingThreshold ?? 2500
+          if (
+            prev &&
+            prev.shippingFeeEnabled === newFeeEnabled &&
+            prev.standardShippingFee === newStandardFee &&
+            prev.freeShippingThreshold === newThreshold
+          ) {
+            return prev
+          }
+          const updated = {
+            shippingFeeEnabled: newFeeEnabled,
+            standardShippingFee: newStandardFee,
+            freeShippingThreshold: newThreshold,
+          }
+          localStorage.setItem('lilycharm_shipping_settings', JSON.stringify(updated))
+          return updated
+        })
+      }
+    } catch {}
+  }
 
   const refreshProductsFromApi = async () => {
     try {
@@ -110,9 +133,11 @@ export function StudioProvider({ children }) {
   useEffect(() => {
     refreshProductsFromApi()
     refreshCollectionsFromApi()
+    refreshSettingsFromApi()
     const interval = setInterval(() => {
       refreshProductsFromApi()
       refreshCollectionsFromApi()
+      refreshSettingsFromApi()
     }, 2000)
     return () => clearInterval(interval)
   }, [])
@@ -272,6 +297,22 @@ export function StudioProvider({ children }) {
     setActiveOffer(offerObj)
   }
 
+  const updateShippingSettings = async (newSettings) => {
+    const updated = { ...shippingSettings, ...newSettings }
+    setShippingSettings(updated)
+    localStorage.setItem('lilycharm_shipping_settings', JSON.stringify(updated))
+    try {
+      await fetch(`${API_URL}/settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      })
+      refreshSettingsFromApi()
+    } catch (e) {
+      console.error('Failed to update shipping settings:', e)
+    }
+  }
+
   return (
     <StudioContext.Provider
       value={{
@@ -280,6 +321,7 @@ export function StudioProvider({ children }) {
         orders,
         marqueeText,
         activeOffer,
+        shippingSettings,
         addProduct,
         updateProduct,
         deleteProduct,
@@ -291,8 +333,10 @@ export function StudioProvider({ children }) {
         updateOrderStatus,
         updateMarquee,
         updateOffer,
+        updateShippingSettings,
         refreshProductsFromApi,
         refreshCollectionsFromApi,
+        refreshSettingsFromApi,
       }}
     >
       {children}

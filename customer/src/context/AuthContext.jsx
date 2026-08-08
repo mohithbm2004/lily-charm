@@ -100,6 +100,7 @@ export function AuthProvider({ children }) {
     setToken('')
     localStorage.removeItem('lilycharm_user')
     localStorage.removeItem('lilycharm_token')
+    localStorage.removeItem('lilycharm_user_profile')
   }
 
   const updateUserProfile = (updatedUser) => {

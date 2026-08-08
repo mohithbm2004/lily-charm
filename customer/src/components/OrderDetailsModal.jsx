@@ -92,7 +92,7 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
 
         {/* Timeline */}
         <div className="bg-[var(--color-card-bg)] p-4 border border-[var(--color-line)]">
-          <OrderTimeline status={order.status} history={order.statusHistory} />
+          <OrderTimeline status={order.status} history={order.statusHistory} notes={order.notes} refundId={order.razorpayRefundId} cancellationFee={order.cancellationFee} refundAmount={order.refundAmount} />
         </div>
 
         {/* Tracking Carrier Card */}

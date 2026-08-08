@@ -19,9 +19,12 @@ import {
   User,
   Eye,
   Download,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react'
 import { useStudio } from '../context/StudioContext'
-import { formatPrice } from '../lib/format'
+import { formatPrice, formatDateTime, formatDateOnly } from '../lib/format'
+import { exportOrdersToCSV, exportUsersToCSV, exportCustomRequestsToCSV } from '../lib/exportCSV'
 import ImageFocusPicker from '../components/ImageFocusPicker'
 
 const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
@@ -50,7 +53,48 @@ export default function AdminDashboard() {
     deleteCustomRequest,
     updateMarquee,
     updateOffer,
+    shippingSettings,
+    updateShippingSettings,
   } = useStudio()
+
+  // Double Confirmation Modal state for safe bulk deletion
+  const [doubleConfirmModal, setDoubleConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    expectedPhrase: 'DELETE',
+    inputText: '',
+    actionLabel: 'Permanently Delete All',
+    onConfirm: null,
+  })
+
+  const [tempShipping, setTempShipping] = useState(() => ({
+    shippingFeeEnabled: shippingSettings?.shippingFeeEnabled ?? true,
+    standardShippingFee: shippingSettings?.standardShippingFee ?? 100,
+    freeShippingThreshold: shippingSettings?.freeShippingThreshold ?? 2500,
+  }))
+  const [hasInitializedShipping, setHasInitializedShipping] = useState(false)
+  const [savedShippingMsg, setSavedShippingMsg] = useState(false)
+
+  useEffect(() => {
+    if (shippingSettings && !hasInitializedShipping) {
+      setTempShipping({
+        shippingFeeEnabled: shippingSettings.shippingFeeEnabled ?? true,
+        standardShippingFee: shippingSettings.standardShippingFee ?? 100,
+        freeShippingThreshold: shippingSettings.freeShippingThreshold ?? 2500,
+      })
+      setHasInitializedShipping(true)
+    }
+  }, [shippingSettings, hasInitializedShipping])
+
+  const handleSaveShipping = async (e) => {
+    e.preventDefault()
+    if (updateShippingSettings) {
+      await updateShippingSettings(tempShipping)
+    }
+    setSavedShippingMsg(true)
+    setTimeout(() => setSavedShippingMsg(false), 3000)
+  }
 
   const [pinInput, setPinInput] = useState('')
   const [isUnlocked, setIsUnlocked] = useState(() => {
@@ -189,6 +233,9 @@ export default function AdminDashboard() {
               <h3 className="font-bold text-base font-[var(--font-display)]">{req.name}</h3>
               <p className="text-xs text-[var(--color-primary)] font-semibold">{req.email}</p>
               {req.phone && <p className="text-[0.7rem] text-[var(--color-ink-soft)] font-mono">{req.phone}</p>}
+              <p className="text-[0.65rem] text-[var(--color-ink-soft)] font-mono font-semibold pt-0.5">
+                🕒 {formatDateTime(req.createdAt)}
+              </p>
             </div>
             <span className={`text-[0.62rem] font-bold uppercase tracking-wider px-2.5 py-1 rounded border ${
               req.status === 'Completed' || req.status === 'Accepted & Order Created'
@@ -205,10 +252,15 @@ export default function AdminDashboard() {
             </span>
           </div>
 
-          {/* Style Preference */}
-          <div>
+          {/* Style Preference & Delivery Location */}
+          <div className="space-y-1">
             <span className="eyebrow text-[0.65rem]">Preferred Style</span>
             <p className="text-xs font-bold">{req.stylePreference || 'Custom Arrangement'}</p>
+            {(req.address || req.city || req.pincode) && (
+              <p className="text-[0.68rem] text-[var(--color-ink-soft)] font-medium pt-0.5">
+                📍 <strong>Delivery Address:</strong> {req.address ? `${req.address}, ` : ''}{req.city || ''} {req.pincode ? `- ${req.pincode}` : ''}
+              </p>
+            )}
           </div>
 
           {/* Customer Notes */}
@@ -335,90 +387,24 @@ export default function AdminDashboard() {
     )
   }
 
-  // Merge users array with customers extracted from orders & custom requests safely
+  // Return ONLY actual registered MongoDB users from database
   const mergedUsers = useMemo(() => {
-    const customerMap = new Map()
-    const registeredUserIds = new Set()
-    const registeredEmails = new Set()
-
-    ;(users || []).forEach((u) => {
-      if (u && u.email) {
-        const cleanEmail = u.email.toLowerCase().trim()
-        registeredEmails.add(cleanEmail)
-        if (u._id) registeredUserIds.add(u._id.toString())
-        if (Array.isArray(u.alternateEmails)) {
-          u.alternateEmails.forEach((alt) => {
-            if (alt) registeredEmails.add(alt.toLowerCase().trim())
-          })
-        }
-
-        customerMap.set(cleanEmail, {
-          _id: u._id || `user-${cleanEmail}`,
-          name: u.name || 'Customer',
-          email: u.email,
-          alternateEmails: u.alternateEmails || [],
-          phone: u.phone || '',
-          address: u.address || '',
-          city: u.city || '',
-          pincode: u.pincode || '',
-          createdAt: u.createdAt || Date.now(),
-          profileImage: u.profileImage || '',
-          isRegistered: true,
-        })
-      }
-    })
-
-    ;(orders || []).forEach((o) => {
-      const oUserId = (o.user?._id || o.user)?.toString()
-      const oEmail = (o.email || o.shippingAddress?.email || '').toLowerCase().trim()
-
-      // Skip creating a separate card if this order belongs to a registered user or matching registered email
-      if ((oUserId && registeredUserIds.has(oUserId)) || (oEmail && registeredEmails.has(oEmail))) {
-        return
-      }
-
-      if (oEmail && !customerMap.has(oEmail)) {
-        customerMap.set(oEmail, {
-          _id: `ord-cust-${o._id || o.id || oEmail}`,
-          name: o.shippingAddress?.name || 'Store Customer',
-          email: oEmail,
-          phone: o.shippingAddress?.phone || '',
-          address: o.shippingAddress?.address || o.shippingAddress?.line1 || '',
-          city: o.shippingAddress?.city || '',
-          pincode: o.shippingAddress?.pincode || '',
-          createdAt: o.createdAt || Date.now(),
-          profileImage: '',
-          isRegistered: false,
-        })
-      }
-    })
-
-    ;(customRequests || []).forEach((r) => {
-      const rUserId = (r.user?._id || r.user)?.toString()
-      const rEmail = (r.email || '').toLowerCase().trim()
-
-      if ((rUserId && registeredUserIds.has(rUserId)) || (rEmail && registeredEmails.has(rEmail))) {
-        return
-      }
-
-      if (rEmail && !customerMap.has(rEmail)) {
-        customerMap.set(rEmail, {
-          _id: `req-cust-${r._id || rEmail}`,
-          name: r.name || 'Custom Design Client',
-          email: rEmail,
-          phone: r.phone || '',
-          address: r.address || '',
-          city: r.city || '',
-          pincode: r.pincode || '',
-          createdAt: r.createdAt || Date.now(),
-          profileImage: '',
-          isRegistered: false,
-        })
-      }
-    })
-
-    return Array.from(customerMap.values())
-  }, [users, orders, customRequests])
+    return (users || []).map((u) => ({
+      _id: u._id || `user-${u.email}`,
+      name: u.name || 'Customer',
+      email: u.email,
+      alternateEmails: u.alternateEmails || [],
+      phone: u.phone || '',
+      address: u.address || '',
+      city: u.city || '',
+      pincode: u.pincode || '',
+      createdAt: u.createdAt || Date.now(),
+      profileImage: u.profileImage || u.profilePicture || u.avatar || '',
+      provider: u.provider || (u.googleId ? 'google' : 'email'),
+      googleId: u.googleId || '',
+      isVerified: u.isVerified !== false,
+    }))
+  }, [users])
 
   const filteredUsers = useMemo(() => {
     const q = (userSearchQuery || '').toLowerCase().trim()
@@ -1095,9 +1081,15 @@ export default function AdminDashboard() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (window.confirm('Are you sure you want to delete ALL collections from the Storefront?')) {
-                        deleteAllCollections()
-                      }
+                      setDoubleConfirmModal({
+                        isOpen: true,
+                        title: 'Clear All Storefront Collections',
+                        message: `Are you sure you want to permanently delete ALL ${collections.length} collection series from the storefront? This action cannot be undone.`,
+                        expectedPhrase: 'DELETE',
+                        inputText: '',
+                        actionLabel: 'Permanently Clear All Collections',
+                        onConfirm: () => deleteAllCollections(),
+                      })
                     }}
                     className="border border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-colors"
                   >
@@ -1206,21 +1198,39 @@ export default function AdminDashboard() {
                   Process orders, update courier tracking numbers, approve refunds, and generate PDF invoices.
                 </p>
               </div>
-              <div className="flex items-center gap-3 self-start">
+              <div className="flex items-center gap-3 self-start flex-wrap">
                 <span className="bg-[var(--color-primary)] text-white text-xs font-bold font-mono px-3 py-1.5 rounded">
                   {orders.length} Orders
                 </span>
+
                 {orders.length > 0 && (
-                  <button
-                    onClick={() => {
-                      if (confirm('Are you sure you want to delete ALL orders from studio database?')) {
-                        deleteAllOrders()
-                      }
-                    }}
-                    className="px-3 py-1.5 border border-red-300 text-red-600 text-xs font-bold hover:bg-red-50 flex items-center gap-1 transition-colors"
-                  >
-                    <Trash2 size={13} /> Delete All Orders
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => exportOrdersToCSV(orders)}
+                      className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors shadow-sm rounded"
+                      title="Download complete orders spreadsheet as CSV"
+                    >
+                      <Download size={13} /> Export Orders (CSV)
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setDoubleConfirmModal({
+                          isOpen: true,
+                          title: 'Bulk Delete All Customer Orders',
+                          message: `⚠️ DANGER: You are about to permanently delete ALL ${orders.length} orders from the studio database. This will wipe out all order histories, payment tracking, and customer shipping records. This cannot be undone.`,
+                          expectedPhrase: 'DELETE',
+                          inputText: '',
+                          actionLabel: 'Permanently Delete All Orders',
+                          onConfirm: () => deleteAllOrders(),
+                        })
+                      }}
+                      className="px-3 py-1.5 border border-red-300 text-red-600 text-xs font-bold hover:bg-red-50 flex items-center gap-1 transition-colors"
+                    >
+                      <Trash2 size={13} /> Delete All Orders
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -1240,7 +1250,7 @@ export default function AdminDashboard() {
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-[var(--color-line)] text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[var(--color-ink-soft)] bg-[var(--color-bg)]">
-                        <th className="p-4">Order ID & Date</th>
+                        <th className="p-4">Order ID & Timestamp</th>
                         <th className="p-4">Customer & Address</th>
                         <th className="p-4">Items Ordered</th>
                         <th className="p-4">Amount & Payment</th>
@@ -1254,7 +1264,9 @@ export default function AdminDashboard() {
                         <tr key={o.id || o._id} className="hover:bg-[var(--color-bg)]/60 transition-colors">
                           <td className="p-4 align-top space-y-1">
                             <p className="font-mono font-bold text-sm text-[var(--color-primary)]">{o.orderNumber || o.id || o._id}</p>
-                            <p className="text-[0.68rem] text-[var(--color-ink-soft)]">{o.date || (o.createdAt ? new Date(o.createdAt).toLocaleDateString('en-IN') : '')}</p>
+                            <p className="text-[0.68rem] text-[var(--color-ink-soft)] font-mono font-semibold">
+                              🕒 {formatDateTime(o.createdAt || o.date)}
+                            </p>
                             <button
                               onClick={() => window.open(`${API_URL}/orders/${o._id || o.id}/invoice`, '_blank')}
                               className="text-[0.62rem] font-bold text-blue-700 hover:underline flex items-center gap-1 mt-1"
@@ -1323,12 +1335,15 @@ export default function AdminDashboard() {
                               <option value="Pending Payment">⏳ Pending Payment</option>
                               <option value="Paid">💳 Paid</option>
                               <option value="Confirmed">✅ Order Confirmed</option>
+                              <option value="Handcrafting">🎨 Handcrafting in Studio</option>
                               <option value="Processing">🎨 Studio Processing</option>
                               <option value="Packed">📦 Packed & Sealed</option>
+                              <option value="Packed & Dispatched">📦 Packed & Dispatched</option>
                               <option value="Shipped">🚚 Shipped</option>
                               <option value="Out For Delivery">🛵 Out For Delivery</option>
                               <option value="Delivered">🎉 Delivered</option>
                               <option value="Cancelled">❌ Cancelled</option>
+                              <option value="Cancelled & Refunded">💸 Cancelled & Refunded</option>
                               <option value="Refund Requested">⚠️ Refund Requested</option>
                               <option value="Refund Approved">💸 Refund Approved</option>
                               <option value="Refund Rejected">🚫 Refund Rejected</option>
@@ -1382,6 +1397,37 @@ export default function AdminDashboard() {
                             >
                               <Trash2 size={13} /> Delete
                             </button>
+
+                            {o.status !== 'Cancelled' && o.status !== 'Cancelled & Refunded' && (
+                              <button
+                                onClick={async () => {
+                                  const reason = prompt('Enter cancellation & refund reason for customer:', 'Cancelled by studio admin')
+                                  if (reason !== null) {
+                                    try {
+                                      const res = await fetch(`${API_URL}/orders/${o._id || o.id}/cancel`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ reason, isAdmin: true }),
+                                      })
+                                      const data = await res.json()
+                                      alert(data.message || 'Order cancelled & refund processed!')
+                                      window.location.reload()
+                                    } catch {
+                                      alert('Failed to process refund.')
+                                    }
+                                  }
+                                }}
+                                className="text-rose-700 hover:text-rose-900 text-[0.68rem] font-bold uppercase flex items-center gap-1 ml-auto hover:underline mt-1.5"
+                              >
+                                <XCircle size={12} /> Cancel & Auto Refund
+                              </button>
+                            )}
+
+                            {o.razorpayRefundId && (
+                              <span className="text-[0.6rem] font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 rounded block mt-1 text-right">
+                                Refund ID: {o.razorpayRefundId}
+                              </span>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -1490,6 +1536,83 @@ export default function AdminDashboard() {
                 Save Main Banner Offer
               </button>
             </form>
+
+            {/* Shipping Fee & Free Delivery Threshold Manager */}
+            <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 space-y-4 shadow-sm md:col-span-2">
+              <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3">
+                <div className="flex items-center gap-2">
+                  <Truck size={20} className="text-[var(--color-primary)]" />
+                  <h2 className="text-xl font-bold font-[var(--font-display)] uppercase">
+                    🚚 Shipping Fee & Free Delivery Threshold Settings
+                  </h2>
+                </div>
+                <span className={`text-[0.65rem] font-bold uppercase tracking-wider px-2.5 py-1 rounded border ${
+                  tempShipping.shippingFeeEnabled ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300'
+                }`}>
+                  {tempShipping.shippingFeeEnabled ? 'SHIPPING FEE ENABLED' : 'STOREWIDE FREE SHIPPING'}
+                </span>
+              </div>
+              <p className="text-xs text-[var(--color-ink-soft)]">
+                Control standard shipping charges and set the minimum order total required for FREE delivery across the store.
+              </p>
+
+              <form onSubmit={handleSaveShipping} className="space-y-5 pt-2">
+                <div className="flex items-center justify-between p-3.5 border border-[var(--color-line)] bg-[var(--color-bg)]">
+                  <div>
+                    <p className="font-bold text-xs">Enable Shipping Charge</p>
+                    <p className="text-[0.68rem] text-[var(--color-ink-soft)]">When disabled, all orders receive 100% Free Shipping storewide.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={tempShipping.shippingFeeEnabled}
+                      onChange={(e) => setTempShipping({ ...tempShipping, shippingFeeEnabled: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-700" />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider mb-1.5">Standard Shipping Charge (₹)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={tempShipping.standardShippingFee}
+                      onChange={(e) => setTempShipping({ ...tempShipping, standardShippingFee: Number(e.target.value) })}
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-mono font-bold focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)]"
+                      placeholder="e.g. 100"
+                    />
+                    <p className="text-[0.65rem] text-[var(--color-ink-soft)] mt-1">Charged on orders below the free shipping threshold.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider mb-1.5">Free Shipping Threshold Amount (₹)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={tempShipping.freeShippingThreshold}
+                      onChange={(e) => setTempShipping({ ...tempShipping, freeShippingThreshold: Number(e.target.value) })}
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-mono font-bold focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-emerald-800"
+                      placeholder="e.g. 2500"
+                    />
+                    <p className="text-[0.65rem] text-[var(--color-ink-soft)] mt-1">Orders at or above this subtotal get FREE delivery.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <button type="submit" className="btn-primary py-3 px-6 text-xs uppercase font-bold tracking-wider">
+                    Save Shipping Settings
+                  </button>
+                  {savedShippingMsg && (
+                    <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                      ✨ Shipping Settings Saved Live!
+                    </span>
+                  )}
+                </div>
+              </form>
+            </div>
 
             {/* MULTI-SEGMENT COUPON MANAGER */}
             <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 space-y-6 shadow-sm">
@@ -1698,7 +1821,7 @@ export default function AdminDashboard() {
                 </p>
               </div>
 
-              {/* Column Filter Tabs */}
+              {/* Column Filter Tabs & Export */}
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
@@ -1744,6 +1867,17 @@ export default function AdminDashboard() {
                 >
                   ⏱️ Pending ({pendingRequests.length})
                 </button>
+
+                {customRequests.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => exportCustomRequestsToCSV(customRequests)}
+                    className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors shadow-sm rounded ml-auto sm:ml-2"
+                    title="Download custom requests spreadsheet as CSV"
+                  >
+                    <Download size={13} /> Export Custom Quotes (CSV)
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1879,6 +2013,17 @@ export default function AdminDashboard() {
                 <span className="bg-[var(--color-primary)] text-white text-xs font-bold font-mono px-3 py-2 rounded shadow-sm shrink-0">
                   {mergedUsers.length} Customers
                 </span>
+
+                {mergedUsers.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => exportUsersToCSV(mergedUsers, orders, customRequests)}
+                    className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors shadow-sm rounded shrink-0"
+                    title="Download complete registered users & customer profiles spreadsheet as CSV"
+                  >
+                    <Download size={13} /> Export Customers (CSV)
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1933,13 +2078,26 @@ export default function AdminDashboard() {
                             <h3 className="font-bold text-base font-[var(--font-display)] truncate">{u.name}</h3>
                             <p className="text-xs text-[var(--color-primary)] font-bold truncate">{u.email}</p>
                             {u.phone && <p className="text-[0.68rem] text-[var(--color-ink-soft)] font-mono">{u.phone}</p>}
+                            {u.provider === 'google' || u.googleId ? (
+                              <span className="inline-flex items-center gap-1 text-[0.6rem] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded mt-1">
+                                <CheckCircle2 size={11} /> Verified via Google OAuth
+                              </span>
+                            ) : u.isVerified ? (
+                              <span className="inline-flex items-center gap-1 text-[0.6rem] font-bold text-blue-800 bg-blue-100 border border-blue-300 px-2 py-0.5 rounded mt-1">
+                                <CheckCircle2 size={11} /> Verified via Email OTP
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[0.6rem] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded mt-1">
+                                🟡 Pending OTP Verification
+                              </span>
+                            )}
                           </div>
                         </div>
 
                         <div className="space-y-1 text-xs text-[var(--color-ink-soft)]">
                           <p className="truncate"><strong>Shipping Address:</strong> {u.address || 'Not specified'}</p>
                           <p><strong>City & PIN:</strong> {u.city ? `${u.city} - ${u.pincode}` : 'Not specified'}</p>
-                          <p className="font-mono text-[0.65rem] pt-1">Registered: {new Date(u.createdAt).toLocaleDateString()}</p>
+                          <p className="font-mono text-[0.65rem] pt-1">🕒 Registered: {formatDateTime(u.createdAt)}</p>
                         </div>
 
                         {/* Summary Chips */}
@@ -2862,6 +3020,102 @@ export default function AdminDashboard() {
                 />
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* DOUBLE CONFIRMATION MODAL FOR SAFE BULK DELETION */}
+      {doubleConfirmModal.isOpen && (
+        <div className="fixed inset-0 bg-black/75 z-[400] flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-[var(--color-bg)] border-2 border-red-500 p-6 md:p-8 max-w-lg w-full shadow-2xl space-y-5 text-[var(--color-ink)] my-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 border-b border-[var(--color-line)] pb-4 text-red-700">
+              <div className="w-11 h-11 rounded-full bg-red-100 flex items-center justify-center shrink-0 border border-red-300">
+                <Trash2 size={22} className="text-red-700" />
+              </div>
+              <div>
+                <span className="text-[0.65rem] font-bold tracking-widest uppercase text-red-800 font-mono block">
+                  Double Confirmation Required
+                </span>
+                <h3 className="font-bold text-base font-[var(--font-display)] text-red-950 uppercase">
+                  {doubleConfirmModal.title}
+                </h3>
+              </div>
+            </div>
+
+            <p className="text-xs md:text-sm text-[var(--color-ink)] leading-relaxed">
+              {doubleConfirmModal.message}
+            </p>
+
+            <div className="bg-red-50/90 border border-red-300 p-4 space-y-2.5 rounded text-xs text-red-950">
+              <p className="font-bold">
+                To confirm this bulk deletion, please type <span className="font-mono bg-red-200 px-2 py-0.5 rounded font-bold text-red-900">{doubleConfirmModal.expectedPhrase}</span> in the box below:
+              </p>
+              <input
+                type="text"
+                autoFocus
+                placeholder={`Type "${doubleConfirmModal.expectedPhrase}" to enable deletion...`}
+                value={doubleConfirmModal.inputText}
+                onChange={(e) =>
+                  setDoubleConfirmModal((prev) => ({ ...prev, inputText: e.target.value }))
+                }
+                className="w-full border-2 border-red-300 focus:border-red-600 bg-white p-3 text-xs font-mono font-bold uppercase tracking-wider focus:outline-none shadow-inner"
+              />
+              <p className="text-[0.68rem] text-red-800 italic">
+                {doubleConfirmModal.inputText.trim().toUpperCase() === doubleConfirmModal.expectedPhrase.toUpperCase()
+                  ? '✅ Phrase matched. Deletion button is now unlocked.'
+                  : `⚠️ Type exactly "${doubleConfirmModal.expectedPhrase}" to unlock the button.`}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setDoubleConfirmModal({
+                    isOpen: false,
+                    title: '',
+                    message: '',
+                    expectedPhrase: 'DELETE',
+                    inputText: '',
+                    actionLabel: '',
+                    onConfirm: null,
+                  })
+                }
+                className="btn-outline px-5 py-2.5 text-xs font-bold uppercase tracking-wider"
+              >
+                Cancel & Keep Data
+              </button>
+
+              <button
+                type="button"
+                disabled={
+                  doubleConfirmModal.inputText.trim().toUpperCase() !==
+                  doubleConfirmModal.expectedPhrase.toUpperCase()
+                }
+                onClick={async () => {
+                  if (
+                    doubleConfirmModal.inputText.trim().toUpperCase() ===
+                    doubleConfirmModal.expectedPhrase.toUpperCase()
+                  ) {
+                    if (doubleConfirmModal.onConfirm) {
+                      await doubleConfirmModal.onConfirm()
+                    }
+                    setDoubleConfirmModal({
+                      isOpen: false,
+                      title: '',
+                      message: '',
+                      expectedPhrase: 'DELETE',
+                      inputText: '',
+                      actionLabel: '',
+                      onConfirm: null,
+                    })
+                  }
+                }}
+                className="px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white bg-red-700 hover:bg-red-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm flex items-center gap-1.5"
+              >
+                <Trash2 size={13} /> {doubleConfirmModal.actionLabel}
+              </button>
+            </div>
           </div>
         </div>
       )}

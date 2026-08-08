@@ -31,13 +31,43 @@ export default function Admin() {
     orders,
     marqueeText,
     activeOffer,
+    shippingSettings,
     addProduct,
     deleteProduct,
     updateProduct,
     updateOrderStatus,
     updateMarquee,
     updateOffer,
+    updateShippingSettings,
   } = useStudio()
+
+  const [tempShipping, setTempShipping] = useState(() => ({
+    shippingFeeEnabled: shippingSettings?.shippingFeeEnabled ?? true,
+    standardShippingFee: shippingSettings?.standardShippingFee ?? 100,
+    freeShippingThreshold: shippingSettings?.freeShippingThreshold ?? 2500,
+  }))
+  const [hasInitializedShipping, setHasInitializedShipping] = useState(false)
+  const [savedShippingMsg, setSavedShippingMsg] = useState(false)
+
+  useEffect(() => {
+    if (shippingSettings && !hasInitializedShipping) {
+      setTempShipping({
+        shippingFeeEnabled: shippingSettings.shippingFeeEnabled ?? true,
+        standardShippingFee: shippingSettings.standardShippingFee ?? 100,
+        freeShippingThreshold: shippingSettings.freeShippingThreshold ?? 2500,
+      })
+      setHasInitializedShipping(true)
+    }
+  }, [shippingSettings, hasInitializedShipping])
+
+  const handleSaveShipping = async (e) => {
+    e.preventDefault()
+    if (updateShippingSettings) {
+      await updateShippingSettings(tempShipping)
+    }
+    setSavedShippingMsg(true)
+    setTimeout(() => setSavedShippingMsg(false), 3000)
+  }
 
   // Authentication State
   const [isUnlocked, setIsUnlocked] = useState(() => {
@@ -599,6 +629,73 @@ export default function Admin() {
                 {savedOfferMsg && (
                   <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
                     <CheckCircle2 size={14} /> Offer Active!
+                  </span>
+                )}
+              </div>
+            </form>
+          </div>
+
+          {/* Shipping Fee & Free Delivery Threshold Manager */}
+          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 space-y-4 md:col-span-2">
+            <div className="flex items-center gap-2">
+              <Truck size={18} className="text-[var(--color-primary)]" />
+              <h3 className="font-bold text-xl font-[var(--font-display)]">Shipping Fee & Free Delivery Threshold Settings</h3>
+            </div>
+            <p className="text-xs text-[var(--color-ink-soft)]">
+              Control standard shipping charges and set the minimum order total required for FREE delivery across the store.
+            </p>
+            <form onSubmit={handleSaveShipping} className="space-y-5 pt-2">
+              <div className="flex items-center justify-between p-3.5 border border-[var(--color-line)] bg-[var(--color-bg)]">
+                <div>
+                  <p className="font-bold text-xs">Enable Shipping Charge</p>
+                  <p className="text-[0.68rem] text-[var(--color-ink-soft)]">When disabled, all orders receive 100% Free Shipping storewide.</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={tempShipping.shippingFeeEnabled}
+                    onChange={(e) => setTempShipping({ ...tempShipping, shippingFeeEnabled: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-700" />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="eyebrow block mb-1">Standard Shipping Charge (₹)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={tempShipping.standardShippingFee}
+                    onChange={(e) => setTempShipping({ ...tempShipping, standardShippingFee: Number(e.target.value) })}
+                    className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[var(--color-primary)]"
+                    placeholder="e.g. 100"
+                  />
+                  <p className="text-[0.65rem] text-[var(--color-ink-soft)] mt-1">Charged on orders below free shipping threshold.</p>
+                </div>
+
+                <div>
+                  <label className="eyebrow block mb-1">Free Shipping Threshold Amount (₹)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={tempShipping.freeShippingThreshold}
+                    onChange={(e) => setTempShipping({ ...tempShipping, freeShippingThreshold: Number(e.target.value) })}
+                    className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[var(--color-primary)] text-emerald-800"
+                    placeholder="e.g. 2500"
+                  />
+                  <p className="text-[0.65rem] text-[var(--color-ink-soft)] mt-1">Orders at or above this subtotal get FREE delivery.</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <button type="submit" className="btn-primary py-2.5 px-6 text-xs flex items-center gap-2 font-bold uppercase tracking-wider">
+                  <Check size={14} /> Save Shipping Settings
+                </button>
+                {savedShippingMsg && (
+                  <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                    <CheckCircle2 size={14} /> Shipping Settings Saved Live!
                   </span>
                 )}
               </div>

@@ -13,7 +13,10 @@ export const getSettings = async (req, res) => {
         discountPercent: 10,
         offerTitle: '10% OFF Studio Discount',
         isOfferActive: true,
-        marqueeText: 'EVERY PIECE HANDMADE TO ORDER • FREE SHIPPING ON ALL ORDERS • CUSTOM BESPOKE ORDERS OPEN',
+        marqueeText: 'EVERY PIECE HANDMADE TO ORDER • FREE SHIPPING ON ALL ORDERS ABOVE ₹2500 • CUSTOM BESPOKE ORDERS OPEN',
+        shippingFeeEnabled: true,
+        standardShippingFee: 100,
+        freeShippingThreshold: 2500,
       })
     }
     res.json(settings)
@@ -23,12 +26,21 @@ export const getSettings = async (req, res) => {
   }
 }
 
-// @desc    Update studio settings (offer code, discount percentage, marquee)
+// @desc    Update studio settings (offer code, discount percentage, marquee, shipping)
 // @route   POST /api/settings
 // @access  Admin/Public
 export const updateSettings = async (req, res) => {
   try {
-    const { offerCode, discountPercent, offerTitle, isOfferActive, marqueeText } = req.body
+    const {
+      offerCode,
+      discountPercent,
+      offerTitle,
+      isOfferActive,
+      marqueeText,
+      shippingFeeEnabled,
+      standardShippingFee,
+      freeShippingThreshold,
+    } = req.body
 
     let settings = await Setting.findOne({ key: 'main_studio_settings' })
     if (!settings) {
@@ -40,6 +52,10 @@ export const updateSettings = async (req, res) => {
     if (offerTitle !== undefined) settings.offerTitle = offerTitle
     if (isOfferActive !== undefined) settings.isOfferActive = Boolean(isOfferActive)
     if (marqueeText !== undefined) settings.marqueeText = marqueeText
+
+    if (shippingFeeEnabled !== undefined) settings.shippingFeeEnabled = Boolean(shippingFeeEnabled)
+    if (standardShippingFee !== undefined) settings.standardShippingFee = Math.max(0, Number(standardShippingFee))
+    if (freeShippingThreshold !== undefined) settings.freeShippingThreshold = Math.max(0, Number(freeShippingThreshold))
 
     await settings.save()
     res.json({ message: 'Settings updated successfully', settings })

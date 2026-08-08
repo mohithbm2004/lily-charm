@@ -3,14 +3,20 @@ import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Minus, Plus } from 'lucide-react'
 import { useCart } from '../context/CartContext'
+import { useStudio } from '../context/StudioContext'
 import { formatPrice } from '../lib/format'
 
 export default function CartDrawer() {
   const { items, open, closeCart, removeItem, setQty, subtotal, coupon: activeCoupon, discountAmount, applyCoupon, removeCoupon } = useCart()
+  const { shippingSettings } = useStudio()
   const [couponInput, setCouponInput] = useState('')
   const [couponMsg, setCouponMsg] = useState(null)
 
-  const shipping = items.length === 0 ? 0 : subtotal > 8000 ? 0 : 0 // Free Shipping for testing
+  const isShippingEnabled = shippingSettings?.shippingFeeEnabled ?? true
+  const standardShippingFee = shippingSettings?.standardShippingFee ?? 100
+  const freeThreshold = shippingSettings?.freeShippingThreshold ?? 2500
+
+  const shipping = items.length === 0 ? 0 : isShippingEnabled ? (subtotal >= freeThreshold ? 0 : standardShippingFee) : 0
   const grandTotal = Math.max(0, subtotal - discountAmount + shipping)
 
   const handleApplyCoupon = (e) => {
@@ -117,7 +123,23 @@ export default function CartDrawer() {
                       <span>-{formatPrice(discountAmount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between"><span>Shipping</span><span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span></div>
+                  <div className="flex justify-between items-center">
+                    <span>Shipping</span>
+                    <span className="font-bold">
+                      {shipping === 0 ? (
+                        <span className="text-emerald-700 font-mono">
+                          Free {isShippingEnabled && subtotal >= freeThreshold ? `(> ₹${freeThreshold})` : ''}
+                        </span>
+                      ) : (
+                        formatPrice(shipping)
+                      )}
+                    </span>
+                  </div>
+                  {isShippingEnabled && shipping > 0 && subtotal < freeThreshold && (
+                    <p className="text-[0.68rem] text-emerald-800 bg-emerald-50 border border-emerald-200 p-2 rounded font-semibold text-center">
+                      ✨ Add {formatPrice(freeThreshold - subtotal)} more for <strong>FREE Shipping!</strong>
+                    </p>
+                  )}
                   <div className="flex justify-between font-[var(--font-display)] text-lg pt-2 border-t border-[var(--color-line)] text-[var(--color-ink)] font-bold">
                     <span>Total</span><span className="text-[var(--color-primary)]">{formatPrice(grandTotal)}</span>
                   </div>
@@ -125,6 +147,9 @@ export default function CartDrawer() {
                 <Link to="/checkout" onClick={closeCart} className="btn-primary w-full text-center block py-3 uppercase text-xs font-bold tracking-widest">
                   Checkout ({formatPrice(grandTotal)})
                 </Link>
+                <p className="text-[0.62rem] text-amber-900 bg-amber-50/80 border border-amber-200 p-2 rounded text-center leading-normal">
+                  ℹ️ <strong>Cancellation Policy:</strong> Customer cancellations incur a 3% fee (97% refund). Studio Admin cancellations = 100% full refund.
+                </p>
               </div>
             )}
           </motion.aside>

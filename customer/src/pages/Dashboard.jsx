@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { formatPrice } from '../lib/format'
 import Reveal from '../components/Reveal'
-import { User, Package, MapPin, Sparkles, Upload, CheckCircle2, Search, Edit3, LogOut, Download, Eye, Truck, RefreshCw } from 'lucide-react'
+import { User, Package, MapPin, Sparkles, Upload, CheckCircle2, Search, Edit3, LogOut, Download, Eye, Truck, RefreshCw, XCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useAlert } from '../context/AlertContext'
 import OrderDetailsModal from '../components/OrderDetailsModal'
 import OrderTimeline from '../components/OrderTimeline'
 
@@ -13,28 +14,53 @@ const tabs = ['My Orders', 'Profile Details', 'Custom Price Quotes', 'Saved Addr
 
 export default function Dashboard() {
   const { user, logout, updateUserProfile } = useAuth()
+  const { showAlert, showConfirm } = useAlert()
+  const navigate = useNavigate()
   const [tab, setTab] = useState('Profile Details')
   const [params] = useSearchParams()
   const justOrdered = params.get('order') === 'confirmed'
 
-  // User profile state
+  const defaultProfile = {
+    name: 'Valued Customer',
+    email: 'customer@example.com',
+    phone: '+91 98765 43210',
+    address: '123 Atelier Studio Street',
+    city: 'Bengaluru',
+    pincode: '560001',
+    profileImage: '',
+  }
+
+  // User profile state strictly tied to authenticated user session
   const [userProfile, setUserProfile] = useState(() => {
-    return user || {
-      name: 'Valued Customer',
-      email: 'customer@example.com',
-      phone: '+91 98765 43210',
-      address: '123 Atelier Studio Street',
-      city: 'Bengaluru',
-      pincode: '560001',
-      profileImage: '',
-    }
+    if (!user) return null
+    try {
+      const saved = localStorage.getItem('lilycharm_user_profile')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed && typeof parsed === 'object') return { ...defaultProfile, ...parsed }
+      }
+    } catch {}
+    return user ? { ...defaultProfile, ...user } : null
   })
 
   useEffect(() => {
-    if (user) setUserProfile(user)
+    if (user && typeof user === 'object') {
+      setUserProfile((prev) => ({ ...defaultProfile, ...(prev || {}), ...user }))
+      setAvatarPreview(user.profileImage || '')
+      fetchProfileFromApi(user.email)
+      fetchUserOrdersAndRequests(user.email)
+    } else {
+      setUserProfile(null)
+      setUserOrders([])
+      setUserCustomRequests([])
+      setAvatarPreview('')
+      localStorage.removeItem('lilycharm_user_profile')
+    }
   }, [user])
 
-  const [avatarPreview, setAvatarPreview] = useState(userProfile.profileImage || '')
+  const currentEmail = userProfile?.email || user?.email || ''
+
+  const [avatarPreview, setAvatarPreview] = useState(userProfile?.profileImage || '')
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('')
 
@@ -43,6 +69,7 @@ export default function Dashboard() {
   const [userCustomRequests, setUserCustomRequests] = useState([])
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [quoteSearchEmail, setQuoteSearchEmail] = useState('')
+  const [confirmedCustomOrder, setConfirmedCustomOrder] = useState(null)
 
   const fetchProfileFromApi = async (email) => {
     if (!email) return
@@ -50,9 +77,11 @@ export default function Dashboard() {
       const res = await fetch(`${API_URL}/auth/profile?email=${encodeURIComponent(email)}`)
       if (res.ok) {
         const data = await res.json()
-        setUserProfile(data)
-        setAvatarPreview(data.profileImage || '')
-        localStorage.setItem('lilycharm_user_profile', JSON.stringify(data))
+        if (data && typeof data === 'object') {
+          setUserProfile((prev) => ({ ...defaultProfile, ...prev, ...data }))
+          setAvatarPreview(data.profileImage || '')
+          localStorage.setItem('lilycharm_user_profile', JSON.stringify(data))
+        }
       }
     } catch {
       // offline fallback
@@ -62,8 +91,9 @@ export default function Dashboard() {
   const fetchUserOrdersAndRequests = async (email) => {
     if (!email) return
     try {
+      const cleanEmail = email.toLowerCase().trim()
       const [ordRes, reqRes] = await Promise.all([
-        fetch(`${API_URL}/orders/mine?email=${encodeURIComponent(email)}`),
+        fetch(`${API_URL}/orders/mine?email=${encodeURIComponent(cleanEmail)}`),
         fetch(`${API_URL}/custom-requests`),
       ])
       if (ordRes.ok) {
@@ -77,7 +107,7 @@ export default function Dashboard() {
           const fallbackData = await fallbackRes.json()
           const rawOrders = Array.isArray(fallbackData) ? fallbackData : (fallbackData.orders || [])
           const filtered = rawOrders.filter(
-            (o) => o.shippingAddress?.email?.toLowerCase().trim() === email.toLowerCase().trim()
+            (o) => o?.shippingAddress?.email && o.shippingAddress.email.toLowerCase().trim() === cleanEmail
           )
           setUserOrders(filtered)
         }
@@ -86,7 +116,7 @@ export default function Dashboard() {
       if (reqRes.ok) {
         const reqs = await reqRes.json()
         const myReqs = (Array.isArray(reqs) ? reqs : []).filter(
-          (r) => r.email?.toLowerCase().trim() === email.toLowerCase().trim()
+          (r) => r?.email && r.email.toLowerCase().trim() === cleanEmail
         )
         setUserCustomRequests(myReqs)
       }
@@ -96,9 +126,9 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    fetchProfileFromApi(userProfile.email)
-    fetchUserOrdersAndRequests(userProfile.email)
-  }, [userProfile.email])
+    fetchProfileFromApi(currentEmail)
+    fetchUserOrdersAndRequests(currentEmail)
+  }, [currentEmail])
 
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0]
@@ -110,8 +140,181 @@ export default function Dashboard() {
     reader.readAsDataURL(file)
   }
 
+  const [dashPincodeStatus, setDashPincodeStatus] = useState({ loading: false, success: false, message: '' })
+
+  const handleDashboardPincodeChange = async (e) => {
+    const rawVal = e.target.value
+    const digitsOnly = rawVal.replace(/\D/g, '').slice(0, 6)
+    setUserProfile((prev) => ({ ...prev, pincode: digitsOnly }))
+
+    if (digitsOnly.length < 6) {
+      setDashPincodeStatus({
+        loading: false,
+        success: false,
+        message: digitsOnly.length > 0 ? `PIN code must be 6 digits (${digitsOnly.length}/6)` : '',
+      })
+      return
+    }
+
+    setDashPincodeStatus({ loading: true, success: false, message: '🔍 Fetching city & location...' })
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${digitsOnly}`)
+      const data = await res.json()
+      if (data && data[0] && data[0].Status === 'Success' && data[0].PostOffice?.length > 0) {
+        const postOffice = data[0].PostOffice[0]
+        const city = postOffice.District || postOffice.Block || postOffice.Name || ''
+        setUserProfile((prev) => ({
+          ...prev,
+          city: city || prev.city,
+        }))
+        setDashPincodeStatus({
+          loading: false,
+          success: true,
+          message: `📍 Auto-filled City: ${city}`,
+        })
+      } else {
+        setDashPincodeStatus({
+          loading: false,
+          success: false,
+          message: '⚠️ Invalid PIN code',
+        })
+      }
+    } catch (err) {
+      console.error('Dashboard pincode error:', err)
+      setDashPincodeStatus({ loading: false, success: false, message: '' })
+    }
+  }
+
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) return resolve(true)
+      const script = document.createElement('script')
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+      script.onload = () => resolve(true)
+      script.onerror = () => resolve(false)
+      document.body.appendChild(script)
+    })
+  }
+
+  const handleAcceptQuoteAndPay = async (req) => {
+    try {
+      const isLoaded = await loadRazorpayScript()
+      if (!isLoaded) {
+        alert('Failed to load Razorpay SDK. Please check your internet connection.')
+        return
+      }
+
+      const shipping = req.quotedPrice > 8000 ? 0 : 250
+      const totalAmount = (req.quotedPrice || 0) + shipping
+
+      // 1. Fetch Razorpay Order ID from backend (amount in paise)
+      let rzpOrderData = null
+      try {
+        const rzpOrderRes = await fetch(`${API_URL}/create-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: Math.round(totalAmount * 100), currency: 'INR' }),
+        })
+        if (rzpOrderRes.ok) {
+          rzpOrderData = await rzpOrderRes.json()
+        }
+      } catch (e) {
+        console.error('Failed to create Razorpay order ID via /create-order:', e)
+      }
+
+      if (!rzpOrderData || !rzpOrderData.id) {
+        try {
+          const fallbackRes = await fetch(`${API_URL}/orders/create-razorpay-order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: Math.round(totalAmount * 100), currency: 'INR' }),
+          })
+          if (fallbackRes.ok) {
+            rzpOrderData = await fallbackRes.json()
+          }
+        } catch (e) {
+          console.error('Failed to create Razorpay order ID via /orders/create-razorpay-order:', e)
+        }
+      }
+
+      const razorpayOrderId = rzpOrderData?.id || rzpOrderData?.order_id
+      if (!razorpayOrderId) {
+        alert('Could not initialize Razorpay payment. Please check backend connection.')
+        return
+      }
+
+      // 2. Launch Razorpay Standard Checkout Modal
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TNMb3FlCzDPhzo',
+        amount: Math.round(totalAmount * 100),
+        currency: 'INR',
+        name: 'Lily Charm Flower Studio',
+        description: `Payment for Custom Artwork Quote #${req._id.slice(-6)}`,
+        order_id: razorpayOrderId,
+        prefill: {
+          name: req.name || userProfile.name,
+          email: req.email || userProfile.email,
+          contact: req.phone || userProfile.phone || '',
+        },
+        theme: { color: '#2B3925' },
+        handler: async function (response) {
+          try {
+            const acceptRes = await fetch(`${API_URL}/custom-requests/${req._id}/accept`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+                shippingAddress: {
+                  name: req.name || userProfile.name,
+                  email: req.email || userProfile.email,
+                  phone: req.phone || userProfile.phone || '',
+                  address: req.address || 'Studio Collection Address',
+                  city: req.city || 'Bengaluru',
+                  pincode: req.pincode || '560001',
+                },
+              }),
+            })
+            const data = await acceptRes.json()
+            if (acceptRes.ok) {
+              const finalOrder = data.order || {
+                orderNumber: data.orderNumber || `LC-${Date.now().toString().slice(-6)}`,
+                shippingAddress: {
+                  name: req.name || userProfile.name,
+                  address: req.address || 'Studio Collection Address',
+                  city: req.city || 'Bengaluru',
+                  pincode: req.pincode || '560001',
+                },
+                total: totalAmount,
+                grandTotal: totalAmount,
+              }
+              setConfirmedCustomOrder(finalOrder)
+              fetchUserOrdersAndRequests(userProfile.email)
+            } else {
+              alert(data.message || 'Failed to record custom order payment.')
+            }
+          } catch (err) {
+            console.error('Error recording custom quote payment:', err)
+            alert('Connection error recording payment.')
+          }
+        },
+      }
+
+      const rzp = new window.Razorpay(options)
+      rzp.open()
+    } catch (err) {
+      console.error('Error starting Razorpay checkout for quote:', err)
+      alert('Network error initializing payment.')
+    }
+  }
+
   const handleSaveProfile = async (e) => {
     e.preventDefault()
+    if (userProfile.pincode && !/^\d{6}$/.test(userProfile.pincode)) {
+      alert('Please enter a valid 6-digit numeric PIN code.')
+      return
+    }
     setIsSavingProfile(true)
     setSaveSuccessMsg('')
 
@@ -146,6 +349,81 @@ export default function Dashboard() {
     }
   }
 
+  // Exact Order Confirmed Page Matching Image 2
+  if (confirmedCustomOrder) {
+    return (
+      <div className="max-w-3xl mx-auto px-6 pt-36 pb-24 text-center space-y-6">
+        <div className="w-20 h-20 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto">
+          <CheckCircle2 size={48} />
+        </div>
+        <h1 className="text-3xl md:text-4xl font-bold font-[var(--font-display)] uppercase">ORDER CONFIRMED!</h1>
+        <p className="text-sm text-[var(--color-ink-soft)] max-w-md mx-auto leading-relaxed">
+          Thank you for your order, <strong className="text-[var(--color-ink)]">{confirmedCustomOrder.shippingAddress?.name || userProfile?.name || 'Valued Customer'}</strong>! Your order number is{' '}
+          <strong className="text-[var(--color-primary)] font-mono">{confirmedCustomOrder.orderNumber || confirmedCustomOrder._id}</strong>.
+        </p>
+        <div className="bg-[var(--color-beige)]/40 p-6 border border-[var(--color-line)] max-w-lg mx-auto text-left text-xs space-y-2">
+          <div className="flex justify-between border-b border-[var(--color-line)] pb-2 font-bold uppercase">
+            <span>Payment Status</span>
+            <span className="text-emerald-700 font-mono">PAID (RAZORPAY)</span>
+          </div>
+          <div className="flex justify-between pt-1">
+            <span>Shipping To:</span>
+            <span className="font-semibold text-right">
+              {confirmedCustomOrder.shippingAddress?.address || userProfile?.address}, {confirmedCustomOrder.shippingAddress?.city || userProfile?.city} - {confirmedCustomOrder.shippingAddress?.pincode || userProfile?.pincode}
+            </span>
+          </div>
+          <div className="flex justify-between pt-1 border-t border-[var(--color-line)] font-bold text-sm">
+            <span>Total Paid:</span>
+            <span className="text-[var(--color-primary)]">
+              {formatPrice(confirmedCustomOrder.grandTotal ?? confirmedCustomOrder.total ?? 0)}
+            </span>
+          </div>
+        </div>
+        <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={() => {
+              setConfirmedCustomOrder(null)
+              setTab('My Orders')
+            }}
+            className="btn-primary px-8 py-3 text-xs uppercase tracking-widest font-bold"
+          >
+            CONTINUE SHOPPING
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // If customer is signed out, render a clean login prompt screen with zero previous user details
+  if (!user) {
+    return (
+      <div className="max-w-xl mx-auto px-6 pt-40 pb-28 text-center space-y-6 text-[var(--color-ink)]">
+        <div className="w-20 h-20 rounded-full bg-[var(--color-card-bg)] border border-[var(--color-line)] flex items-center justify-center mx-auto text-[var(--color-primary)] shadow-sm">
+          <User size={36} />
+        </div>
+        <div className="space-y-2">
+          <span className="text-[0.68rem] tracking-[0.2em] uppercase font-bold text-[var(--color-primary)] font-mono">
+            Lily Charm Customer Portal
+          </span>
+          <h1 className="text-3xl font-bold font-[var(--font-display)] uppercase">
+            Account Signed Out
+          </h1>
+          <p className="text-xs text-[var(--color-ink-soft)] max-w-md mx-auto leading-relaxed">
+            You have been securely signed out of your customer account. Sign in with Google OAuth or your Email OTP to view your orders, saved delivery addresses, and custom design quotes.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          <button
+            onClick={() => navigate('/')}
+            className="btn-primary px-8 py-3 text-xs uppercase tracking-widest font-bold flex items-center gap-2"
+          >
+            Return to Storefront
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-6 md:px-10 pt-32 pb-24 text-[var(--color-ink)]">
       <Reveal>
@@ -153,20 +431,37 @@ export default function Dashboard() {
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full border-2 border-[var(--color-primary)] overflow-hidden bg-[var(--color-card-bg)] shrink-0 flex items-center justify-center">
               {avatarPreview ? (
-                <img src={avatarPreview} alt={userProfile.name} className="w-full h-full object-cover" />
+                <img src={avatarPreview} alt={userProfile?.name || 'Customer'} className="w-full h-full object-cover" />
               ) : (
                 <User size={32} className="text-[var(--color-primary)]" />
               )}
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold font-[var(--font-display)] uppercase">{userProfile.name}</h1>
-              <p className="text-xs text-[var(--color-primary)] font-semibold font-mono">{userProfile.email}</p>
+              <h1 className="text-2xl md:text-3xl font-bold font-[var(--font-display)] uppercase">{userProfile?.name || 'Valued Customer'}</h1>
+              <p className="text-xs text-[var(--color-primary)] font-semibold font-mono">{userProfile?.email || 'customer@example.com'}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-mono text-[var(--color-ink-soft)] bg-[var(--color-card-bg)] border border-[var(--color-line)] px-4 py-2 self-start">
-            <span>Customer Account:</span>
-            <strong className="text-emerald-700">Verified & Active</strong>
+          <div className="flex items-center gap-3 self-start flex-wrap">
+            <div className="flex items-center gap-2 text-xs font-mono text-[var(--color-ink-soft)] bg-[var(--color-card-bg)] border border-[var(--color-line)] px-4 py-2">
+              <span>Customer Account:</span>
+              <strong className="text-emerald-700">Verified & Active</strong>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                logout()
+                setUserProfile(null)
+                setUserOrders([])
+                setUserCustomRequests([])
+                navigate('/')
+              }}
+              className="border border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100 px-3.5 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors"
+              title="Sign Out from account"
+            >
+              <LogOut size={13} /> Sign Out
+            </button>
           </div>
         </div>
 
@@ -239,7 +534,7 @@ export default function Dashboard() {
                   <input
                     type="text"
                     required
-                    value={userProfile.name}
+                    value={userProfile?.name || ''}
                     onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })}
                     className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] p-3 font-bold"
                     placeholder="e.g. Eleanor Vance"
@@ -251,7 +546,7 @@ export default function Dashboard() {
                   <input
                     type="email"
                     required
-                    value={userProfile.email}
+                    value={userProfile?.email || ''}
                     onChange={(e) => setUserProfile({ ...userProfile, email: e.target.value })}
                     className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] p-3 font-semibold"
                     placeholder="e.g. customer@example.com"
@@ -264,7 +559,7 @@ export default function Dashboard() {
                   <label className="block font-bold uppercase mb-1">Phone Number</label>
                   <input
                     type="tel"
-                    value={userProfile.phone}
+                    value={userProfile?.phone || ''}
                     onChange={(e) => setUserProfile({ ...userProfile, phone: e.target.value })}
                     className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] p-3 font-mono"
                     placeholder="e.g. +91 98765 43210"
@@ -275,7 +570,7 @@ export default function Dashboard() {
                   <label className="block font-bold uppercase mb-1">City</label>
                   <input
                     type="text"
-                    value={userProfile.city}
+                    value={userProfile?.city || ''}
                     onChange={(e) => setUserProfile({ ...userProfile, city: e.target.value })}
                     className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] p-3"
                     placeholder="e.g. Bengaluru"
@@ -287,7 +582,7 @@ export default function Dashboard() {
                 <label className="block font-bold uppercase mb-1">Street Address</label>
                 <input
                   type="text"
-                  value={userProfile.address}
+                  value={userProfile?.address || ''}
                   onChange={(e) => setUserProfile({ ...userProfile, address: e.target.value })}
                   className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] p-3"
                   placeholder="e.g. 123 Atelier Studio Street"
@@ -295,14 +590,34 @@ export default function Dashboard() {
               </div>
 
               <div>
-                <label className="block font-bold uppercase mb-1">PIN Code</label>
+                <label className="block font-bold uppercase mb-1">PIN Code (6 digits)</label>
                 <input
                   type="text"
-                  value={userProfile.pincode}
-                  onChange={(e) => setUserProfile({ ...userProfile, pincode: e.target.value })}
-                  className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] p-3 font-mono"
-                  placeholder="e.g. 560001"
+                  inputMode="numeric"
+                  pattern="\d*"
+                  maxLength={6}
+                  value={userProfile?.pincode || ''}
+                  onChange={handleDashboardPincodeChange}
+                  className={`w-full border p-3 font-mono text-xs focus:outline-none ${
+                    dashPincodeStatus.message && !dashPincodeStatus.success && !dashPincodeStatus.loading
+                      ? 'border-amber-600 focus:border-amber-600 bg-amber-50/20'
+                      : dashPincodeStatus.success
+                      ? 'border-emerald-600 focus:border-emerald-600 bg-emerald-50/20'
+                      : 'border-[var(--color-line)] bg-[var(--color-bg)] focus:border-[var(--color-primary)]'
+                  }`}
+                  placeholder="e.g. 562159"
                 />
+                {dashPincodeStatus.message && (
+                  <p className={`text-[0.68rem] mt-1 font-semibold ${
+                    dashPincodeStatus.loading
+                      ? 'text-blue-600 animate-pulse'
+                      : dashPincodeStatus.success
+                      ? 'text-emerald-700 font-mono'
+                      : 'text-amber-700'
+                  }`}>
+                    {dashPincodeStatus.message}
+                  </p>
+                )}
               </div>
 
               <button
@@ -348,7 +663,7 @@ export default function Dashboard() {
                       <div className="flex flex-wrap justify-between items-start border-b border-[var(--color-line)] pb-3 gap-2">
                         <div>
                           <p className="font-mono font-bold text-sm text-[var(--color-primary)]">{o.orderNumber || o._id}</p>
-                          <p className="text-[0.68rem] text-[var(--color-ink-soft)]">Placed on: {new Date(o.createdAt).toLocaleDateString('en-IN')}</p>
+                          <p className="text-[0.68rem] text-[var(--color-ink-soft)]">Placed on: {o.createdAt && !isNaN(new Date(o.createdAt)) ? new Date(o.createdAt).toLocaleDateString('en-IN') : 'Recently Placed'}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <span
@@ -379,7 +694,7 @@ export default function Dashboard() {
 
                       {/* Timeline Preview */}
                       <div className="bg-[var(--color-bg)] p-3 border border-[var(--color-line)]">
-                        <OrderTimeline status={o.status} history={o.statusHistory} />
+                        <OrderTimeline status={o.status} history={o.statusHistory} notes={o.notes} refundId={o.razorpayRefundId} cancellationFee={o.cancellationFee} refundAmount={o.refundAmount} />
                       </div>
 
                       {/* Items Preview */}
@@ -419,6 +734,76 @@ export default function Dashboard() {
                           >
                             <Download size={12} /> Invoice PDF
                           </button>
+
+                          {['Pending Payment', 'Paid', 'Confirmed', 'Pending'].includes(o.status) && (
+                            <button
+                              onClick={() => {
+                                const orderTotal = o.grandTotal ?? o.total ?? 0
+                                const processingFee = Math.round(orderTotal * 0.03)
+                                const netRefund = Math.max(0, orderTotal - processingFee)
+
+                                showConfirm({
+                                  title: 'Cancel Order Confirmation',
+                                  type: 'warning',
+                                  message: `Are you sure you want to cancel order "${o.orderNumber || o._id}"? Automatic refund will be processed back to your payment method via Razorpay.`,
+                                  details: [
+                                    { label: 'Order Number', value: o.orderNumber || o._id },
+                                    { label: 'Original Order Total', value: formatPrice(orderTotal) },
+                                    { label: 'Gateway Processing Fee (3%)', value: `- ${formatPrice(processingFee)}`, color: 'text-rose-700 font-bold' },
+                                    { label: 'Net Refund to Customer (97%)', value: formatPrice(netRefund), color: 'text-emerald-800 font-bold text-sm', isTotal: true },
+                                  ],
+                                  disclaimer: 'Customer self-cancellation incurs a 3% payment gateway processing fee. The net 97% refund is automatically credited back to your original payment method via Razorpay within 5–7 banking days. (Note: 100% full refund applies only if cancelled by Studio Admin).',
+                                  confirmText: `Confirm Cancellation (${formatPrice(netRefund)} Refund)`,
+                                  cancelText: 'Keep Order',
+                                  onConfirm: async () => {
+                                    try {
+                                      const res = await fetch(`${API_URL}/orders/${o._id}/cancel`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ reason: 'Cancelled by customer via dashboard' }),
+                                      })
+                                      const data = await res.json()
+                                      if (res.ok) {
+                                        showAlert({
+                                          title: 'Order Cancelled & Refund Initiated',
+                                          type: 'success',
+                                          message: `✨ Order ${o.orderNumber || o._id} has been cancelled. Net refund of ${formatPrice(netRefund)} (97%) has been initiated to your original payment method via Razorpay.`,
+                                        })
+                                        fetchUserOrdersAndRequests(userProfile.email)
+                                      } else {
+                                        showAlert({
+                                          title: 'Cancellation Failed',
+                                          type: 'error',
+                                          message: data.message || 'Failed to cancel order.',
+                                        })
+                                      }
+                                    } catch {
+                                      showAlert({
+                                        title: 'Connection Error',
+                                        type: 'error',
+                                        message: 'Network error attempting order cancellation.',
+                                      })
+                                    }
+                                  },
+                                })
+                              }}
+                              className="bg-rose-700 hover:bg-rose-800 text-white font-bold text-[0.65rem] uppercase tracking-wider px-3 py-2 transition-colors flex items-center gap-1 rounded"
+                            >
+                              <XCircle size={12} /> Cancel Order
+                            </button>
+                          )}
+
+                          {['Handcrafting', 'Processing', 'Packed', 'Packed & Dispatched', 'Shipped', 'Out For Delivery'].includes(o.status) && (
+                            <span className="text-[0.62rem] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-300 px-2.5 py-1.5 rounded flex items-center gap-1">
+                              🎨 Handcrafting/Dispatch Started — Cannot Cancel Online
+                            </span>
+                          )}
+
+                          {o.razorpayRefundId && (
+                            <span className="text-[0.62rem] font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-300 px-2.5 py-1.5 rounded flex items-center gap-1">
+                              ✨ Refund Ref: {o.razorpayRefundId}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -460,7 +845,7 @@ export default function Dashboard() {
                       <div className="flex flex-wrap justify-between items-start border-b border-[var(--color-line)] pb-3 gap-2">
                         <div>
                           <h4 className="font-bold text-sm font-[var(--font-display)]">{req.stylePreference || 'Custom Botanical Artwork'}</h4>
-                          <p className="text-[0.68rem] text-[var(--color-ink-soft)]">Submitted: {new Date(req.createdAt).toLocaleDateString('en-IN')}</p>
+                          <p className="text-[0.68rem] text-[var(--color-ink-soft)]">Submitted: {req.createdAt && !isNaN(new Date(req.createdAt)) ? new Date(req.createdAt).toLocaleDateString('en-IN') : 'Recently Submitted'}</p>
                         </div>
                         <span
                           className={`font-mono font-bold uppercase px-2.5 py-1 text-[0.62rem] rounded tracking-wider shadow-sm border ${
@@ -489,37 +874,12 @@ export default function Dashboard() {
 
                           {/* Accept / Decline Action Bar if status is Quoted */}
                           {req.status === 'Quoted' && (
-                            <div className="pt-2 flex flex-wrap gap-2">
+                            <div className="pt-2 flex flex-wrap gap-2 items-center">
                               <button
-                                onClick={async () => {
-                                  try {
-                                    const res = await fetch(`${API_URL}/custom-requests/${req._id}/accept`, {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({
-                                        shippingAddress: {
-                                          name: req.name,
-                                          email: req.email,
-                                          phone: req.phone || '',
-                                          address: req.address || 'Custom Address',
-                                          city: req.city || 'Bengaluru',
-                                          pincode: req.pincode || '560001',
-                                        },
-                                      }),
-                                    })
-                                    if (res.ok) {
-                                      fetchUserOrdersAndRequests(userProfile.email)
-                                      setTab('My Orders')
-                                    } else {
-                                      alert('Failed to accept quote. Please try again.')
-                                    }
-                                  } catch (e) {
-                                    console.error('Error accepting quote:', e)
-                                  }
-                                }}
-                                className="btn-primary py-2 px-4 text-[0.65rem] font-bold uppercase tracking-wider"
+                                onClick={() => handleAcceptQuoteAndPay(req)}
+                                className="btn-primary py-2.5 px-5 text-[0.68rem] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm"
                               >
-                                Accept Quote & Place Order
+                                💳 Accept Quote & Pay Now ({formatPrice((req.quotedPrice || 0) + ((req.quotedPrice || 0) > 8000 ? 0 : 250))})
                               </button>
 
                               <button

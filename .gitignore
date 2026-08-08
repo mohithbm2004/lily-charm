@@ -30,3 +30,5 @@ pnpm-debug.log*
 .idea
 .vscode/*
 !.vscode/extensions.json
+scratch/
+**/scratch/

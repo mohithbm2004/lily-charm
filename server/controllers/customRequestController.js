@@ -98,7 +98,7 @@ export async function quotePrice(req, res, next) {
   }
 }
 
-// POST /api/custom-requests/:id/accept — Customer accepts price quote & converts to Order in MongoDB
+// POST /api/custom-requests/:id/accept — Customer accepts price quote & pays online via Razorpay to create Order
 export async function acceptQuoteAndCreateOrder(req, res, next) {
   try {
     const customRequest = await CustomRequest.findById(req.params.id)
@@ -108,7 +108,7 @@ export async function acceptQuoteAndCreateOrder(req, res, next) {
       return res.status(400).json({ message: 'This custom request has not been quoted by admin yet.' })
     }
 
-    const { shippingAddress } = req.body
+    const { shippingAddress, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body
 
     const itemTitle = `Custom Artwork: ${customRequest.stylePreference || 'Bespoke Floral Frame'}`
     const price = customRequest.quotedPrice
@@ -117,12 +117,14 @@ export async function acceptQuoteAndCreateOrder(req, res, next) {
 
     const newOrder = await Order.create({
       orderNumber: `LC-CQ-${Date.now().toString().slice(-6)}`,
+      user: customRequest.user || req.user?._id,
       items: [
         {
           title: itemTitle,
           price: price,
           qty: 1,
           image: customRequest.image || customRequest.images?.[0] || '',
+          specimen: customRequest.specimen || 'CUSTOM-DESIGN',
         },
       ],
       shippingAddress: shippingAddress || {
@@ -137,18 +139,22 @@ export async function acceptQuoteAndCreateOrder(req, res, next) {
       shippingCharge: shipping,
       grandTotal: total,
       total: total,
-      paymentMethod: 'Custom Quote Approved (Razorpay Prepaid)',
+      paymentMethod: 'Razorpay Prepaid (Custom Quote)',
       paymentStatus: 'Paid',
       status: 'Confirmed',
-      statusHistory: [{ status: 'Confirmed', note: 'Custom design price quote accepted by customer.' }],
+      razorpayOrderId: razorpayOrderId || '',
+      razorpayPaymentId: razorpayPaymentId || '',
+      razorpaySignature: razorpaySignature || '',
+      statusHistory: [{ status: 'Confirmed', note: 'Custom price quote accepted and paid online via Razorpay.' }],
     })
 
-    customRequest.status = 'Accepted & Order Created'
+    customRequest.status = 'Paid & Order Placed'
     customRequest.convertedOrderId = newOrder._id.toString()
     await customRequest.save()
 
     res.json({
-      message: 'Quote accepted! Custom design converted into official order.',
+      success: true,
+      message: 'Quote accepted and payment received! Custom design converted into official order.',
       order: newOrder,
       customRequest,
     })

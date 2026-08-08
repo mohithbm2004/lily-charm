@@ -4,20 +4,27 @@ import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { formatPrice } from '../lib/format'
 import Reveal from '../components/Reveal'
-import { CheckCircle2, ShoppingBag } from 'lucide-react'
+import { CheckCircle2, ShoppingBag, AlertTriangle } from 'lucide-react'
+
+import { useStudio } from '../context/StudioContext'
 
 const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
 
 export default function Checkout() {
   const { items, subtotal, coupon: activeCoupon, discountAmount, applyCoupon, removeCoupon, clearCart } = useCart()
   const { user, token } = useAuth()
+  const { shippingSettings } = useStudio()
   const navigate = useNavigate()
   const [processing, setProcessing] = useState(false)
   const [orderConfirmed, setOrderConfirmed] = useState(null)
   const [couponInput, setCouponInput] = useState('')
   const [couponMsg, setCouponMsg] = useState(null)
 
-  const shipping = 0 // Free Shipping for testing
+  const isShippingEnabled = shippingSettings?.shippingFeeEnabled ?? true
+  const standardShippingFee = shippingSettings?.standardShippingFee ?? 100
+  const freeThreshold = shippingSettings?.freeShippingThreshold ?? 2500
+
+  const shipping = isShippingEnabled ? (subtotal >= freeThreshold ? 0 : standardShippingFee) : 0
   const total = Math.max(0, subtotal - discountAmount + shipping)
 
   const handleApplyCoupon = (e) => {
@@ -51,7 +58,55 @@ export default function Checkout() {
     }
   }, [user])
 
+  const [pincodeStatus, setPincodeStatus] = useState({ loading: false, success: false, message: '' })
+
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
+
+  const handlePincodeChange = async (e) => {
+    const rawVal = e.target.value
+    const digitsOnly = rawVal.replace(/\D/g, '').slice(0, 6)
+    setForm((prev) => ({ ...prev, pincode: digitsOnly }))
+
+    if (digitsOnly.length < 6) {
+      setPincodeStatus({
+        loading: false,
+        success: false,
+        message: digitsOnly.length > 0 ? `PIN code must be 6 digits (${digitsOnly.length}/6)` : '',
+      })
+      return
+    }
+
+    // Auto-fetch location when exactly 6 digits are entered
+    setPincodeStatus({ loading: true, success: false, message: '🔍 Fetching city & location...' })
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${digitsOnly}`)
+      const data = await res.json()
+      if (data && data[0] && data[0].Status === 'Success' && data[0].PostOffice?.length > 0) {
+        const postOffice = data[0].PostOffice[0]
+        const city = postOffice.District || postOffice.Block || postOffice.Name || ''
+        const state = postOffice.State || ''
+        setForm((prev) => ({
+          ...prev,
+          city: city || prev.city,
+          state: state || prev.state,
+        }))
+        setPincodeStatus({
+          loading: false,
+          success: true,
+          message: `📍 ${city}${state ? `, ${state}` : ''}`,
+        })
+      } else {
+        setPincodeStatus({
+          loading: false,
+          success: false,
+          message: '⚠️ Invalid PIN code or postal data not found',
+        })
+      }
+    } catch (err) {
+      console.error('Pincode auto-fetch error:', err)
+      setPincodeStatus({ loading: false, success: false, message: '' })
+    }
+  }
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -67,6 +122,13 @@ export default function Checkout() {
   const handlePay = async (e) => {
     e.preventDefault()
     if (processing) return
+
+    // Strict 6-digit Pincode Validation
+    if (!/^\d{6}$/.test(form.pincode)) {
+      alert('Please enter a valid 6-digit numeric PIN code (e.g. 562159).')
+      return
+    }
+
     setProcessing(true)
 
     try {
@@ -283,9 +345,39 @@ export default function Checkout() {
           <div>
             <p className="eyebrow mb-4">Shipping Address</p>
             <div className="grid grid-cols-2 gap-4 text-xs">
-              <input name="address" required onChange={handleChange} placeholder="Street address *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] col-span-2" />
-              <input name="city" required onChange={handleChange} placeholder="City *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)]" />
-              <input name="pincode" required onChange={handleChange} placeholder="PIN code *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] font-mono" />
+              <input name="address" required value={form.address} onChange={handleChange} placeholder="Street address *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] col-span-2" />
+              <input name="city" required value={form.city} onChange={handleChange} placeholder="City / District *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] font-semibold" />
+              <div>
+                <input
+                  name="pincode"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="\d*"
+                  maxLength={6}
+                  required
+                  value={form.pincode}
+                  onChange={handlePincodeChange}
+                  placeholder="PIN code (6 digits) *"
+                  className={`w-full border bg-transparent px-4 py-3 text-xs focus:outline-none font-mono ${
+                    pincodeStatus.message && !pincodeStatus.success && !pincodeStatus.loading
+                      ? 'border-amber-600 focus:border-amber-600'
+                      : pincodeStatus.success
+                      ? 'border-emerald-600 focus:border-emerald-600'
+                      : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                  }`}
+                />
+                {pincodeStatus.message && (
+                  <p className={`text-[0.68rem] mt-1 font-semibold ${
+                    pincodeStatus.loading
+                      ? 'text-blue-600 animate-pulse'
+                      : pincodeStatus.success
+                      ? 'text-emerald-700 font-mono'
+                      : 'text-amber-700'
+                  }`}>
+                    {pincodeStatus.message}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
           <div>
@@ -295,6 +387,21 @@ export default function Checkout() {
               <span className="specimen-tag bg-emerald-800 text-white font-mono">100% SECURE</span>
             </div>
           </div>
+
+          {/* Cancellation Policy Disclaimer */}
+          <div className="p-4 bg-amber-50/90 border border-amber-300 text-[0.72rem] text-amber-900 leading-relaxed rounded space-y-1.5 shadow-sm">
+            <div className="font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-950 text-xs">
+              <AlertTriangle size={15} className="text-amber-700 shrink-0" />
+              Studio Cancellation & Refund Policy
+            </div>
+            <p className="text-[0.7rem]">
+              • <strong>Online Self-Cancellation:</strong> You can cancel your order before handcrafting begins. Customer self-cancellation incurs a <strong>3% payment processing fee</strong> (97% net amount is refunded to your original payment method).
+            </p>
+            <p className="text-[0.7rem]">
+              • <strong>Studio Admin Cancellation:</strong> If cancelled by Studio Admin, a <strong>100% full refund</strong> is issued immediately with 0% deduction.
+            </p>
+          </div>
+
           <button type="submit" disabled={processing} className="btn-primary w-full py-3.5 text-xs uppercase tracking-widest font-bold disabled:opacity-60">
             {processing ? 'Processing Payment & Saving Order...' : `Pay ${formatPrice(total)} Now`}
           </button>
@@ -367,7 +474,23 @@ export default function Checkout() {
                 <span>-{formatPrice(discountAmount)}</span>
               </div>
             )}
-            <div className="flex justify-between"><span>Shipping</span><span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span></div>
+            <div className="flex justify-between items-center">
+              <span>Shipping Charge</span>
+              <span className="font-bold">
+                {shipping === 0 ? (
+                  <span className="text-emerald-700 font-mono">
+                    FREE {isShippingEnabled && subtotal >= freeThreshold ? `(Orders > ₹${freeThreshold})` : ''}
+                  </span>
+                ) : (
+                  formatPrice(shipping)
+                )}
+              </span>
+            </div>
+            {isShippingEnabled && shipping > 0 && subtotal < freeThreshold && (
+              <p className="text-[0.68rem] text-emerald-800 bg-emerald-50 border border-emerald-200 p-2 rounded font-semibold text-center">
+                ✨ Add {formatPrice(freeThreshold - subtotal)} more for <strong>FREE Shipping!</strong>
+              </p>
+            )}
             <div className="flex justify-between font-[var(--font-display)] text-lg font-bold pt-3 border-t border-[var(--color-line)] text-[var(--color-ink)]">
               <span>Total Amount</span><span className="text-[var(--color-primary)]">{formatPrice(total)}</span>
             </div>
