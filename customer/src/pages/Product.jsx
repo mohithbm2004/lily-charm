@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Heart, Minus, Plus } from 'lucide-react'
+import { Heart, Minus, Plus, Star, Edit3, CheckCircle2 } from 'lucide-react'
 import { useStudio } from '../context/StudioContext'
 import { formatPrice } from '../lib/format'
 import { useCart } from '../context/CartContext'
 import ProductCard from '../components/ProductCard'
 import Reveal from '../components/Reveal'
+import ReviewModal from '../components/ReviewModal'
+
+const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
 
 export default function Product() {
   const { products } = useStudio()
@@ -13,7 +16,30 @@ export default function Product() {
   const product = products.find((p) => p.id === id) || products[0]
   const [qty, setQty] = useState(1)
   const [tab, setTab] = useState('description')
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [productReviews, setProductReviews] = useState([])
   const { addItem, openCart } = useCart()
+
+  const fetchProductReviews = async () => {
+    try {
+      const res = await fetch(`${API_URL}/reviews`)
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          const matched = data.filter(
+            (r) =>
+              (r.product && r.product === (product._id || product.id)) ||
+              (r.productTitle && r.productTitle.toLowerCase().includes(product.title.toLowerCase()))
+          )
+          setProductReviews(matched.length > 0 ? matched : data.slice(0, 3))
+        }
+      }
+    } catch {}
+  }
+
+  useEffect(() => {
+    fetchProductReviews()
+  }, [product?.id, product?._id, product?.title])
 
   const related = products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4)
 
@@ -118,7 +144,56 @@ export default function Product() {
                   <li>Care: keep out of direct sunlight, avoid humidity</li>
                 </ul>
               )}
-              {tab === 'reviews' && <p>"Colours held perfectly, even a year on." — verified buyer</p>}
+              {tab === 'reviews' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3">
+                    <p className="font-bold text-xs uppercase tracking-wider text-[var(--color-ink)]">
+                      Customer Reviews & Feedback ({productReviews.length})
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowReviewModal(true)}
+                      className="btn-primary py-1.5 px-3 text-[0.65rem] flex items-center gap-1.5"
+                    >
+                      <Edit3 size={12} /> Write a Review
+                    </button>
+                  </div>
+
+                  {productReviews.length === 0 ? (
+                    <div className="text-center py-6 space-y-2">
+                      <p className="text-xs text-[var(--color-ink-soft)] italic">
+                        No customer reviews yet for this piece. Be the first to share your thoughts!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {productReviews.map((r, i) => (
+                        <div key={r._id || r.id || i} className="p-3.5 bg-[var(--color-card-bg)] border border-[var(--color-line)] space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-xs text-[var(--color-ink)]">{r.name}</span>
+                              {r.isVerifiedBuyer !== false && (
+                                <span className="inline-flex items-center gap-0.5 text-[0.6rem] text-emerald-800 font-bold bg-emerald-100 px-1.5 py-0.5 rounded">
+                                  <CheckCircle2 size={10} /> Verified
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex gap-0.5 text-amber-500">
+                              {Array.from({ length: r.rating || 5 }).map((_, si) => (
+                                <Star key={si} size={13} fill="currentColor" strokeWidth={0} />
+                              ))}
+                            </div>
+                          </div>
+                          {r.title && <p className="font-bold text-xs text-[var(--color-ink)]">"{r.title}"</p>}
+                          <p className="text-xs text-[var(--color-ink-soft)] leading-relaxed italic">
+                            "{r.comment || r.quote}"
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </Reveal>
@@ -135,6 +210,16 @@ export default function Product() {
           </div>
         </div>
       )}
+
+      {/* Write Review Modal */}
+      <ReviewModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        defaultProductTitle={product.title}
+        onSuccess={() => {
+          fetchProductReviews()
+        }}
+      />
     </div>
   )
 }

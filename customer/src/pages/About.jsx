@@ -29,8 +29,8 @@ export default function About() {
               <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-3.5 shadow-2xl">
                 <div className="relative overflow-hidden aspect-[4/5] arch-frame border border-[var(--color-line)] bg-[var(--color-bg)]">
                   <img
-                    src="/images/products/flower-6-1.jpg"
-                    alt="Lily Charm handcrafted floral creation with gold trim and ribbon"
+                    src="/images/products/flower-crimson-velvet-bouquet.png"
+                    alt="Lily Charm handcrafted crimson red velvet flower bouquet"
                     className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
                   />
                 </div>
@@ -79,10 +79,23 @@ export default function About() {
             <p className="text-sm md:text-base leading-relaxed text-[var(--color-ink)]">
               Today, every everlasting flower, bouquet, and handcrafted gift is thoughtfully designed to celebrate life's most precious moments. Each piece is made with meticulous attention to detail, ensuring it becomes more than a gift—it becomes a cherished keepsake that lasts for years.
             </p>
-            <div className="pt-2 border-t border-[var(--color-line)]">
-              <p className="text-base md:text-lg font-serif font-bold text-[var(--color-primary)] leading-snug">
+            <div className="pt-4 border-t border-[var(--color-line)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <p className="text-base md:text-lg font-serif font-bold text-[var(--color-primary)] leading-snug flex-1">
                 At Lily Charm, we don't simply create flowers; we create timeless memories, handcrafted with love, inspired by creativity, and made to be treasured forever.
               </p>
+              <div className="flex items-center gap-3 bg-[var(--color-card-bg)] border border-[var(--color-line)] p-2.5 shadow-sm shrink-0">
+                <div className="w-12 h-12 rounded-full border border-[var(--color-primary)]/40 p-0.5 overflow-hidden bg-white shrink-0">
+                  <img
+                    src="/images/logo.png"
+                    alt="Lily Charm Official Brand Seal"
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs font-bold font-[var(--font-display)] uppercase text-[var(--color-ink)]">Keerthana Bapu</p>
+                  <p className="text-[0.62rem] font-serif uppercase tracking-widest text-[var(--color-primary)] font-semibold">Founder & Lead Artisan</p>
+                </div>
+              </div>
             </div>
           </div>
         </Reveal>

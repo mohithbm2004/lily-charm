@@ -551,6 +551,52 @@ export function StudioProvider({ children }) {
     }
   }
 
+  const [reviews, setReviews] = useState([])
+
+  const refreshReviewsFromApi = async () => {
+    try {
+      const res = await fetch(`${API_URL}/reviews?admin=true`)
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          setReviews(data)
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch reviews:', e)
+    }
+  }
+
+  useEffect(() => {
+    refreshReviewsFromApi()
+  }, [])
+
+  const toggleReviewDisplay = async (id, isDisplayed) => {
+    setReviews((prev) =>
+      prev.map((r) => (r._id === id ? { ...r, isDisplayed } : r))
+    )
+    try {
+      await fetch(`${API_URL}/reviews/${id}/display`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isDisplayed }),
+      })
+      refreshReviewsFromApi()
+    } catch (e) {
+      console.error('Failed to toggle review display:', e)
+    }
+  }
+
+  const deleteReview = async (id) => {
+    setReviews((prev) => prev.filter((r) => r._id !== id))
+    try {
+      await fetch(`${API_URL}/reviews/${id}`, { method: 'DELETE' })
+      refreshReviewsFromApi()
+    } catch (e) {
+      console.error('Failed to delete review:', e)
+    }
+  }
+
   return (
     <StudioContext.Provider
       value={{
@@ -559,6 +605,7 @@ export function StudioProvider({ children }) {
         orders,
         customRequests,
         users,
+        reviews,
         marqueeText,
         activeOffer,
         shippingSettings,
@@ -576,6 +623,9 @@ export function StudioProvider({ children }) {
         quoteCustomPrice,
         updateCustomRequestStatus,
         deleteCustomRequest,
+        toggleReviewDisplay,
+        deleteReview,
+        refreshReviewsFromApi,
         updateMarquee,
         updateOffer,
         updateShippingSettings,

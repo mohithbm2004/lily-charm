@@ -177,3 +177,29 @@ export function exportCustomRequestsToCSV(customRequests = []) {
 
   downloadCSV('LilyCharm_Custom_Design_Requests', rows)
 }
+
+/**
+ * Export All Customer Reviews & Feedback to CSV
+ */
+export function exportReviewsToCSV(reviews = []) {
+  if (!reviews || reviews.length === 0) {
+    alert('No reviews available to export.')
+    return
+  }
+
+  const rows = reviews.map((r) => ({
+    'Review ID': r._id || '',
+    'Submitted Timestamp': formatDateTime(r.createdAt),
+    'Customer Name': r.name || '',
+    'Customer Email': r.email || '',
+    'Rating (Stars)': r.rating || 5,
+    'Review Title': r.title || '',
+    'Feedback Comment': r.comment || '',
+    'Creation Title': r.productTitle || '',
+    'Display on Storefront': r.isDisplayed ? 'YES (Live)' : 'NO (Hidden)',
+    'Verified Buyer': r.isVerifiedBuyer ? 'Verified' : 'Unverified',
+  }))
+
+  downloadCSV('LilyCharm_Customer_Reviews', rows)
+}
+

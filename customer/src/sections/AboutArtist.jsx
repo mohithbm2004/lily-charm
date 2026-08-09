@@ -38,8 +38,8 @@ export default function AboutArtist() {
               <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-3 shadow-xl">
                 <div className="relative overflow-hidden aspect-[4/5] arch-frame border border-[var(--color-line)] bg-[var(--color-bg)]">
                   <img
-                    src="/images/products/flower-6-1.jpg"
-                    alt="Lily Charm floral creation with gold trim and ribbon"
+                    src="/images/products/flower-crimson-velvet-bouquet.png"
+                    alt="Lily Charm handcrafted crimson red velvet flower bouquet"
                     className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
                   />
                 </div>

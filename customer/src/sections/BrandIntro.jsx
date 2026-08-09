@@ -16,8 +16,8 @@ export default function BrandIntro() {
                 <div className="border border-[var(--color-line)] bg-[var(--color-bg)] p-3 shadow-2xl">
                   <div className="relative overflow-hidden aspect-[4/4.8] border border-[var(--color-line)] bg-[var(--color-card-bg)]">
                     <img
-                      src="/images/products/flower-2-1.jpg"
-                      alt="Lily Charm Handcrafted Velvet Floral Bouquet"
+                      src="/images/products/flower-crimson-velvet-bouquet.png"
+                      alt="Lily Charm Handcrafted Crimson Red Velvet Floral Bouquet"
                       className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
                     />
                     <div className="absolute top-3 left-3 bg-[var(--color-bg)]/90 backdrop-blur-sm border border-[var(--color-line)] px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-[var(--color-primary)]">
@@ -32,9 +32,23 @@ export default function BrandIntro() {
           {/* Right Column: Welcome Message & Story */}
           <div className="md:col-span-7 space-y-6">
             <Reveal delay={0.1}>
-              <span className="eyebrow flex items-center gap-1.5 text-[var(--color-primary)] font-bold text-xs uppercase tracking-[0.24em]">
-                <Sparkles size={14} /> Welcome to Lily Charm
-              </span>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-12 h-12 rounded-full border-2 border-[var(--color-primary)]/40 p-0.5 shadow-md overflow-hidden bg-white shrink-0">
+                  <img
+                    src="/images/logo.png"
+                    alt="Lily Charm Official Logo Seal"
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                </div>
+                <div>
+                  <span className="eyebrow flex items-center gap-1.5 text-[var(--color-primary)] font-bold text-xs uppercase tracking-[0.24em] leading-tight">
+                    <Sparkles size={13} /> Official Studio Seal
+                  </span>
+                  <span className="text-[0.62rem] tracking-[0.18em] uppercase font-serif text-[var(--color-ink-soft)] font-semibold block mt-0.5">
+                    Floral Creations by Keerthana Bapu
+                  </span>
+                </div>
+              </div>
               <h2 className="text-3xl md:text-4xl font-bold font-[var(--font-display)] uppercase tracking-tight text-[var(--color-ink)] leading-tight pt-1">
                 Where Creativity Blossoms Into Timeless Gifts
               </h2>

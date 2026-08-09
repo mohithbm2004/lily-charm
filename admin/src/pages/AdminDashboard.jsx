@@ -18,13 +18,16 @@ import {
   Users,
   User,
   Eye,
+  EyeOff,
+  Star,
+  MessageSquare,
   Download,
   CheckCircle2,
   XCircle,
 } from 'lucide-react'
 import { useStudio } from '../context/StudioContext'
 import { formatPrice, formatDateTime, formatDateOnly } from '../lib/format'
-import { exportOrdersToCSV, exportUsersToCSV, exportCustomRequestsToCSV } from '../lib/exportCSV'
+import { exportOrdersToCSV, exportUsersToCSV, exportCustomRequestsToCSV, exportReviewsToCSV } from '../lib/exportCSV'
 import ImageFocusPicker from '../components/ImageFocusPicker'
 
 const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
@@ -36,6 +39,7 @@ export default function AdminDashboard() {
     orders,
     customRequests = [],
     users = [],
+    reviews = [],
     marqueeText,
     activeOffer,
     addProduct,
@@ -51,6 +55,9 @@ export default function AdminDashboard() {
     quoteCustomPrice,
     updateCustomRequestStatus,
     deleteCustomRequest,
+    toggleReviewDisplay,
+    deleteReview,
+    refreshReviewsFromApi,
     updateMarquee,
     updateOffer,
     shippingSettings,
@@ -767,6 +774,25 @@ export default function AdminDashboard() {
     alert('Offer banner updated successfully!')
   }
 
+  const [reviewFilter, setReviewFilter] = useState('all') // 'all', 'displayed', 'hidden'
+  const [reviewSearchQuery, setReviewSearchQuery] = useState('')
+
+  const filteredReviews = useMemo(() => {
+    return reviews.filter((r) => {
+      if (reviewFilter === 'displayed' && !r.isDisplayed) return false
+      if (reviewFilter === 'hidden' && r.isDisplayed) return false
+      if (reviewSearchQuery.trim()) {
+        const q = reviewSearchQuery.toLowerCase()
+        const matchName = r.name?.toLowerCase().includes(q)
+        const matchComment = r.comment?.toLowerCase().includes(q)
+        const matchTitle = r.title?.toLowerCase().includes(q)
+        const matchProduct = r.productTitle?.toLowerCase().includes(q)
+        if (!matchName && !matchComment && !matchTitle && !matchProduct) return false
+      }
+      return true
+    })
+  }, [reviews, reviewFilter, reviewSearchQuery])
+
   const filteredProducts = products.filter(
     (p) =>
       p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -781,14 +807,23 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-[var(--color-bg)] flex items-center justify-center p-6">
         <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-8 max-w-md w-full shadow-lg space-y-6">
-          <div className="text-center space-y-2">
-            <div className="w-12 h-12 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center mx-auto">
-              <Lock size={24} />
+          <div className="text-center space-y-3">
+            <div className="w-20 h-20 rounded-full border-2 border-[var(--color-primary)]/40 p-1 shadow-md overflow-hidden bg-white mx-auto">
+              <img
+                src="/images/logo.png"
+                alt="Lily Charm Official Brand Logo"
+                className="w-full h-full object-cover rounded-full"
+              />
             </div>
-            <h1 className="text-2xl font-bold font-[var(--font-display)] uppercase tracking-wider text-[var(--color-ink)]">
-              Lily Charm Admin Portal
-            </h1>
-            <p className="text-xs text-[var(--color-ink-soft)]">
+            <div>
+              <h1 className="text-2xl font-bold font-[var(--font-display)] uppercase tracking-wider text-[var(--color-ink)]">
+                Lily Charm Admin Portal
+              </h1>
+              <p className="text-[0.68rem] tracking-[0.2em] uppercase font-serif text-[var(--color-primary)] font-semibold mt-0.5">
+                Floral Creations by Keerthana Bapu
+              </p>
+            </div>
+            <p className="text-xs text-[var(--color-ink-soft)] max-w-xs mx-auto">
               Enter security PIN to manage flower catalog, collections, offers, and delivery tracking.
             </p>
           </div>
@@ -842,10 +877,21 @@ export default function AdminDashboard() {
       <header className="bg-[var(--color-primary)] text-white border-b border-[var(--color-line)] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 md:px-10 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-[var(--font-display)] font-bold text-lg md:text-xl tracking-[0.16em] uppercase">
-              Lily Charm Admin Portal
-            </span>
+            <div className="w-9 h-9 rounded-full border border-white/40 p-0.5 shadow-sm overflow-hidden bg-white shrink-0">
+              <img
+                src="/images/logo.png"
+                alt="Lily Charm Logo"
+                className="w-full h-full object-cover rounded-full"
+              />
+            </div>
+            <div>
+              <span className="font-[var(--font-display)] font-bold text-base md:text-lg tracking-[0.16em] uppercase block leading-tight text-white">
+                Lily Charm Admin
+              </span>
+              <span className="text-[0.52rem] md:text-[0.55rem] tracking-[0.2em] uppercase font-serif text-white/80 block">
+                Floral Creations by Keerthana Bapu
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
@@ -980,6 +1026,17 @@ export default function AdminDashboard() {
             }`}
           >
             <Users size={15} /> 6. Registered Users ({users.length})
+          </button>
+
+          <button
+            onClick={() => setActiveTab('reviews')}
+            className={`px-5 py-3.5 text-xs font-semibold tracking-[0.16em] uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors ${
+              activeTab === 'reviews'
+                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)]'
+                : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
+            }`}
+          >
+            <Star size={15} className="text-amber-500 fill-amber-400" /> 7. Reviews & Feedback ({reviews.length})
           </button>
         </div>
 
@@ -2125,6 +2182,234 @@ export default function AdminDashboard() {
                     </div>
                   )
                 })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 7: CUSTOMER REVIEWS & FEEDBACK MODERATION */}
+        {activeTab === 'reviews' && (
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--color-line)] pb-4">
+              <div>
+                <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
+                  <Star className="text-amber-500 fill-amber-400" size={20} /> Customer Reviews & Feedback Moderation
+                </h2>
+                <p className="text-xs text-[var(--color-ink-soft)] mt-0.5">
+                  Approve, moderate, or hide customer reviews and stories before they appear publicly on the storefront.
+                </p>
+              </div>
+
+              {/* Filters & Search */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-3 text-[var(--color-ink-soft)]" />
+                  <input
+                    type="text"
+                    placeholder="Search reviews by customer or creation..."
+                    value={reviewSearchQuery}
+                    onChange={(e) => setReviewSearchQuery(e.target.value)}
+                    className="pl-8 pr-4 py-2 border border-[var(--color-line)] bg-[var(--color-card-bg)] text-xs font-semibold focus:outline-none focus:border-[var(--color-primary)] w-64"
+                  />
+                  {reviewSearchQuery && (
+                    <button
+                      onClick={() => setReviewSearchQuery('')}
+                      className="absolute right-2.5 top-2.5 text-[0.65rem] font-bold text-[var(--color-ink-soft)] hover:text-black uppercase"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-[var(--color-card-bg)] p-1 border border-[var(--color-line)]">
+                  <button
+                    type="button"
+                    onClick={() => setReviewFilter('all')}
+                    className={`px-3 py-1 text-xs font-bold uppercase tracking-wider transition-colors ${
+                      reviewFilter === 'all'
+                        ? 'bg-[var(--color-primary)] text-white'
+                        : 'text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
+                    }`}
+                  >
+                    All ({reviews.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReviewFilter('displayed')}
+                    className={`px-3 py-1 text-xs font-bold uppercase tracking-wider transition-colors ${
+                      reviewFilter === 'displayed'
+                        ? 'bg-emerald-700 text-white'
+                        : 'text-emerald-800 hover:bg-emerald-50'
+                    }`}
+                  >
+                    🟢 Displayed ({reviews.filter((r) => r.isDisplayed).length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReviewFilter('hidden')}
+                    className={`px-3 py-1 text-xs font-bold uppercase tracking-wider transition-colors ${
+                      reviewFilter === 'hidden'
+                        ? 'bg-stone-700 text-white'
+                        : 'text-stone-700 hover:bg-stone-100'
+                    }`}
+                  >
+                    ⚪ Hidden ({reviews.filter((r) => !r.isDisplayed).length})
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => exportReviewsToCSV(filteredReviews)}
+                  className="btn-outline px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-[var(--color-primary)] hover:text-white transition-colors"
+                >
+                  <Download size={13} /> Export Reviews CSV
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4">
+                <span className="eyebrow text-[0.65rem] block mb-1">Total Submissions</span>
+                <p className="text-xl font-bold font-[var(--font-display)]">{reviews.length} Reviews</p>
+              </div>
+              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4">
+                <span className="eyebrow text-[0.65rem] block mb-1">Average Star Rating</span>
+                <p className="text-xl font-bold font-[var(--font-display)] text-amber-600 flex items-center gap-1">
+                  ⭐ {reviews.length ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1) : '5.0'} / 5.0
+                </p>
+              </div>
+              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4">
+                <span className="eyebrow text-[0.65rem] block mb-1">Live on Storefront</span>
+                <p className="text-xl font-bold font-[var(--font-display)] text-emerald-800">
+                  {reviews.filter((r) => r.isDisplayed).length} Visible
+                </p>
+              </div>
+              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4">
+                <span className="eyebrow text-[0.65rem] block mb-1">Pending / Hidden</span>
+                <p className="text-xl font-bold font-[var(--font-display)] text-stone-600">
+                  {reviews.filter((r) => !r.isDisplayed).length} Hidden
+                </p>
+              </div>
+            </div>
+
+            {/* Reviews Cards List */}
+            {filteredReviews.length === 0 ? (
+              <div className="border border-dashed border-[var(--color-line)] bg-[var(--color-card-bg)] p-12 text-center space-y-2">
+                <Star size={32} className="mx-auto text-amber-500" />
+                <p className="font-bold uppercase text-sm">No Customer Reviews Found</p>
+                <p className="text-xs text-[var(--color-ink-soft)]">
+                  Customer feedback and ratings submitted via the storefront will appear here for your moderation.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredReviews.map((r) => (
+                  <div
+                    key={r._id}
+                    className={`border p-5 space-y-4 shadow-sm flex flex-col justify-between transition-all ${
+                      r.isDisplayed
+                        ? 'border-emerald-400 bg-white ring-1 ring-emerald-200'
+                        : 'border-[var(--color-line)] bg-[var(--color-card-bg)]/80 opacity-90'
+                    }`}
+                  >
+                    <div className="space-y-3">
+                      {/* Header: Customer info & Status */}
+                      <div className="flex items-start justify-between gap-2 border-b border-[var(--color-line)] pb-3">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <h3 className="font-bold text-base font-[var(--font-display)]">{r.name}</h3>
+                            {r.isVerifiedBuyer !== false && (
+                              <span className="text-[0.58rem] bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.2 rounded font-bold">
+                                Verified
+                              </span>
+                            )}
+                          </div>
+                          {r.email && <p className="text-xs text-[var(--color-primary)] font-semibold">{r.email}</p>}
+                          <p className="text-[0.65rem] text-[var(--color-ink-soft)] font-mono font-semibold pt-0.5">
+                            🕒 {formatDateTime(r.createdAt)}
+                          </p>
+                        </div>
+
+                        {/* Star Rating */}
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <div className="flex gap-0.5 text-amber-500">
+                            {Array.from({ length: r.rating || 5 }).map((_, si) => (
+                              <Star key={si} size={13} fill="currentColor" strokeWidth={0} />
+                            ))}
+                          </div>
+                          <span className="text-[0.62rem] font-bold font-mono text-amber-800">
+                            {r.rating}/5 Stars
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Product Tag */}
+                      {r.productTitle && (
+                        <div>
+                          <span className="text-[0.65rem] font-bold uppercase tracking-wider bg-[var(--color-bg)] border border-[var(--color-line)] px-2 py-0.5 text-[var(--color-ink)] inline-block">
+                            🌸 {r.productTitle}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Review Title & Comment */}
+                      <div className="space-y-1">
+                        {r.title && <p className="font-bold text-xs text-[var(--color-ink)]">"{r.title}"</p>}
+                        <div className="p-3 bg-[var(--color-bg)]/60 border border-[var(--color-line)] text-xs text-[var(--color-ink)] leading-relaxed italic">
+                          "{r.comment}"
+                        </div>
+                      </div>
+
+                      {/* Status Indicator */}
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className={`text-[0.65rem] font-bold uppercase tracking-wider px-2.5 py-1 rounded border flex items-center gap-1.5 ${
+                          r.isDisplayed
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                            : 'bg-stone-100 text-stone-700 border-stone-300'
+                        }`}>
+                          {r.isDisplayed ? '🟢 Live on Storefront' : '⚪ Hidden from Public'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Moderation Actions */}
+                    <div className="pt-3 border-t border-[var(--color-line)] flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleReviewDisplay(r._id, !r.isDisplayed)}
+                        className={`px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider border transition-colors flex items-center gap-1.5 ${
+                          r.isDisplayed
+                            ? 'border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100'
+                            : 'border-emerald-600 bg-emerald-700 text-white hover:bg-emerald-800 shadow-sm'
+                        }`}
+                      >
+                        {r.isDisplayed ? (
+                          <>
+                            <EyeOff size={13} /> Hide from Storefront
+                          </>
+                        ) : (
+                          <>
+                            <Eye size={13} /> Display on Storefront
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to permanently delete this review from ${r.name}?`)) {
+                            deleteReview(r._id)
+                          }
+                        }}
+                        className="px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider border border-rose-300 text-rose-700 hover:bg-rose-50 flex items-center gap-1 transition-colors"
+                        title="Delete review"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

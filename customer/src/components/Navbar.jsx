@@ -53,12 +53,26 @@ export default function Navbar() {
         <div className="border-b border-[var(--color-line)] bg-[var(--color-bg)]">
           <div className="max-w-7xl mx-auto px-6 md:px-10 h-16 md:h-20 flex items-center justify-between gap-6">
             
-            {/* Left Brand Title */}
+            {/* Left Brand Title & Official Logo Emblem */}
             <Link
               to="/"
-              className="font-[var(--font-display)] text-2xl md:text-3xl tracking-[0.2em] uppercase font-bold text-[var(--color-ink)] shrink-0 hover:opacity-85 transition-opacity py-2"
+              className="flex items-center gap-3 shrink-0 hover:opacity-90 transition-opacity py-1 group"
             >
-              Lily Charm
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full border border-[var(--color-primary)]/40 p-0.5 shadow-sm overflow-hidden bg-white shrink-0 group-hover:scale-105 transition-transform">
+                <img
+                  src="/images/logo.png"
+                  alt="Lily Charm Official Logo"
+                  className="w-full h-full object-cover rounded-full"
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-[var(--font-display)] text-xl md:text-2xl tracking-[0.18em] uppercase font-bold text-[var(--color-ink)] leading-none">
+                  Lily Charm
+                </span>
+                <span className="text-[0.55rem] md:text-[0.58rem] tracking-[0.22em] uppercase font-serif text-[var(--color-primary)] font-medium mt-0.5">
+                  Floral Creations
+                </span>
+              </div>
             </Link>
 
             {/* Right Nav Links & Actions */}
