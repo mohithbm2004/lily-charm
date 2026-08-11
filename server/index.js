@@ -7,6 +7,7 @@ import { connectDB } from './config/db.js'
 import authRoutes from './routes/authRoutes.js'
 import productRoutes from './routes/productRoutes.js'
 import orderRoutes from './routes/orderRoutes.js'
+import paymentRoutes from './routes/paymentRoutes.js'
 import uploadRoutes from './routes/uploadRoutes.js'
 import collectionRoutes from './routes/collectionRoutes.js'
 import customRequestRoutes from './routes/customRequestRoutes.js'
@@ -31,19 +32,63 @@ app.use(
   })
 )
 
-app.use(cors())
+// Allowed Origins for CORS
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  process.env.ADMIN_CLIENT_URL,
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+].filter(Boolean)
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server, Postman)
+      if (!origin) return callback(null, true)
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.vercel.app') ||
+        origin.endsWith('.onrender.com') ||
+        process.env.NODE_ENV !== 'production'
+      ) {
+        return callback(null, true)
+      }
+      return callback(null, true)
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  })
+)
 
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ limit: '50mb', extended: true }))
 
+// Root Route
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Bloom Atelier API is running',
+  })
+})
+
 // Health Check Endpoint (Exempt from rate limiting)
-app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }))
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Bloom Atelier API is healthy',
+    timestamp: new Date().toISOString(),
+  })
+})
 
 // Global API Rate Limiter
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: process.env.NODE_ENV === 'production' ? 1000 : 10000, // Generous limit for production and dev
-  message: { message: 'Too many requests from this IP, please try again later.' },
+  message: { success: false, message: 'Too many requests from this IP, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
 })
@@ -52,8 +97,6 @@ app.use('/api/', apiLimiter)
 
 app.post('/api/create-order', createRazorpayOrder)
 app.post('/api/verify-payment', verifyPayment)
-
-import paymentRoutes from './routes/paymentRoutes.js'
 
 app.use('/api/auth', authRoutes)
 app.use('/api/products', productRoutes)
@@ -74,5 +117,7 @@ const PORT = process.env.PORT || 5000
 
 connectDB().then(() => {
   startAutomaticDbCleanup()
-  app.listen(PORT, () => console.log(`Lily Charm API running on port ${PORT}`))
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Bloom Atelier API running on port ${PORT}`)
+  })
 })
