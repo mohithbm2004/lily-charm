@@ -245,7 +245,7 @@ export default function Dashboard() {
 
       // 2. Launch Razorpay Standard Checkout Modal
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TNMb3FlCzDPhzo',
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_TNkyGJugajutew',
         amount: Math.round(totalAmount * 100),
         currency: 'INR',
         name: 'Lily Charm Flower Studio',

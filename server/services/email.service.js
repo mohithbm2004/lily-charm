@@ -3,6 +3,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import brevoTransport from '../config/brevo.js'
 import sesTransport from '../config/ses.js'
+import smtpTransport from '../config/smtp.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -41,16 +42,17 @@ export function compileTemplate(templateName, data = {}) {
 }
 
 /**
- * Unified Core Email Dispatcher Service with Dual-Provider Routing & Retry Logic
+ * Unified Core Email Dispatcher Service with Multi-Provider Routing (Direct SMTP, SES, Brevo)
  */
 export async function sendEmail({
-  provider = 'brevo',
+  provider = 'smtp',
   type = 'generic',
   to,
   subject,
   html,
   text,
   attachments = [],
+  replyTo,
   data = {},
   retries = 3,
 }) {
@@ -67,23 +69,27 @@ export async function sendEmail({
   let transport = null
   let providerName = provider.toLowerCase()
 
-  if (providerName === 'brevo') {
-    transport = brevoTransport
-  } else if (providerName === 'ses') {
+  if (providerName === 'smtp' && smtpTransport) {
+    transport = smtpTransport
+  } else if (providerName === 'ses' && sesTransport) {
     transport = sesTransport
+  } else if (providerName === 'brevo' && brevoTransport) {
+    transport = brevoTransport
   } else {
-    // Default Fallback Routing based on email type
-    const brevoTypes = ['otp', 'registration-otp', 'forgot-password', 'reset-password', 'verification']
-    if (brevoTypes.includes(type.toLowerCase())) {
-      providerName = 'brevo'
-      transport = brevoTransport
-    } else {
+    // Automatic best available transport fallback
+    if (smtpTransport) {
+      providerName = 'smtp'
+      transport = smtpTransport
+    } else if (sesTransport) {
       providerName = 'ses'
       transport = sesTransport
+    } else if (brevoTransport) {
+      providerName = 'brevo'
+      transport = brevoTransport
     }
   }
 
-  const fromAddress = process.env.EMAIL_FROM || '"Lily Charm Studio" <no-reply@lilycharm.com>'
+  const fromAddress = process.env.EMAIL_FROM || '"Lily Charm" <keerthanabm@lilycharm.in>'
 
   // 3. Fallback / Mock mode if no credentials configured
   if (!transport) {
@@ -111,6 +117,7 @@ export async function sendEmail({
         text: text || '',
         html: html || '',
         attachments,
+        ...(replyTo ? { replyTo } : {}),
       }
 
       const info = await transport.sendMail(mailOptions)
@@ -124,6 +131,7 @@ export async function sendEmail({
       if (providerName === 'brevo' && process.env.BREVO_API_KEY) {
         try {
           console.log(`[BREVO REST FALLBACK] Attempting direct Brevo HTTPS REST API dispatch for ${type} to ${cleanTo}...`)
+          const verifiedSender = process.env.BREVO_VERIFIED_SENDER || 'lilycharm.store.in@gmail.com'
           const res = await fetch('https://api.brevo.com/v3/smtp/email', {
             method: 'POST',
             headers: {
@@ -132,10 +140,11 @@ export async function sendEmail({
               'content-type': 'application/json'
             },
             body: JSON.stringify({
-              sender: { name: 'Lily Charm', email: 'lilycharm.store.in@gmail.com' },
+              sender: { name: 'Lily Charm Studio', email: verifiedSender },
               to: [{ email: cleanTo }],
               subject,
-              htmlContent: html || text || 'Lily Charm Order Notification'
+              htmlContent: html || text || 'Lily Charm Order Notification',
+              ...(replyTo ? { replyTo: typeof replyTo === 'string' ? { email: replyTo } : replyTo } : {}),
             })
           })
           const apiRes = await res.json()

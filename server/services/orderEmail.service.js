@@ -41,7 +41,7 @@ export async function sendOrderConfirmation(order) {
   })
 
   return await sendEmail({
-    provider: 'ses',
+    provider: 'smtp',
     type: 'order-confirmation',
     to: recipientEmail,
     subject: `✨ Order Confirmed: ${order.orderNumber} - Lily Charm`,
@@ -83,7 +83,7 @@ export async function sendOrderInvoice(order, pdfBuffer = null) {
   })
 
   return await sendEmail({
-    provider: 'ses',
+    provider: 'smtp',
     type: 'invoice',
     to: recipientEmail,
     subject: `📄 Tax Invoice for Order ${order.orderNumber} - Lily Charm`,
@@ -109,7 +109,7 @@ export async function sendPaymentSuccess(order) {
   })
 
   return await sendEmail({
-    provider: 'ses',
+    provider: 'smtp',
     type: 'payment-success',
     to: recipientEmail,
     subject: `💳 Payment Received: Order ${order.orderNumber} - Lily Charm`,
@@ -131,7 +131,7 @@ export async function sendOrderPacked(order) {
   })
 
   return await sendEmail({
-    provider: 'ses',
+    provider: 'smtp',
     type: 'order-packed',
     to: recipientEmail,
     subject: `📦 Order Packed: ${order.orderNumber} - Lily Charm`,
@@ -159,7 +159,7 @@ export async function sendOrderShipped(order) {
   })
 
   return await sendEmail({
-    provider: 'ses',
+    provider: 'smtp',
     type: 'order-shipped',
     to: recipientEmail,
     subject: `🚚 Order Shipped: ${order.orderNumber} - Lily Charm`,
@@ -183,7 +183,7 @@ export async function sendOrderOutForDelivery(order) {
   })
 
   return await sendEmail({
-    provider: 'ses',
+    provider: 'smtp',
     type: 'out-for-delivery',
     to: recipientEmail,
     subject: `🚚 Out for Delivery Today: ${order.orderNumber} - Lily Charm`,
@@ -207,7 +207,7 @@ export async function sendOrderDelivered(order) {
   })
 
   return await sendEmail({
-    provider: 'ses',
+    provider: 'smtp',
     type: 'order-delivered',
     to: recipientEmail,
     subject: `🎉 Delivered: Order ${order.orderNumber} - Lily Charm`,
@@ -232,7 +232,7 @@ export async function sendRefundApproved(order) {
   })
 
   return await sendEmail({
-    provider: 'ses',
+    provider: 'smtp',
     type: 'refund-approved',
     to: recipientEmail,
     subject: `💰 Refund Approved: Order ${order.orderNumber} - Lily Charm`,
@@ -255,7 +255,7 @@ export async function sendRefundRejected(order, reason = '') {
   })
 
   return await sendEmail({
-    provider: 'ses',
+    provider: 'smtp',
     type: 'refund-rejected',
     to: recipientEmail,
     subject: `⚠️ Refund Notice: Order ${order.orderNumber} - Lily Charm`,
@@ -296,7 +296,7 @@ export async function sendNewsletterEmail(recipients = [], subject, content) {
       })
 
       const res = await sendEmail({
-        provider: 'ses',
+        provider: 'smtp',
         type: 'newsletter',
         to: email,
         subject: subject || '🌸 Lily Charm Newsletter',

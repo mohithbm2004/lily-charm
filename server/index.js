@@ -13,6 +13,7 @@ import customRequestRoutes from './routes/customRequestRoutes.js'
 import settingRoutes from './routes/settingRoutes.js'
 import couponRoutes from './routes/couponRoutes.js'
 import reviewRoutes from './routes/reviewRoutes.js'
+import contactRoutes from './routes/contactRoutes.js'
 import { createRazorpayOrder, verifyPayment } from './controllers/orderController.js'
 import { startAutomaticDbCleanup } from './utils/dbCleanup.js'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
@@ -64,6 +65,7 @@ app.use('/api/custom-requests', customRequestRoutes)
 app.use('/api/settings', settingRoutes)
 app.use('/api/coupons', couponRoutes)
 app.use('/api/reviews', reviewRoutes)
+app.use('/api/contact', contactRoutes)
 
 app.use(notFound)
 app.use(errorHandler)

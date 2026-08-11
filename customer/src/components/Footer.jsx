@@ -1,21 +1,10 @@
 import { Link } from 'react-router-dom'
 
 const IconInstagram = (props) => (
-  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.4" {...props}>
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
     <rect x="3" y="3" width="18" height="18" rx="5" />
     <circle cx="12" cy="12" r="4" />
     <circle cx="17.2" cy="6.8" r="0.6" fill="currentColor" stroke="none" />
-  </svg>
-)
-const IconFacebook = (props) => (
-  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.4" {...props}>
-    <path d="M15 8h-2a2 2 0 0 0-2 2v10M9 13h4" />
-    <circle cx="12" cy="12" r="9" />
-  </svg>
-)
-const IconTwitter = (props) => (
-  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.4" {...props}>
-    <path d="M4 4l7.2 8.6L4.4 20H7l5.6-6.3L17 20h3l-7.5-9L19.5 4H17l-5.2 5.8L7 4H4z" />
   </svg>
 )
 
@@ -62,10 +51,17 @@ export default function Footer() {
         </div>
         <div>
           <p className="text-[#F5E8D0] font-bold text-xs tracking-[0.24em] uppercase mb-4 font-[var(--font-button)]">Connect</p>
-          <div className="flex gap-4 mb-4">
-            <a href="#" aria-label="Instagram" className="p-2.5 border border-white/30 rounded-full hover:border-[#F5E8D0] hover:text-[#F5E8D0] transition-colors"><IconInstagram /></a>
-            <a href="#" aria-label="Facebook" className="p-2.5 border border-white/30 rounded-full hover:border-[#F5E8D0] hover:text-[#F5E8D0] transition-colors"><IconFacebook /></a>
-            <a href="#" aria-label="Twitter" className="p-2.5 border border-white/30 rounded-full hover:border-[#F5E8D0] hover:text-[#F5E8D0] transition-colors"><IconTwitter /></a>
+          <div className="mb-4">
+            <a
+              href="https://www.instagram.com/lily._charm?igsh=bnkwdWViMjlpMjA1"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Follow Lily Charm on Instagram"
+              className="inline-flex items-center gap-2.5 px-4 py-2.5 border border-white/30 rounded-full hover:border-[#F5E8D0] hover:text-[#F5E8D0] hover:bg-white/5 transition-all text-xs font-semibold uppercase tracking-wider group"
+            >
+              <IconInstagram className="group-hover:scale-110 transition-transform" />
+              <span>@lily._charm</span>
+            </a>
           </div>
           <p className="text-xs text-[#E2DACB] font-medium">
             Handcrafted with love by Lily Charm Studio.
