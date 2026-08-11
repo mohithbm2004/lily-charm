@@ -13,6 +13,12 @@ if (user && pass) {
     port,
     secure: port === 465,
     auth: { user, pass },
+    connectionTimeout: 8000, // 8s timeout for cloud container stability
+    greetingTimeout: 8000,
+    socketTimeout: 10000,
+    tls: {
+      rejectUnauthorized: false,
+    },
   })
 } else {
   console.warn('[DIRECT SMTP NOTICE]: Direct mailbox SMTP credentials not configured yet.')

@@ -42,7 +42,45 @@ export function compileTemplate(templateName, data = {}) {
 }
 
 /**
- * Unified Core Email Dispatcher Service with Multi-Provider Routing (Direct SMTP, SES, Brevo)
+ * Direct Brevo HTTPS REST API Dispatch (Uses Port 443 HTTPS - 100% immune to cloud port blocks on Render/Vercel)
+ */
+async function dispatchViaBrevoRestApi({ to, subject, html, text, replyTo }) {
+  const apiKey = process.env.BREVO_API_KEY
+  if (!apiKey) throw new Error('BREVO_API_KEY is not configured.')
+
+  const verifiedSender = process.env.BREVO_VERIFIED_SENDER || 'keerthanabm@lilycharm.in'
+  const senderName = 'Lily Charm Studio'
+
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'api-key': apiKey,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: { name: senderName, email: verifiedSender },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html || text || 'Lily Charm Notification',
+      textContent: text || '',
+      ...(replyTo ? { replyTo: typeof replyTo === 'string' ? { email: replyTo } : replyTo } : {}),
+    }),
+  })
+
+  const apiRes = await res.json()
+  if (!res.ok || !apiRes.messageId) {
+    throw new Error(apiRes.message || `Brevo REST API responded with status ${res.status}`)
+  }
+
+  return apiRes.messageId
+}
+
+/**
+ * Unified Core Email Dispatcher Service with 3-Tier Multi-Provider Cloud Routing:
+ * Tier 1: Direct Zoho Mailbox SMTP (keerthanabm@lilycharm.in)
+ * Tier 2: Amazon SES SMTP (email-smtp.ap-south-1.amazonaws.com)
+ * Tier 3: Brevo HTTPS REST API (Port 443 HTTPS - Guaranteed Cloud Delivery on Render/Vercel)
  */
 export async function sendEmail({
   provider = 'smtp',
@@ -54,7 +92,7 @@ export async function sendEmail({
   attachments = [],
   replyTo,
   data = {},
-  retries = 3,
+  retries = 2,
 }) {
   // 1. Email Validation
   if (!validateEmail(to)) {
@@ -64,108 +102,84 @@ export async function sendEmail({
   }
 
   const cleanTo = to.trim().toLowerCase()
+  const fromAddress = process.env.EMAIL_FROM || '"Lily Charm" <keerthanabm@lilycharm.in>'
 
-  // 2. Transporter Selection
-  let transport = null
-  let providerName = provider.toLowerCase()
+  // Build transporter candidate list in priority order
+  const candidateTransporters = []
 
-  if (providerName === 'smtp' && smtpTransport) {
-    transport = smtpTransport
-  } else if (providerName === 'ses' && sesTransport) {
-    transport = sesTransport
-  } else if (providerName === 'brevo' && brevoTransport) {
-    transport = brevoTransport
-  } else {
-    // Automatic best available transport fallback
-    if (smtpTransport) {
-      providerName = 'smtp'
-      transport = smtpTransport
-    } else if (sesTransport) {
-      providerName = 'ses'
-      transport = sesTransport
-    } else if (brevoTransport) {
-      providerName = 'brevo'
-      transport = brevoTransport
+  if (smtpTransport) {
+    candidateTransporters.push({ name: 'smtp', transport: smtpTransport })
+  }
+  if (sesTransport) {
+    candidateTransporters.push({ name: 'ses', transport: sesTransport })
+  }
+  if (brevoTransport) {
+    candidateTransporters.push({ name: 'brevo-smtp', transport: brevoTransport })
+  }
+
+  // 2. Try Standard Transporters with Retry Loop
+  let lastError = null
+
+  for (const { name: provName, transport } of candidateTransporters) {
+    let attempt = 0
+    while (attempt < retries) {
+      attempt++
+      try {
+        const mailOptions = {
+          from: fromAddress,
+          to: cleanTo,
+          subject,
+          text: text || '',
+          html: html || '',
+          attachments,
+          ...(replyTo ? { replyTo } : {}),
+        }
+
+        const info = await transport.sendMail(mailOptions)
+        console.log(`[EMAIL SUCCESS] [Provider: ${provName.toUpperCase()}] [Type: ${type}] Sent to ${cleanTo} (ID: ${info.messageId})`)
+        return { success: true, messageId: info.messageId, provider: provName, attempts: attempt }
+      } catch (err) {
+        lastError = err
+        console.warn(`[EMAIL NOTICE] [Provider: ${provName.toUpperCase()}] Attempt ${attempt}/${retries} failed for ${cleanTo}: ${err.message}`)
+        if (attempt < retries) {
+          await new Promise((resolve) => setTimeout(resolve, 800))
+        }
+      }
     }
   }
 
-  const fromAddress = process.env.EMAIL_FROM || '"Lily Charm" <keerthanabm@lilycharm.in>'
+  // 3. Guaranteed Cloud Fallback: Pure HTTPS REST API (Port 443 HTTPS)
+  // This bypasses any cloud host (Render/Vercel/Railway) SMTP port 465/587 egress blocks
+  if (process.env.BREVO_API_KEY) {
+    try {
+      console.log(`[CLOUD HTTPS DISPATCH] Attempting pure HTTPS Port 443 REST API for ${type} to ${cleanTo}...`)
+      const restMessageId = await dispatchViaBrevoRestApi({
+        to: cleanTo,
+        subject,
+        html,
+        text,
+        replyTo,
+      })
+      console.log(`[EMAIL SUCCESS via CLOUD HTTPS REST API] Sent to ${cleanTo} (ID: ${restMessageId})`)
+      return { success: true, messageId: restMessageId, provider: 'cloud-https-rest', attempts: 1 }
+    } catch (restErr) {
+      console.warn(`[CLOUD HTTPS REST API ERROR]: ${restErr.message}`)
+      lastError = restErr
+    }
+  }
 
-  // 3. Fallback / Mock mode if no credentials configured
-  if (!transport) {
+  // 4. Simulated Fallback if completely unconfigured
+  if (candidateTransporters.length === 0 && !process.env.BREVO_API_KEY) {
     console.log(`\n=================== [SIMULATED EMAIL DISPATCH] ===================`)
-    console.log(`[PROVIDER]: ${providerName.toUpperCase()}`)
     console.log(`[TYPE]: ${type}`)
     console.log(`[TO]: ${cleanTo}`)
     console.log(`[SUBJECT]: ${subject}`)
-    console.log(`[DATA KEYS]: ${Object.keys(data).join(', ')}`)
     console.log(`=================================================================\n`)
     return { success: true, messageId: `mock-${Date.now()}`, simulated: true }
   }
 
-  // 4. Retry Loop with Exponential Backoff
-  let attempt = 0
-  let lastError = null
-
-  while (attempt < retries) {
-    attempt++
-    try {
-      const mailOptions = {
-        from: fromAddress,
-        to: cleanTo,
-        subject,
-        text: text || '',
-        html: html || '',
-        attachments,
-        ...(replyTo ? { replyTo } : {}),
-      }
-
-      const info = await transport.sendMail(mailOptions)
-      console.log(`[EMAIL SUCCESS] [Provider: ${providerName.toUpperCase()}] [Type: ${type}] Sent to ${cleanTo} (ID: ${info.messageId})`)
-      return { success: true, messageId: info.messageId, provider: providerName, attempts: attempt }
-    } catch (err) {
-      lastError = err
-      console.warn(`[EMAIL RETRY WARNING] [Attempt ${attempt}/${retries}] [Provider: ${providerName.toUpperCase()}] Failed to send to ${cleanTo}: ${err.message}`)
-      
-      // Brevo REST API Fallback (ONLY for Brevo provider emails)
-      if (providerName === 'brevo' && process.env.BREVO_API_KEY) {
-        try {
-          console.log(`[BREVO REST FALLBACK] Attempting direct Brevo HTTPS REST API dispatch for ${type} to ${cleanTo}...`)
-          const verifiedSender = process.env.BREVO_VERIFIED_SENDER || 'lilycharm.store.in@gmail.com'
-          const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-            method: 'POST',
-            headers: {
-              'accept': 'application/json',
-              'api-key': process.env.BREVO_API_KEY,
-              'content-type': 'application/json'
-            },
-            body: JSON.stringify({
-              sender: { name: 'Lily Charm Studio', email: verifiedSender },
-              to: [{ email: cleanTo }],
-              subject,
-              htmlContent: html || text || 'Lily Charm Order Notification',
-              ...(replyTo ? { replyTo: typeof replyTo === 'string' ? { email: replyTo } : replyTo } : {}),
-            })
-          })
-          const apiRes = await res.json()
-          if (apiRes.messageId) {
-            console.log(`[EMAIL SUCCESS via BREVO REST FALLBACK] Sent to ${cleanTo} (ID: ${apiRes.messageId})`)
-            return { success: true, messageId: apiRes.messageId, provider: 'brevo-rest-fallback', attempts: attempt }
-          }
-        } catch (restErr) {
-          console.warn(`[BREVO REST API ERROR]: ${restErr.message}`)
-        }
-      }
-
-      if (attempt < retries) {
-        const delayMs = Math.pow(2, attempt - 1) * 1000 // 1s, 2s, 4s...
-        await new Promise((resolve) => setTimeout(resolve, delayMs))
-      }
-    }
-  }
-
-  console.error(`[EMAIL DISPATCH FAILURE] Exhausted ${retries} attempts to ${cleanTo} via ${providerName.toUpperCase()}. Error: ${lastError?.message}`)
-  throw new Error(`Email dispatch failed via ${providerName.toUpperCase()}: ${lastError?.message}`)
+  console.error(`[EMAIL DISPATCH FAILURE] Exhausted all providers to ${cleanTo}. Last Error: ${lastError?.message}`)
+  throw new Error(`Email dispatch failed to ${cleanTo}: ${lastError?.message}`)
 }
 
 export default {
