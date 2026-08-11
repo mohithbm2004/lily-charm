@@ -15,6 +15,7 @@ import settingRoutes from './routes/settingRoutes.js'
 import couponRoutes from './routes/couponRoutes.js'
 import reviewRoutes from './routes/reviewRoutes.js'
 import contactRoutes from './routes/contactRoutes.js'
+import healthRouter from './routes/healthRouter.js'
 import { createRazorpayOrder, verifyPayment } from './controllers/orderController.js'
 import { startAutomaticDbCleanup } from './utils/dbCleanup.js'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
@@ -75,14 +76,9 @@ app.get('/', (req, res) => {
   })
 })
 
-// Health Check Endpoint (Exempt from rate limiting)
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Bloom Atelier API is healthy',
-    timestamp: new Date().toISOString(),
-  })
-})
+// Health Check Endpoints (Exempt from rate limiting)
+app.use('/health', healthRouter)
+app.use('/api/health', healthRouter)
 
 // Global API Rate Limiter
 const apiLimiter = rateLimit({
