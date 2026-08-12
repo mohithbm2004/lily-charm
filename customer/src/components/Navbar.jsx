@@ -48,7 +48,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-[var(--color-bg)] transition-shadow duration-300 w-full max-w-full">
+      <header className={`sticky top-0 z-[1000] bg-[var(--color-bg)] transition-shadow duration-300 w-full max-w-full ${scrolled ? 'shadow-md' : ''}`}>
         {/* Top Main Navigation */}
         <div className="border-b border-[var(--color-line)] bg-[var(--color-bg)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 h-16 md:h-20 flex items-center justify-between gap-3 sm:gap-6">

@@ -85,7 +85,7 @@ export default function ReviewModal({ isOpen, onClose, defaultProductTitle = '',
   }
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
       <div className="bg-[var(--color-bg)] border border-[var(--color-line)] p-4 sm:p-6 md:p-8 max-w-lg w-full shadow-2xl relative space-y-4 sm:space-y-6 text-[var(--color-ink)] my-auto max-h-[90vh] overflow-y-auto">
         {/* Close Button */}
         <button

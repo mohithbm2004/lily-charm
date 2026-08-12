@@ -37,14 +37,14 @@ export default function CartDrawer() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={closeCart}
-            className="fixed inset-0 bg-[var(--color-ink)]/40 z-[60]"
+            className="fixed inset-0 bg-[var(--color-ink)]/40 z-[1100]"
           />
           <motion.aside
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed top-0 right-0 h-full w-full sm:w-[420px] max-w-full bg-[var(--color-bg)] z-[70] flex flex-col shadow-2xl"
+            className="fixed top-0 right-0 h-full w-full sm:w-[420px] max-w-full bg-[var(--color-bg)] z-[1101] flex flex-col shadow-2xl"
           >
             <div className="flex items-center justify-between px-4 sm:px-6 h-16 sm:h-20 border-b border-[var(--color-line)] shrink-0">
               <h2 className="font-[var(--font-display)] text-lg sm:text-xl font-bold uppercase">Your Bag ({items.length})</h2>

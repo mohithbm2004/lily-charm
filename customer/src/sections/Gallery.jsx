@@ -35,7 +35,7 @@ export default function Gallery() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setActive(null)}
-            className="fixed inset-0 bg-black/85 z-[80] flex items-center justify-center p-4 sm:p-6"
+            className="fixed inset-0 bg-black/85 z-[1200] flex items-center justify-center p-4 sm:p-6"
           >
             <button className="absolute top-4 right-4 sm:top-6 sm:right-6 text-white p-1" onClick={() => setActive(null)} aria-label="Close">
               <X size={26} strokeWidth={1.2} />

@@ -138,7 +138,7 @@ export default function Shop() {
 
       {/* Mobile Filter Modal */}
       {filtersOpen && (
-        <div className="fixed inset-0 z-[70] bg-[var(--color-bg)] p-5 sm:p-6 overflow-y-auto md:hidden">
+        <div className="fixed inset-0 z-[1100] bg-[var(--color-bg)] p-5 sm:p-6 overflow-y-auto md:hidden">
           <div className="flex justify-between items-center mb-6 pb-4 border-b border-[var(--color-line)]">
             <p className="font-[var(--font-display)] text-xl font-bold uppercase">Filters</p>
             <button

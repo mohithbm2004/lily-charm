@@ -166,7 +166,7 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-black/80 z-[110] flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
+      <div className="fixed inset-0 bg-black/80 z-[1200] flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
