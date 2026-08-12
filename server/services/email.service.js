@@ -1,7 +1,12 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { getZeptoMailAgent, SENDER_ADDRESSES } from '../config/zeptomail.js'
+import {
+  getZeptoMailAgent,
+  SENDER_ADDRESSES,
+  createAgentTransport,
+  categorizeSmtpError,
+} from '../config/zeptomail.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -46,7 +51,7 @@ export function compileTemplate(templateName, data = {}) {
 }
 
 /**
- * Centralized Email Dispatcher using ONLY ZeptoMail SMTP (smtp.zeptomail.in:587)
+ * Centralized Email Dispatcher using ONLY ZeptoMail SMTP with Multi-Port Failover & Categorized Logging
  */
 export async function sendEmail({
   type = 'generic',
@@ -73,7 +78,7 @@ export async function sendEmail({
   const agent = getZeptoMailAgent(type)
   const fromAddress = from || agent.from
 
-  // 3. Clear Configuration Check
+  // 3. Configuration Check
   if (!agent.configured || !agent.transport) {
     const notice = `ZeptoMail credentials are not configured.`
     console.warn(`[ZEPTOMAIL CONFIG NOTICE] [Purpose: ${agent.purpose.toUpperCase()}]: ${notice}`)
@@ -87,41 +92,81 @@ export async function sendEmail({
     }
   }
 
-  // 4. Retry Loop with Exponential Backoff
+  // 4. Dispatch Email Options
+  const mailOptions = {
+    from: fromAddress,
+    to: cleanTo,
+    subject,
+    text: text || '',
+    html: html || '',
+    attachments,
+    ...(replyTo ? { replyTo } : {}),
+  }
+
   let attempt = 0
-  let lastError = null
+  let lastCategorized = null
 
   while (attempt < retries) {
     attempt++
+
+    // Try Primary Transporter (Controlled by ZEPTOMAIL_PORT / 587)
     try {
-      const mailOptions = {
-        from: fromAddress,
-        to: cleanTo,
-        subject,
-        text: text || '',
-        html: html || '',
-        attachments,
-        ...(replyTo ? { replyTo } : {}),
+      const info = await agent.transport.sendMail(mailOptions)
+      console.log(`[EMAIL SUCCESS] [ZeptoMail SMTP] [Purpose: ${agent.purpose.toUpperCase()}] [Port: ${agent.port}] [From: ${fromAddress}] Sent to ${cleanTo} (ID: ${info.messageId})`)
+      return {
+        success: true,
+        messageId: info.messageId,
+        provider: 'zeptomail',
+        purpose: agent.purpose,
+        port: agent.port,
+        attempts: attempt,
+      }
+    } catch (err) {
+      lastCategorized = categorizeSmtpError(err, agent.host, agent.port)
+      console.warn(`[EMAIL ATTEMPT ${attempt}/${retries} FAILED] [Category: ${lastCategorized.category}] ${lastCategorized.message}`)
+
+      // If connection timed out on Port 587 and fallback is viable, attempt Port 465 (SSL)
+      if (agent.pass && agent.port !== 465 && (lastCategorized.category === 'TCP_CONNECTION_TIMEOUT' || lastCategorized.category === 'TLS_FAILURE')) {
+        console.log(`[ZEPTOMAIL RESILIENT FALLBACK] Attempting instantaneous fallback via Port 465 (SSL TLSv1.2)...`)
+        try {
+          const fallbackTransport = createAgentTransport({
+            host: agent.host,
+            port: 465,
+            pass: agent.pass,
+            secure: true,
+            requireTLS: false,
+            tlsMinVersion: 'TLSv1.2',
+            label: 'Fallback-SSL',
+          })
+          const fallbackInfo = await fallbackTransport.sendMail(mailOptions)
+          console.log(`[EMAIL SUCCESS via ZeptoMail Port 465 SSL] Sent to ${cleanTo} (ID: ${fallbackInfo.messageId})`)
+          return {
+            success: true,
+            messageId: fallbackInfo.messageId,
+            provider: 'zeptomail-ssl-fallback',
+            purpose: agent.purpose,
+            port: 465,
+            attempts: attempt,
+          }
+        } catch (fallbackErr) {
+          const fbCat = categorizeSmtpError(fallbackErr, agent.host, 465)
+          console.error(`[ZEPTOMAIL FALLBACK PORT 465 FAILED] [Category: ${fbCat.category}] ${fbCat.message}`)
+        }
       }
 
-      const info = await agent.transport.sendMail(mailOptions)
-      console.log(`[EMAIL SUCCESS] [ZeptoMail SMTP] [Purpose: ${agent.purpose.toUpperCase()}] [From: ${fromAddress}] Sent to ${cleanTo} (ID: ${info.messageId})`)
-      return { success: true, messageId: info.messageId, provider: 'zeptomail', purpose: agent.purpose, attempts: attempt }
-    } catch (err) {
-      lastError = err
-      console.warn(`[EMAIL RETRY WARNING] [Attempt ${attempt}/${retries}] [ZeptoMail SMTP] [Purpose: ${agent.purpose.toUpperCase()}] Failed to send to ${cleanTo}: ${err.message}`)
       if (attempt < retries) {
         await new Promise((resolve) => setTimeout(resolve, 1000))
       }
     }
   }
 
-  console.error(`[EMAIL DISPATCH FAILURE] Exhausted ${retries} attempts to ${cleanTo} via ZeptoMail SMTP (${agent.purpose.toUpperCase()}). Error: ${lastError?.message}`)
-  throw new Error(`Email dispatch failed via ZeptoMail SMTP: ${lastError?.message}`)
+  console.error(`[EMAIL DISPATCH FAILURE] Exhausted ${retries} attempts to ${cleanTo} via ZeptoMail SMTP (${agent.purpose.toUpperCase()}). Last Error [${lastCategorized?.category}]: ${lastCategorized?.message}`)
+  throw new Error(`Email dispatch failed via ZeptoMail SMTP [${lastCategorized?.category}]: ${lastCategorized?.message}`)
 }
 
 export default {
   SENDER_ADDRESSES,
+  getZeptoMailAgent,
   validateEmail,
   compileTemplate,
   sendEmail,
