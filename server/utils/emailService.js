@@ -45,7 +45,7 @@ export async function sendOrderStatusEmail(order, newStatus, note = '') {
 
 export async function sendAdminNewOrderNotification(order) {
   try {
-    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'admin@lilycharm.com'
+    const adminEmail = process.env.ADMIN_EMAIL || 'keerthanabm@lilycharm.in'
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; padding: 20px;">
         <h2 style="color: #212B1C;">🚨 New Paid Order Received: ${order.orderNumber}</h2>
@@ -57,7 +57,6 @@ export async function sendAdminNewOrderNotification(order) {
     `
 
     return await sendEmail({
-      provider: 'ses',
       type: 'admin-notification',
       to: adminEmail,
       subject: `🔔 NEW ORDER: ${order.orderNumber} (₹${order.grandTotal || order.total})`,

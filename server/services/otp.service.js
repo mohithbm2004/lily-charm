@@ -21,7 +21,7 @@ export function canResendOtp(lastOtpSentAt, cooldownSeconds = 60) {
 }
 
 /**
- * Brevo Provider: Send OTP Email for Registration or Password Reset
+ * ZeptoMail: Send OTP Email for Registration or Password Reset (From: no-reply@lilycharm.in)
  */
 export async function sendOtpEmail(email, name, otp, isReset = false) {
   const storeName = 'Lily Charm Studio'
@@ -39,7 +39,6 @@ export async function sendOtpEmail(email, name, otp, isReset = false) {
   })
 
   return await sendEmail({
-    provider: 'smtp',
     type: isReset ? 'reset-password' : 'otp',
     to: email,
     subject: isReset ? `🔑 ${otp} is your Lily Charm Password Reset Code` : `🔐 ${otp} is your Lily Charm Verification Code`,
@@ -49,7 +48,7 @@ export async function sendOtpEmail(email, name, otp, isReset = false) {
 }
 
 /**
- * Send Password Reset Link Email via Direct Zoho SMTP
+ * ZeptoMail: Send Password Reset Link Email (From: no-reply@lilycharm.in)
  */
 export async function sendPasswordResetEmail(email, name, resetUrl) {
   const storeName = 'Lily Charm Studio'
@@ -62,7 +61,6 @@ export async function sendPasswordResetEmail(email, name, resetUrl) {
   })
 
   return await sendEmail({
-    provider: 'smtp',
     type: 'reset-password',
     to: email,
     subject: `🔑 Reset Your Lily Charm Password`,
@@ -72,7 +70,7 @@ export async function sendPasswordResetEmail(email, name, resetUrl) {
 }
 
 /**
- * Send Welcome Email to Verified User via Direct Zoho SMTP
+ * ZeptoMail: Send Welcome Email to Verified User (From: no-reply@lilycharm.in)
  */
 export async function sendWelcomeEmail(email, name) {
   const storeUrl = process.env.CLIENT_URL || 'http://localhost:5173'
@@ -82,7 +80,6 @@ export async function sendWelcomeEmail(email, name) {
   })
 
   return await sendEmail({
-    provider: 'smtp',
     type: 'welcome',
     to: email,
     subject: `🌸 Welcome to Lily Charm Velvet Floral Studio!`,

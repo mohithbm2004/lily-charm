@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Star, X, CheckCircle2, Sparkles, Heart } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-
-const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
+import { API_URL } from '../config/api'
 
 export default function ReviewModal({ isOpen, onClose, defaultProductTitle = '', onSuccess }) {
   const { user } = useAuth()

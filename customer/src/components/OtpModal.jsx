@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ShieldCheck, RefreshCw, Sparkles, CheckCircle2, Clock } from 'lucide-react'
-
-const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
+import { API_URL } from '../config/api'
 
 export default function OtpModal({ isOpen, onClose, email, onVerified }) {
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', ''])

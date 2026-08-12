@@ -1,15 +1,19 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import brevoTransport from '../config/brevo.js'
-import sesTransport from '../config/ses.js'
-import smtpTransport from '../config/smtp.js'
+import { getZeptoMailAgent, SENDER_ADDRESSES } from '../config/zeptomail.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+export { SENDER_ADDRESSES, getZeptoMailAgent }
+
+export function getSenderByPurpose(type = '') {
+  return getZeptoMailAgent(type).from
+}
+
 /**
- * Validates email address format
+ * Validates recipient email address format
  */
 export function validateEmail(email) {
   if (!email || typeof email !== 'string') return false
@@ -24,7 +28,7 @@ export function compileTemplate(templateName, data = {}) {
   try {
     const filePath = path.join(__dirname, `../templates/${templateName}`)
     if (!fs.existsSync(filePath)) {
-      console.warn(`[EMAIL TEMPLATE WARNING]: Template ${templateName} not found at ${filePath}. Falling back to blank template.`)
+      console.warn(`[EMAIL TEMPLATE WARNING]: Template ${templateName} not found at ${filePath}. Falling back to default layout.`)
       return `<p>${data.message || data.text || ''}</p>`
     }
 
@@ -42,50 +46,12 @@ export function compileTemplate(templateName, data = {}) {
 }
 
 /**
- * Direct Brevo HTTPS REST API Dispatch (Uses Port 443 HTTPS - 100% immune to cloud port blocks on Render/Vercel)
- */
-async function dispatchViaBrevoRestApi({ to, subject, html, text, replyTo }) {
-  const apiKey = process.env.BREVO_API_KEY
-  if (!apiKey) throw new Error('BREVO_API_KEY is not configured.')
-
-  const verifiedSender = process.env.BREVO_VERIFIED_SENDER || 'keerthanabm@lilycharm.in'
-  const senderName = 'Lily Charm Studio'
-
-  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: {
-      'accept': 'application/json',
-      'api-key': apiKey,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      sender: { name: senderName, email: verifiedSender },
-      to: [{ email: to }],
-      subject,
-      htmlContent: html || text || 'Lily Charm Notification',
-      textContent: text || '',
-      ...(replyTo ? { replyTo: typeof replyTo === 'string' ? { email: replyTo } : replyTo } : {}),
-    }),
-  })
-
-  const apiRes = await res.json()
-  if (!res.ok || !apiRes.messageId) {
-    throw new Error(apiRes.message || `Brevo REST API responded with status ${res.status}`)
-  }
-
-  return apiRes.messageId
-}
-
-/**
- * Unified Core Email Dispatcher Service with 3-Tier Multi-Provider Cloud Routing:
- * Tier 1: Direct Zoho Mailbox SMTP (keerthanabm@lilycharm.in)
- * Tier 2: Amazon SES SMTP (email-smtp.ap-south-1.amazonaws.com)
- * Tier 3: Brevo HTTPS REST API (Port 443 HTTPS - Guaranteed Cloud Delivery on Render/Vercel)
+ * Centralized Email Dispatcher using ONLY ZeptoMail SMTP (smtp.zeptomail.in:587)
  */
 export async function sendEmail({
-  provider = 'smtp',
   type = 'generic',
   to,
+  from,
   subject,
   html,
   text,
@@ -94,95 +60,68 @@ export async function sendEmail({
   data = {},
   retries = 2,
 }) {
-  // 1. Email Validation
+  // 1. Recipient Validation
   if (!validateEmail(to)) {
     const errorMsg = `Invalid recipient email address: "${to}"`
-    console.error(`[EMAIL SERVICE VALIDATION ERROR]: ${errorMsg}`)
+    console.error(`[ZEPTOMAIL VALIDATION ERROR]: ${errorMsg}`)
     throw new Error(errorMsg)
   }
 
   const cleanTo = to.trim().toLowerCase()
-  const fromAddress = process.env.EMAIL_FROM || '"Lily Charm" <keerthanabm@lilycharm.in>'
 
-  // Build transporter candidate list in priority order
-  const candidateTransporters = []
+  // 2. Resolve Agent Transporter and Verified Sender for this Email Purpose
+  const agent = getZeptoMailAgent(type)
+  const fromAddress = from || agent.from
 
-  if (smtpTransport) {
-    candidateTransporters.push({ name: 'smtp', transport: smtpTransport })
-  }
-  if (sesTransport) {
-    candidateTransporters.push({ name: 'ses', transport: sesTransport })
-  }
-  if (brevoTransport) {
-    candidateTransporters.push({ name: 'brevo-smtp', transport: brevoTransport })
+  // 3. Clear Configuration Check
+  if (!agent.configured || !agent.transport) {
+    const notice = `ZeptoMail credentials are not configured.`
+    console.warn(`[ZEPTOMAIL CONFIG NOTICE] [Purpose: ${agent.purpose.toUpperCase()}]: ${notice}`)
+    return {
+      success: false,
+      message: notice,
+      configured: false,
+      purpose: agent.purpose,
+      from: fromAddress,
+      to: cleanTo,
+    }
   }
 
-  // 2. Try Standard Transporters with Retry Loop
+  // 4. Retry Loop with Exponential Backoff
+  let attempt = 0
   let lastError = null
 
-  for (const { name: provName, transport } of candidateTransporters) {
-    let attempt = 0
-    while (attempt < retries) {
-      attempt++
-      try {
-        const mailOptions = {
-          from: fromAddress,
-          to: cleanTo,
-          subject,
-          text: text || '',
-          html: html || '',
-          attachments,
-          ...(replyTo ? { replyTo } : {}),
-        }
+  while (attempt < retries) {
+    attempt++
+    try {
+      const mailOptions = {
+        from: fromAddress,
+        to: cleanTo,
+        subject,
+        text: text || '',
+        html: html || '',
+        attachments,
+        ...(replyTo ? { replyTo } : {}),
+      }
 
-        const info = await transport.sendMail(mailOptions)
-        console.log(`[EMAIL SUCCESS] [Provider: ${provName.toUpperCase()}] [Type: ${type}] Sent to ${cleanTo} (ID: ${info.messageId})`)
-        return { success: true, messageId: info.messageId, provider: provName, attempts: attempt }
-      } catch (err) {
-        lastError = err
-        console.warn(`[EMAIL NOTICE] [Provider: ${provName.toUpperCase()}] Attempt ${attempt}/${retries} failed for ${cleanTo}: ${err.message}`)
-        if (attempt < retries) {
-          await new Promise((resolve) => setTimeout(resolve, 800))
-        }
+      const info = await agent.transport.sendMail(mailOptions)
+      console.log(`[EMAIL SUCCESS] [ZeptoMail SMTP] [Purpose: ${agent.purpose.toUpperCase()}] [From: ${fromAddress}] Sent to ${cleanTo} (ID: ${info.messageId})`)
+      return { success: true, messageId: info.messageId, provider: 'zeptomail', purpose: agent.purpose, attempts: attempt }
+    } catch (err) {
+      lastError = err
+      console.warn(`[EMAIL RETRY WARNING] [Attempt ${attempt}/${retries}] [ZeptoMail SMTP] [Purpose: ${agent.purpose.toUpperCase()}] Failed to send to ${cleanTo}: ${err.message}`)
+      if (attempt < retries) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
       }
     }
   }
 
-  // 3. Guaranteed Cloud Fallback: Pure HTTPS REST API (Port 443 HTTPS)
-  // This bypasses any cloud host (Render/Vercel/Railway) SMTP port 465/587 egress blocks
-  if (process.env.BREVO_API_KEY) {
-    try {
-      console.log(`[CLOUD HTTPS DISPATCH] Attempting pure HTTPS Port 443 REST API for ${type} to ${cleanTo}...`)
-      const restMessageId = await dispatchViaBrevoRestApi({
-        to: cleanTo,
-        subject,
-        html,
-        text,
-        replyTo,
-      })
-      console.log(`[EMAIL SUCCESS via CLOUD HTTPS REST API] Sent to ${cleanTo} (ID: ${restMessageId})`)
-      return { success: true, messageId: restMessageId, provider: 'cloud-https-rest', attempts: 1 }
-    } catch (restErr) {
-      console.warn(`[CLOUD HTTPS REST API ERROR]: ${restErr.message}`)
-      lastError = restErr
-    }
-  }
-
-  // 4. Simulated Fallback if completely unconfigured
-  if (candidateTransporters.length === 0 && !process.env.BREVO_API_KEY) {
-    console.log(`\n=================== [SIMULATED EMAIL DISPATCH] ===================`)
-    console.log(`[TYPE]: ${type}`)
-    console.log(`[TO]: ${cleanTo}`)
-    console.log(`[SUBJECT]: ${subject}`)
-    console.log(`=================================================================\n`)
-    return { success: true, messageId: `mock-${Date.now()}`, simulated: true }
-  }
-
-  console.error(`[EMAIL DISPATCH FAILURE] Exhausted all providers to ${cleanTo}. Last Error: ${lastError?.message}`)
-  throw new Error(`Email dispatch failed to ${cleanTo}: ${lastError?.message}`)
+  console.error(`[EMAIL DISPATCH FAILURE] Exhausted ${retries} attempts to ${cleanTo} via ZeptoMail SMTP (${agent.purpose.toUpperCase()}). Error: ${lastError?.message}`)
+  throw new Error(`Email dispatch failed via ZeptoMail SMTP: ${lastError?.message}`)
 }
 
 export default {
+  SENDER_ADDRESSES,
   validateEmail,
   compileTemplate,
   sendEmail,

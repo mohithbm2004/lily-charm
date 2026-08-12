@@ -20,7 +20,7 @@ function buildItemsHtml(items = []) {
 }
 
 /**
- * SES Provider: Send Order Confirmation Email
+ * ZeptoMail: Send Order Confirmation Email (From: orders@lilycharm.in)
  */
 export async function sendOrderConfirmation(order) {
   const recipientEmail = order.shippingAddress?.email || order.email
@@ -41,7 +41,6 @@ export async function sendOrderConfirmation(order) {
   })
 
   return await sendEmail({
-    provider: 'smtp',
     type: 'order-confirmation',
     to: recipientEmail,
     subject: `✨ Order Confirmed: ${order.orderNumber} - Lily Charm`,
@@ -51,7 +50,7 @@ export async function sendOrderConfirmation(order) {
 }
 
 /**
- * SES Provider: Send Tax Invoice (with optional PDF attachment)
+ * ZeptoMail: Send Tax Invoice (From: orders@lilycharm.in with optional PDF attachment)
  */
 export async function sendOrderInvoice(order, pdfBuffer = null) {
   const recipientEmail = order.shippingAddress?.email || order.email
@@ -83,7 +82,6 @@ export async function sendOrderInvoice(order, pdfBuffer = null) {
   })
 
   return await sendEmail({
-    provider: 'smtp',
     type: 'invoice',
     to: recipientEmail,
     subject: `📄 Tax Invoice for Order ${order.orderNumber} - Lily Charm`,
@@ -94,7 +92,7 @@ export async function sendOrderInvoice(order, pdfBuffer = null) {
 }
 
 /**
- * SES Provider: Send Payment Success Email
+ * ZeptoMail: Send Payment Success Email (From: orders@lilycharm.in)
  */
 export async function sendPaymentSuccess(order) {
   const recipientEmail = order.shippingAddress?.email || order.email
@@ -109,7 +107,6 @@ export async function sendPaymentSuccess(order) {
   })
 
   return await sendEmail({
-    provider: 'smtp',
     type: 'payment-success',
     to: recipientEmail,
     subject: `💳 Payment Received: Order ${order.orderNumber} - Lily Charm`,
@@ -119,7 +116,7 @@ export async function sendPaymentSuccess(order) {
 }
 
 /**
- * SES Provider: Send Order Packed Email
+ * ZeptoMail: Send Order Packed Email (From: orders@lilycharm.in)
  */
 export async function sendOrderPacked(order) {
   const recipientEmail = order.shippingAddress?.email || order.email
@@ -131,7 +128,6 @@ export async function sendOrderPacked(order) {
   })
 
   return await sendEmail({
-    provider: 'smtp',
     type: 'order-packed',
     to: recipientEmail,
     subject: `📦 Order Packed: ${order.orderNumber} - Lily Charm`,
@@ -141,7 +137,7 @@ export async function sendOrderPacked(order) {
 }
 
 /**
- * SES Provider: Send Order Shipped Email
+ * ZeptoMail: Send Order Shipped Email (From: orders@lilycharm.in)
  */
 export async function sendOrderShipped(order) {
   const recipientEmail = order.shippingAddress?.email || order.email
@@ -159,7 +155,6 @@ export async function sendOrderShipped(order) {
   })
 
   return await sendEmail({
-    provider: 'smtp',
     type: 'order-shipped',
     to: recipientEmail,
     subject: `🚚 Order Shipped: ${order.orderNumber} - Lily Charm`,
@@ -169,7 +164,7 @@ export async function sendOrderShipped(order) {
 }
 
 /**
- * SES Provider: Send Out For Delivery Email
+ * ZeptoMail: Send Out For Delivery Email (From: orders@lilycharm.in)
  */
 export async function sendOrderOutForDelivery(order) {
   const recipientEmail = order.shippingAddress?.email || order.email
@@ -183,7 +178,6 @@ export async function sendOrderOutForDelivery(order) {
   })
 
   return await sendEmail({
-    provider: 'smtp',
     type: 'out-for-delivery',
     to: recipientEmail,
     subject: `🚚 Out for Delivery Today: ${order.orderNumber} - Lily Charm`,
@@ -193,7 +187,7 @@ export async function sendOrderOutForDelivery(order) {
 }
 
 /**
- * SES Provider: Send Order Delivered Email
+ * ZeptoMail: Send Order Delivered Email (From: orders@lilycharm.in)
  */
 export async function sendOrderDelivered(order) {
   const recipientEmail = order.shippingAddress?.email || order.email
@@ -207,7 +201,6 @@ export async function sendOrderDelivered(order) {
   })
 
   return await sendEmail({
-    provider: 'smtp',
     type: 'order-delivered',
     to: recipientEmail,
     subject: `🎉 Delivered: Order ${order.orderNumber} - Lily Charm`,
@@ -217,7 +210,7 @@ export async function sendOrderDelivered(order) {
 }
 
 /**
- * SES Provider: Send Refund Approved Email
+ * ZeptoMail: Send Refund Approved Email (From: orders@lilycharm.in)
  */
 export async function sendRefundApproved(order) {
   const recipientEmail = order.shippingAddress?.email || order.email
@@ -232,7 +225,6 @@ export async function sendRefundApproved(order) {
   })
 
   return await sendEmail({
-    provider: 'smtp',
     type: 'refund-approved',
     to: recipientEmail,
     subject: `💰 Refund Approved: Order ${order.orderNumber} - Lily Charm`,
@@ -242,7 +234,7 @@ export async function sendRefundApproved(order) {
 }
 
 /**
- * SES Provider: Send Refund Rejected Email
+ * ZeptoMail: Send Refund Rejected Email (From: orders@lilycharm.in)
  */
 export async function sendRefundRejected(order, reason = '') {
   const recipientEmail = order.shippingAddress?.email || order.email
@@ -255,7 +247,6 @@ export async function sendRefundRejected(order, reason = '') {
   })
 
   return await sendEmail({
-    provider: 'smtp',
     type: 'refund-rejected',
     to: recipientEmail,
     subject: `⚠️ Refund Notice: Order ${order.orderNumber} - Lily Charm`,
@@ -265,7 +256,7 @@ export async function sendRefundRejected(order, reason = '') {
 }
 
 /**
- * SES Provider: Send Refund Notice (Wrapper for compatibility)
+ * ZeptoMail: Send Refund Notice Wrapper
  */
 export async function sendRefundNotice(order, isApproved = true, amount = 0, reason = '') {
   if (isApproved) {
@@ -277,7 +268,7 @@ export async function sendRefundNotice(order, isApproved = true, amount = 0, rea
 }
 
 /**
- * SES Provider: Send Newsletter Broadcast Email
+ * ZeptoMail: Send Newsletter Broadcast Email (From: contact@lilycharm.in)
  */
 export async function sendNewsletterEmail(recipients = [], subject, content) {
   const results = []
@@ -296,7 +287,6 @@ export async function sendNewsletterEmail(recipients = [], subject, content) {
       })
 
       const res = await sendEmail({
-        provider: 'smtp',
         type: 'newsletter',
         to: email,
         subject: subject || '🌸 Lily Charm Newsletter',
@@ -310,10 +300,7 @@ export async function sendNewsletterEmail(recipients = [], subject, content) {
   return results
 }
 
-export { sendWelcomeEmail } from './otp.service.js'
-
 export default {
-  sendWelcomeEmail,
   sendOrderConfirmation,
   sendOrderInvoice,
   sendPaymentSuccess,

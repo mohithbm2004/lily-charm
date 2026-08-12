@@ -5,8 +5,7 @@ import { Link } from 'react-router-dom'
 import { formatPrice } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
 import { useAlert } from '../context/AlertContext'
-
-const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
+import { API_URL } from '../config/api'
 
 export default function CustomDesignModal({ isOpen, onClose }) {
   const { user } = useAuth()

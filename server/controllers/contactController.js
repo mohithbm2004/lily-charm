@@ -15,8 +15,7 @@ export async function submitContactMessage(req, res, next) {
     const cleanPhone = (phone || '').trim()
     const cleanSubject = (subject || '').trim() || 'Studio Inquiry / Custom Creation'
 
-    const receiverEmail = process.env.CONTACT_RECEIVER_EMAIL || 'keerthanabm@lilycharm.in'
-    const senderFrom = process.env.EMAIL_FROM || 'Lily Charm <keerthanabm@lilycharm.in>'
+    const receiverEmail = process.env.CONTACT_RECEIVER_EMAIL || process.env.ADMIN_EMAIL || 'keerthanabm@lilycharm.in'
 
     // 1. Send Notification Email to Studio Owner (keerthanabm@lilycharm.in)
     const adminHtml = `
@@ -48,10 +47,9 @@ export async function submitContactMessage(req, res, next) {
       </div>
     `
 
-    // Attempt to send email to studio receiver via Direct Zoho Mailbox SMTP
+    // Attempt to send email to studio receiver via ZeptoMail SMTP
     try {
       await sendEmail({
-        provider: 'smtp',
         type: 'contact-inquiry',
         to: receiverEmail,
         replyTo: cleanEmail,
@@ -63,7 +61,7 @@ export async function submitContactMessage(req, res, next) {
       console.warn('[CONTACT EMAIL RECEIVER NOTICE]:', err.message || err)
     }
 
-    // 2. Send Automated Acknowledgment Email to Customer via Direct Zoho Mailbox SMTP
+    // 2. Send Automated Acknowledgment Email to Customer via ZeptoMail SMTP (From: contact@lilycharm.in)
     const customerAckHtml = `
       <div style="font-family: 'Playfair Display', Georgia, serif; max-width: 600px; margin: 0 auto; background-color: #FAF7F2; border: 1px solid #2B3925; padding: 30px; color: #1C1B18;">
         <div style="text-align: center; border-bottom: 2px solid #2B3925; padding-bottom: 15px; margin-bottom: 20px;">
@@ -90,19 +88,18 @@ export async function submitContactMessage(req, res, next) {
         <div style="text-align: center; margin-top: 25px; padding-top: 15px; border-top: 1px solid #DCD6C9; font-size: 11px; color: #7A6652;">
           <p style="margin: 0;">Warm regards,</p>
           <p style="margin: 4px 0 0; font-weight: bold; color: #2B3925; font-family: 'Playfair Display', Georgia, serif; font-size: 14px;">Lily Charm Studio</p>
-          <p style="margin: 2px 0 0;"><a href="mailto:keerthanabm@lilycharm.in" style="color: #7A6652; text-decoration: none;">keerthanabm@lilycharm.in</a> • <a href="https://lilycharm.in" style="color: #7A6652; text-decoration: none;">lilycharm.in</a></p>
+          <p style="margin: 2px 0 0;"><a href="mailto:contact@lilycharm.in" style="color: #7A6652; text-decoration: none;">contact@lilycharm.in</a> • <a href="https://lilycharm.in" style="color: #7A6652; text-decoration: none;">lilycharm.in</a></p>
         </div>
       </div>
     `
 
     try {
       await sendEmail({
-        provider: 'smtp',
         type: 'contact-ack',
         to: cleanEmail,
         subject: `Thank you for contacting Lily Charm Studio — We've received your note! 🌸`,
         html: customerAckHtml,
-        text: `Dear ${cleanName},\n\nThank you for reaching out to Lily Charm. We have received your note and Keerthana Bapu will respond within 1-2 business days.\n\nWarm regards,\nLily Charm Studio\nkeerthanabm@lilycharm.in`,
+        text: `Dear ${cleanName},\n\nThank you for reaching out to Lily Charm. We have received your note and Keerthana Bapu will respond within 1-2 business days.\n\nWarm regards,\nLily Charm Studio\ncontact@lilycharm.in`,
       })
     } catch (err) {
       console.warn('[CONTACT ACK EMAIL NOTICE]:', err.message || err)

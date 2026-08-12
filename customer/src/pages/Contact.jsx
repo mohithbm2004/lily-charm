@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Instagram, Mail, Send, Sparkles, CheckCircle2, Clock, MapPin } from 'lucide-react'
 import Reveal from '../components/Reveal'
-
-const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
+import { API_URL } from '../config/api'
 
 export default function Contact() {
   const [formData, setFormData] = useState({

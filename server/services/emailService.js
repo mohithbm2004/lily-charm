@@ -9,7 +9,13 @@ import {
   sendRefundNotice,
   sendNewsletterEmail,
 } from './orderEmail.service.js'
-import { sendEmail, validateEmail, compileTemplate } from './email.service.js'
+import {
+  sendEmail,
+  validateEmail,
+  compileTemplate,
+  SENDER_ADDRESSES,
+  getSenderByPurpose,
+} from './email.service.js'
 
 export {
   sendOtpEmail,
@@ -26,6 +32,8 @@ export {
   sendEmail,
   validateEmail,
   compileTemplate,
+  SENDER_ADDRESSES,
+  getSenderByPurpose,
 }
 
 export async function sendOrderConfirmationEmail(order) {
@@ -67,4 +75,6 @@ export default {
   sendEmail,
   validateEmail,
   compileTemplate,
+  SENDER_ADDRESSES,
+  getSenderByPurpose,
 }

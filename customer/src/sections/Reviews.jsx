@@ -4,8 +4,7 @@ import { Star, Sparkles, Edit3, CheckCircle2, ChevronLeft, ChevronRight } from '
 import { reviews as defaultReviews } from '../data/products'
 import Reveal from '../components/Reveal'
 import ReviewModal from '../components/ReviewModal'
-
-const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
+import { API_URL } from '../config/api'
 
 export default function Reviews() {
   const [reviewsList, setReviewsList] = useState(defaultReviews)

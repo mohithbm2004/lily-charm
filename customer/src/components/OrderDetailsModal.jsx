@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { X, Download, Truck, Package, AlertCircle, RefreshCw } from 'lucide-react'
 import { formatPrice } from '../lib/format'
 import OrderTimeline from './OrderTimeline'
+import { API_URL } from '../config/api'
 
 export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh }) {
   const [cancelReason, setCancelReason] = useState('')
@@ -12,8 +13,6 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
   const [message, setMessage] = useState('')
 
   if (!isOpen || !order) return null
-
-  const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://lily-charm-server.onrender.com/api' : 'http://localhost:5000/api')
 
   const handleDownloadInvoice = () => {
     window.open(`${API_URL}/orders/${order._id}/invoice`, '_blank')
