@@ -1,12 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import {
-  getZeptoMailAgent,
-  SENDER_ADDRESSES,
-  createAgentTransport,
-  categorizeSmtpError,
-} from '../config/zeptomail.js'
+import { getZeptoMailAgent, SENDER_ADDRESSES } from '../config/zeptomail.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -14,7 +9,7 @@ const __dirname = path.dirname(__filename)
 export { SENDER_ADDRESSES, getZeptoMailAgent }
 
 export function getSenderByPurpose(type = '') {
-  return getZeptoMailAgent(type).from
+  return getZeptoMailAgent(type).from.full
 }
 
 /**
@@ -24,6 +19,30 @@ export function validateEmail(email) {
   if (!email || typeof email !== 'string') return false
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return re.test(email.trim())
+}
+
+/**
+ * Parses email strings like "Lily Charm <no-reply@lilycharm.in>" into { name, address }
+ */
+export function parseEmailAddress(input, defaultName = 'Lily Charm') {
+  if (!input) return { address: 'no-reply@lilycharm.in', name: defaultName }
+  if (typeof input === 'object' && input.address) {
+    return { address: input.address.trim().toLowerCase(), name: input.name || defaultName }
+  }
+
+  const str = String(input).trim()
+  const match = str.match(/^(?:"?([^"]*)"?\s)?(?:<(.+)>)$/)
+  if (match) {
+    return {
+      name: (match[1] || defaultName).trim(),
+      address: match[2].trim().toLowerCase(),
+    }
+  }
+
+  return {
+    name: defaultName,
+    address: str.toLowerCase(),
+  }
 }
 
 /**
@@ -51,11 +70,12 @@ export function compileTemplate(templateName, data = {}) {
 }
 
 /**
- * Centralized Email Dispatcher using ONLY ZeptoMail SMTP with Multi-Port Failover & Categorized Logging
+ * Centralized Email Dispatcher using ZeptoMail HTTP REST API (Port 443 HTTPS)
  */
 export async function sendEmail({
   type = 'generic',
   to,
+  toName,
   from,
   subject,
   html,
@@ -68,100 +88,157 @@ export async function sendEmail({
   // 1. Recipient Validation
   if (!validateEmail(to)) {
     const errorMsg = `Invalid recipient email address: "${to}"`
-    console.error(`[ZEPTOMAIL VALIDATION ERROR]: ${errorMsg}`)
+    console.error(`[ZEPTOMAIL API VALIDATION ERROR]: ${errorMsg}`)
     throw new Error(errorMsg)
   }
 
   const cleanTo = to.trim().toLowerCase()
 
-  // 2. Resolve Agent Transporter and Verified Sender for this Email Purpose
+  // 2. Resolve Agent and Sender details for this purpose
   const agent = getZeptoMailAgent(type)
-  const fromAddress = from || agent.from
+  const parsedFrom = from ? parseEmailAddress(from) : { address: agent.from.address, name: agent.from.name }
 
   // 3. Configuration Check
-  if (!agent.configured || !agent.transport) {
-    const notice = `ZeptoMail credentials are not configured.`
-    console.warn(`[ZEPTOMAIL CONFIG NOTICE] [Purpose: ${agent.purpose.toUpperCase()}]: ${notice}`)
+  if (!agent.configured) {
+    const notice = `ZeptoMail API token is not configured for ${agent.agent}. Please set ${getEnvVarNameForAgent(agent.purpose)} in Render environment variables.`
+    console.warn(`[ZEPTOMAIL API CONFIG NOTICE] [${agent.agent}]: ${notice}`)
     return {
       success: false,
-      message: notice,
+      message: 'ZeptoMail API token is not configured.',
       configured: false,
+      agent: agent.agent,
       purpose: agent.purpose,
-      from: fromAddress,
       to: cleanTo,
     }
   }
 
-  // 4. Dispatch Email Options
-  const mailOptions = {
-    from: fromAddress,
-    to: cleanTo,
-    subject,
-    text: text || '',
-    html: html || '',
-    attachments,
-    ...(replyTo ? { replyTo } : {}),
+  // 4. Build ZeptoMail HTTP REST API Payload
+  const formattedAttachments = attachments.map((att) => ({
+    name: att.filename || 'attachment',
+    content: Buffer.isBuffer(att.content) ? att.content.toString('base64') : att.content,
+    mime_type: att.contentType || 'application/octet-stream',
+  }))
+
+  const payload = {
+    from: {
+      address: parsedFrom.address,
+      name: parsedFrom.name,
+    },
+    to: [
+      {
+        email_address: {
+          address: cleanTo,
+          name: toName || parsedFrom.name || 'Valued Customer',
+        },
+      },
+    ],
+    subject: subject || 'Notification from Lily Charm',
+    htmlbody: html || `<p>${text || ''}</p>`,
+    ...(text ? { textbody: text } : {}),
+    ...(replyTo
+      ? {
+          reply_to: [
+            typeof replyTo === 'string'
+              ? { address: replyTo.trim().toLowerCase(), name: parsedFrom.name }
+              : { address: replyTo.address, name: replyTo.name || parsedFrom.name },
+          ],
+        }
+      : {}),
+    ...(formattedAttachments.length > 0 ? { attachments: formattedAttachments } : {}),
   }
 
+  // 5. Retry Loop for HTTP API with Exponential Backoff
   let attempt = 0
-  let lastCategorized = null
+  let lastError = null
 
   while (attempt < retries) {
     attempt++
-
-    // Try Primary Transporter (Controlled by ZEPTOMAIL_PORT / 587)
     try {
-      const info = await agent.transport.sendMail(mailOptions)
-      console.log(`[EMAIL SUCCESS] [ZeptoMail SMTP] [Purpose: ${agent.purpose.toUpperCase()}] [Port: ${agent.port}] [From: ${fromAddress}] Sent to ${cleanTo} (ID: ${info.messageId})`)
-      return {
-        success: true,
-        messageId: info.messageId,
-        provider: 'zeptomail',
-        purpose: agent.purpose,
-        port: agent.port,
-        attempts: attempt,
-      }
-    } catch (err) {
-      lastCategorized = categorizeSmtpError(err, agent.host, agent.port)
-      console.warn(`[EMAIL ATTEMPT ${attempt}/${retries} FAILED] [Category: ${lastCategorized.category}] ${lastCategorized.message}`)
+      const response = await fetch(agent.apiUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': agent.authHeader,
+        },
+        body: JSON.stringify(payload),
+      })
 
-      // If connection timed out on Port 587 and fallback is viable, attempt Port 465 (SSL)
-      if (agent.pass && agent.port !== 465 && (lastCategorized.category === 'TCP_CONNECTION_TIMEOUT' || lastCategorized.category === 'TLS_FAILURE')) {
-        console.log(`[ZEPTOMAIL RESILIENT FALLBACK] Attempting instantaneous fallback via Port 465 (SSL TLSv1.2)...`)
-        try {
-          const fallbackTransport = createAgentTransport({
-            host: agent.host,
-            port: 465,
-            pass: agent.pass,
-            secure: true,
-            requireTLS: false,
-            tlsMinVersion: 'TLSv1.2',
-            label: 'Fallback-SSL',
-          })
-          const fallbackInfo = await fallbackTransport.sendMail(mailOptions)
-          console.log(`[EMAIL SUCCESS via ZeptoMail Port 465 SSL] Sent to ${cleanTo} (ID: ${fallbackInfo.messageId})`)
-          return {
-            success: true,
-            messageId: fallbackInfo.messageId,
-            provider: 'zeptomail-ssl-fallback',
-            purpose: agent.purpose,
-            port: 465,
-            attempts: attempt,
-          }
-        } catch (fallbackErr) {
-          const fbCat = categorizeSmtpError(fallbackErr, agent.host, 465)
-          console.error(`[ZEPTOMAIL FALLBACK PORT 465 FAILED] [Category: ${fbCat.category}] ${fbCat.message}`)
+      const rawResponseText = await response.text()
+      let responseData = {}
+      try {
+        responseData = JSON.parse(rawResponseText)
+      } catch (_jsonErr) {
+        responseData = { raw: rawResponseText }
+      }
+
+      if (response.ok || response.status === 200 || response.status === 201) {
+        const messageId =
+          responseData?.data?.[0]?.message_id ||
+          responseData?.data?.[0]?.additional_info?.[0]?.message_id ||
+          `zepto-${Date.now()}`
+
+        console.log(
+          `[EMAIL SUCCESS] [ZeptoMail HTTP API] [${agent.agent}] [From: ${parsedFrom.address}] Sent to ${cleanTo} (ID: ${messageId})`
+        )
+        return {
+          success: true,
+          messageId,
+          provider: 'zeptomail-http-api',
+          agent: agent.agent,
+          purpose: agent.purpose,
+          attempts: attempt,
+          data: responseData,
         }
       }
 
-      if (attempt < retries) {
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Handle HTTP API Error Statuses
+      const errCode = responseData?.error?.code || response.status
+      const errMsg =
+        responseData?.error?.details?.[0]?.message ||
+        responseData?.error?.message ||
+        responseData?.message ||
+        response.statusText
+
+      if (response.status === 401 || response.status === 403) {
+        console.error(
+          `[ZEPTOMAIL API AUTH ERROR] [${agent.agent}] Status ${response.status}: ${errMsg}. Check ${getEnvVarNameForAgent(agent.purpose)} token.`
+        )
+      } else if (response.status === 400) {
+        console.error(
+          `[ZEPTOMAIL API VALIDATION ERROR] [${agent.agent}] Status 400: ${errMsg}. Sender address: ${parsedFrom.address}`
+        )
+      } else {
+        console.warn(
+          `[ZEPTOMAIL API REQUEST WARNING] [Attempt ${attempt}/${retries}] Status ${response.status}: ${errMsg}`
+        )
       }
+
+      lastError = new Error(`ZeptoMail HTTP API Error (${response.status}): ${errMsg}`)
+    } catch (fetchErr) {
+      console.warn(
+        `[ZEPTOMAIL API NETWORK WARNING] [Attempt ${attempt}/${retries}] Network error: ${fetchErr.message}`
+      )
+      lastError = fetchErr
+    }
+
+    if (attempt < retries) {
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt))
     }
   }
 
-  console.error(`[EMAIL DISPATCH FAILURE] Exhausted ${retries} attempts to ${cleanTo} via ZeptoMail SMTP (${agent.purpose.toUpperCase()}). Last Error [${lastCategorized?.category}]: ${lastCategorized?.message}`)
-  throw new Error(`Email dispatch failed via ZeptoMail SMTP [${lastCategorized?.category}]: ${lastCategorized?.message}`)
+  console.error(
+    `[EMAIL DISPATCH FAILURE] Exhausted ${retries} attempts to ${cleanTo} via ZeptoMail HTTP API (${agent.agent}). Error: ${lastError?.message}`
+  )
+  throw new Error(`Email dispatch failed via ZeptoMail HTTP API: ${lastError?.message}`)
+}
+
+function getEnvVarNameForAgent(purpose = '') {
+  const p = purpose.toLowerCase()
+  if (p.includes('otp') || p.includes('verify') || p.includes('reset')) return 'ZEPTO_OTP_API_TOKEN'
+  if (p.includes('order') || p.includes('invoice') || p.includes('refund')) return 'ZEPTO_ORDER_API_TOKEN'
+  if (p.includes('support')) return 'ZEPTO_SUPPORT_API_TOKEN'
+  return 'ZEPTO_CONTACT_API_TOKEN'
 }
 
 export default {
@@ -169,5 +246,6 @@ export default {
   getZeptoMailAgent,
   validateEmail,
   compileTemplate,
+  parseEmailAddress,
   sendEmail,
 }
