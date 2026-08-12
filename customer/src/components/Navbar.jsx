@@ -52,7 +52,7 @@ export default function Navbar() {
         {/* Top Main Navigation */}
         <div className="border-b border-[var(--color-line)] bg-[var(--color-bg)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 h-16 md:h-20 flex items-center justify-between gap-3 sm:gap-6">
-
+            
             {/* Left Brand Title & Official Logo Emblem */}
             <Link
               to="/"
@@ -84,7 +84,8 @@ export default function Navbar() {
                     to={l.to}
                     end={l.to === '/'}
                     className={({ isActive }) =>
-                      `text-[0.72rem] tracking-[0.2em] uppercase font-[var(--font-button)] font-medium transition-colors ${isActive ? 'text-[var(--color-primary)] font-bold underline underline-offset-4' : 'text-[var(--color-ink)] hover:text-[var(--color-primary)]'
+                      `text-[0.72rem] tracking-[0.2em] uppercase font-[var(--font-button)] font-medium transition-colors ${
+                        isActive ? 'text-[var(--color-primary)] font-bold underline underline-offset-4' : 'text-[var(--color-ink)] hover:text-[var(--color-primary)]'
                       }`
                     }
                   >
