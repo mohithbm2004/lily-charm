@@ -478,10 +478,10 @@ export default function Dashboard() {
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`shrink-0 text-left text-xs font-bold uppercase tracking-wider px-3.5 sm:px-4 py-2.5 sm:py-3 whitespace-nowrap transition-colors border-l-2 ${
+              className={`shrink-0 text-left text-xs font-bold uppercase tracking-wider px-4 py-3 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
                 tab === t
-                  ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm'
-                  : 'text-[var(--color-ink-soft)] bg-[var(--color-card-bg)]/60 hover:bg-[var(--color-card-bg)] border-transparent'
+                  ? 'bg-[var(--color-primary)] text-white shadow-md'
+                  : 'text-[var(--color-ink-soft)] bg-[var(--color-card-bg)] hover:bg-[var(--color-bg)] border border-[var(--color-line)]'
               }`}
             >
               {t}
@@ -493,9 +493,9 @@ export default function Dashboard() {
         <div className="space-y-6">
           {/* TAB 1: PROFILE DETAILS */}
           {tab === 'Profile Details' && (
-            <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl text-xs border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 md:p-8 shadow-sm">
+            <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl text-xs card-luxury p-6 md:p-8 shadow-sm">
               <div className="border-b border-[var(--color-line)] pb-4 space-y-1">
-                <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
+                <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2 text-[var(--color-ink)]">
                   <User size={18} className="text-[var(--color-primary)]" /> User Profile Information
                 </h2>
                 <p className="text-xs text-[var(--color-ink-soft)]">

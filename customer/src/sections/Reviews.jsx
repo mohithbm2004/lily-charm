@@ -129,9 +129,8 @@ export default function Reviews() {
                 key={r._id || r.id || i}
                 onClick={() => setIndex(i)}
                 aria-label={`Show review ${i + 1}`}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === index ? 'bg-[var(--color-primary)] w-6' : 'bg-[var(--color-line)]/40 w-2 hover:bg-[var(--color-line)]'
-                }`}
+                className={`h-1.5 rounded-full transition-all ${i === index ? 'bg-[var(--color-primary)] w-6' : 'bg-[var(--color-line)]/40 w-2 hover:bg-[var(--color-line)]'
+                  }`}
               />
             ))}
           </div>

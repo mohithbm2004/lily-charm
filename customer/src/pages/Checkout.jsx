@@ -4,7 +4,7 @@ import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { formatPrice } from '../lib/format'
 import Reveal from '../components/Reveal'
-import { CheckCircle2, ShoppingBag, AlertTriangle } from 'lucide-react'
+import { CheckCircle2, ShoppingBag, AlertTriangle, ShieldCheck } from 'lucide-react'
 
 import { useStudio } from '../context/StudioContext'
 import { API_URL } from '../config/api'
@@ -75,7 +75,6 @@ export default function Checkout() {
       return
     }
 
-    // Auto-fetch location when exactly 6 digits are entered
     setPincodeStatus({ loading: true, success: false, message: '🔍 Fetching city & location...' })
     try {
       const res = await fetch(`https://api.postalpincode.in/pincode/${digitsOnly}`)
@@ -122,7 +121,6 @@ export default function Checkout() {
     e.preventDefault()
     if (processing) return
 
-    // Strict 6-digit Pincode Validation
     if (!/^\d{6}$/.test(form.pincode)) {
       alert('Please enter a valid 6-digit numeric PIN code (e.g. 562159).')
       return
@@ -185,7 +183,6 @@ export default function Checkout() {
       let razorpayOrderId = savedOrder.razorpayOrderId || savedOrder.order_id || savedOrder.id
 
       if (!razorpayOrderId) {
-        console.log('Fetching Razorpay order ID from /api/create-order...')
         try {
           const rzpRes = await fetch(`${API_URL}/create-order`, {
             method: 'POST',
@@ -211,7 +208,6 @@ export default function Checkout() {
         return
       }
 
-      // Open Razorpay Standard Checkout Modal
       const options = {
         key: razorpayKey,
         amount: Math.round(total * 100),
@@ -225,7 +221,7 @@ export default function Checkout() {
           contact: form.phone,
         },
         theme: {
-          color: '#882233',
+          color: '#2D3926',
         },
         handler: async function (response) {
           setProcessing(true)
@@ -258,7 +254,6 @@ export default function Checkout() {
         modal: {
           ondismiss: function () {
             setProcessing(false)
-            console.log('Razorpay payment modal closed by user.')
           },
         },
       }
@@ -281,32 +276,32 @@ export default function Checkout() {
   if (orderConfirmed) {
     return (
       <div className="max-w-3xl mx-auto px-6 pt-36 pb-24 text-center space-y-6">
-        <div className="w-20 h-20 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto">
-          <CheckCircle2 size={48} />
+        <div className="w-20 h-20 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto border border-emerald-300 shadow-md">
+          <CheckCircle2 size={44} />
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold font-[var(--font-display)] uppercase">Order Confirmed!</h1>
+        <h1 className="text-3xl md:text-4xl font-bold font-[var(--font-display)]">Order Confirmed!</h1>
         <p className="text-sm text-[var(--color-ink-soft)] max-w-md mx-auto leading-relaxed">
-          Thank you for your order, <strong className="text-[var(--color-ink)]">{orderConfirmed.shippingAddress?.name || form.name}</strong>! Your order number is{' '}
+          Thank you for your order, <strong className="text-[var(--color-ink)]">{orderConfirmed.shippingAddress?.name || form.name}</strong>! Your order reference is{' '}
           <strong className="text-[var(--color-primary)] font-mono">{orderConfirmed.orderNumber || orderConfirmed._id}</strong>.
         </p>
-        <div className="bg-[var(--color-beige)]/40 p-6 border border-[var(--color-line)] max-w-lg mx-auto text-left text-xs space-y-2">
+        <div className="card-luxury p-6 max-w-lg mx-auto text-left text-xs space-y-3">
           <div className="flex justify-between border-b border-[var(--color-line)] pb-2 font-bold uppercase">
             <span>Payment Status</span>
-            <span className="text-emerald-700 font-mono">PAID (Razorpay)</span>
+            <span className="text-emerald-700 font-mono flex items-center gap-1"><ShieldCheck size={14} /> PAID (Razorpay)</span>
           </div>
           <div className="flex justify-between pt-1">
-            <span>Shipping To:</span>
-            <span className="font-semibold text-right">{orderConfirmed.shippingAddress?.address}, {orderConfirmed.shippingAddress?.city} - {orderConfirmed.shippingAddress?.pincode}</span>
+            <span>Shipping Address:</span>
+            <span className="font-semibold text-right max-w-xs">{orderConfirmed.shippingAddress?.address}, {orderConfirmed.shippingAddress?.city} - {orderConfirmed.shippingAddress?.pincode}</span>
           </div>
-          <div className="flex justify-between pt-1 border-t border-[var(--color-line)] font-bold text-sm">
-            <span>Total Paid:</span>
+          <div className="flex justify-between pt-2 border-t border-[var(--color-line)] font-bold text-sm">
+            <span>Total Amount Paid:</span>
             <span className="text-[var(--color-primary)]">{formatPrice(orderConfirmed.grandTotal ?? orderConfirmed.total ?? total)}</span>
           </div>
         </div>
         <div className="pt-4">
           <button
             onClick={() => navigate('/shop')}
-            className="btn-primary px-8 py-3 text-xs uppercase tracking-widest font-bold"
+            className="btn-primary px-8 py-3.5 text-xs"
           >
             Continue Shopping
           </button>
@@ -319,9 +314,9 @@ export default function Checkout() {
     return (
       <div className="max-w-3xl mx-auto px-6 pt-40 pb-24 text-center space-y-4">
         <ShoppingBag size={40} className="mx-auto text-[var(--color-ink-soft)]" />
-        <h1 className="text-2xl mb-1">Your bag is empty</h1>
+        <h1 className="text-2xl font-[var(--font-display)]">Your bag is empty</h1>
         <p className="text-[var(--color-ink-soft)] text-sm">Add a piece from the shop before checking out.</p>
-        <button onClick={() => navigate('/shop')} className="btn-primary mt-4 px-6 py-2.5 text-xs">
+        <button onClick={() => navigate('/shop')} className="btn-primary mt-4 px-6 py-3 text-xs">
           Explore Shop
         </button>
       </div>
@@ -329,23 +324,27 @@ export default function Checkout() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pt-24 sm:pt-32 pb-16 sm:pb-24 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 lg:gap-14 w-full max-w-full">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pt-24 sm:pt-32 pb-16 sm:pb-24 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 lg:gap-12 w-full max-w-full">
       <Reveal>
-        <h1 className="text-2xl sm:text-3xl mb-6 sm:mb-8 font-[var(--font-display)] font-bold uppercase">Checkout</h1>
+        <span className="eyebrow block mb-1.5 text-[var(--color-primary)] font-bold">Secure Storefront Checkout</span>
+        <h1 className="text-2xl sm:text-3xl mb-6 sm:mb-8 font-[var(--font-display)] font-bold">Checkout</h1>
+        
         <form onSubmit={handlePay} className="space-y-6 sm:space-y-8">
           <div>
-            <p className="eyebrow mb-3 sm:mb-4">Contact Information</p>
+            <p className="eyebrow mb-3 sm:mb-4 text-[var(--color-primary)]">1. Contact Information</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
-              <input name="name" required onChange={handleChange} placeholder="Full name *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] w-full" />
-              <input name="email" type="email" required onChange={handleChange} placeholder="Email address *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] w-full" />
-              <input name="phone" required onChange={handleChange} placeholder="Phone number *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] col-span-1 sm:col-span-2 font-mono w-full" />
+              <input name="name" required value={form.name} onChange={handleChange} placeholder="Full name *" className="input-luxury text-xs" />
+              <input name="email" type="email" required value={form.email} onChange={handleChange} placeholder="Email address *" className="input-luxury text-xs" />
+              <input name="phone" required value={form.phone} onChange={handleChange} placeholder="Phone number *" className="input-luxury text-xs col-span-1 sm:col-span-2 font-mono" />
             </div>
           </div>
+
           <div>
-            <p className="eyebrow mb-3 sm:mb-4">Shipping Address</p>
+            <p className="eyebrow mb-3 sm:mb-4 text-[var(--color-primary)]">2. Shipping Address</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
-              <input name="address" required value={form.address} onChange={handleChange} placeholder="Street address *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] col-span-1 sm:col-span-2 w-full" />
-              <input name="city" required value={form.city} onChange={handleChange} placeholder="City / District *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] font-semibold w-full" />
+              <input name="address" required value={form.address} onChange={handleChange} placeholder="Street address *" className="input-luxury text-xs col-span-1 sm:col-span-2" />
+              <input name="city" required value={form.city} onChange={handleChange} placeholder="City / District *" className="input-luxury text-xs font-semibold" />
+              
               <div className="w-full">
                 <input
                   name="pincode"
@@ -357,12 +356,12 @@ export default function Checkout() {
                   value={form.pincode}
                   onChange={handlePincodeChange}
                   placeholder="PIN code (6 digits) *"
-                  className={`w-full border bg-transparent px-4 py-3 text-xs focus:outline-none font-mono ${
+                  className={`input-luxury text-xs font-mono ${
                     pincodeStatus.message && !pincodeStatus.success && !pincodeStatus.loading
                       ? 'border-amber-600 focus:border-amber-600'
                       : pincodeStatus.success
                       ? 'border-emerald-600 focus:border-emerald-600'
-                      : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                      : ''
                   }`}
                 />
                 {pincodeStatus.message && (
@@ -379,54 +378,62 @@ export default function Checkout() {
               </div>
             </div>
           </div>
+
           <div>
-            <p className="eyebrow mb-3 sm:mb-4">Payment Method</p>
-            <div className="border border-[var(--color-line)] px-3.5 sm:px-4 py-3.5 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[var(--color-beige)]/30">
-              <span className="font-semibold">Razorpay — Cards, UPI, Netbanking</span>
-              <span className="specimen-tag bg-emerald-800 text-white font-mono px-2 py-0.5 self-start sm:self-auto">100% SECURE</span>
+            <p className="eyebrow mb-3 sm:mb-4 text-[var(--color-primary)]">3. Payment Gateway</p>
+            <div className="card-luxury p-4 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[var(--color-silk)]">
+              <span className="font-semibold text-[var(--color-ink)] flex items-center gap-1.5">
+                <ShieldCheck size={16} className="text-[var(--color-primary)]" />
+                Razorpay — Cards, UPI (GPay, PhonePe, Paytm), Netbanking
+              </span>
+              <span className="specimen-tag bg-emerald-800 text-white font-mono px-2.5 py-1 rounded-md self-start sm:self-auto">
+                100% SECURE
+              </span>
             </div>
           </div>
 
           {/* Cancellation Policy Disclaimer */}
-          <div className="p-3.5 sm:p-4 bg-amber-50/90 border border-amber-300 text-[0.7rem] sm:text-[0.72rem] text-amber-900 leading-relaxed rounded space-y-1.5 shadow-sm">
-            <div className="font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-950 text-xs">
+          <div className="p-4 bg-amber-50/90 border border-amber-300 text-[0.72rem] text-amber-950 leading-relaxed rounded-xl space-y-1.5 shadow-sm">
+            <div className="font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-900 text-xs">
               <AlertTriangle size={15} className="text-amber-700 shrink-0" />
-              Studio Cancellation & Refund Policy
+              Studio Cancellation &amp; Refund Policy
             </div>
-            <p className="text-[0.68rem] sm:text-[0.7rem]">
+            <p>
               • <strong>Online Self-Cancellation:</strong> You can cancel your order before handcrafting begins. Customer self-cancellation incurs a <strong>3% payment processing fee</strong> (97% net amount is refunded to your original payment method).
             </p>
-            <p className="text-[0.68rem] sm:text-[0.7rem]">
+            <p>
               • <strong>Studio Admin Cancellation:</strong> If cancelled by Studio Admin, a <strong>100% full refund</strong> is issued immediately with 0% deduction.
             </p>
           </div>
 
-          <button type="submit" disabled={processing} className="btn-primary w-full py-3.5 text-xs uppercase tracking-widest font-bold disabled:opacity-60">
+          <button type="submit" disabled={processing} className="btn-primary w-full py-4 text-xs uppercase tracking-widest font-bold disabled:opacity-60">
             {processing ? 'Processing Payment & Saving Order...' : `Pay ${formatPrice(total)} Now`}
           </button>
         </form>
       </Reveal>
 
+      {/* Right: Sticky Order Summary */}
       <Reveal delay={0.1}>
-        <div className="bg-[var(--color-beige)]/30 p-4 sm:p-6 lg:sticky lg:top-28 border border-[var(--color-line)] space-y-4 sm:space-y-5 w-full">
-          <p className="eyebrow mb-2">Order Summary</p>
-          <div className="space-y-3 sm:space-y-4 max-h-56 overflow-y-auto pr-1">
+        <div className="card-luxury p-5 sm:p-6 lg:sticky lg:top-28 border border-[var(--color-line)] space-y-5 w-full shadow-md">
+          <p className="eyebrow text-[var(--color-primary)]">Order Summary</p>
+          
+          <div className="space-y-3.5 max-h-60 overflow-y-auto pr-1 scrollbar-thin">
             {items.map((item) => (
-              <div key={item.id} className="flex gap-3">
-                <img src={item.image} alt={item.title} className="w-14 h-16 object-cover shrink-0 border border-[var(--color-line)] bg-[var(--color-card-bg)]" />
+              <div key={item.id} className="flex gap-3 items-center">
+                <img src={item.image} alt={item.title} className="w-14 h-16 object-cover shrink-0 rounded-lg border border-[var(--color-line)] bg-[var(--color-bg)]" />
                 <div className="flex-1 min-w-0 text-xs">
                   <p className="font-bold leading-tight truncate">{item.title}</p>
-                  <p className="text-[var(--color-ink-soft)] mt-0.5">Qty: {item.qty}</p>
+                  <p className="text-[var(--color-ink-soft)] mt-0.5 font-mono">Qty: {item.qty}</p>
                 </div>
-                <p className="text-xs font-bold text-[var(--color-primary)] shrink-0">{formatPrice(item.price * item.qty)}</p>
+                <p className="text-xs font-bold text-[var(--color-primary)] font-serif shrink-0">{formatPrice(item.price * item.qty)}</p>
               </div>
             ))}
           </div>
 
-          {/* Promo Code Entry Box */}
+          {/* Promo Code Box */}
           <div className="pt-3 border-t border-[var(--color-line)] space-y-2">
             {activeCoupon ? (
-              <div className="bg-emerald-50 border border-emerald-300 p-2.5 text-xs flex justify-between items-center rounded">
+              <div className="bg-emerald-50 border border-emerald-300 p-2.5 text-xs flex justify-between items-center rounded-xl">
                 <div>
                   <p className="font-bold text-emerald-900 flex items-center gap-1">
                     ✨ {activeCoupon.code}
@@ -436,7 +443,7 @@ export default function Checkout() {
                 <button
                   type="button"
                   onClick={removeCoupon}
-                  className="text-rose-600 font-bold uppercase text-[0.65rem] hover:underline"
+                  className="text-rose-700 font-bold uppercase text-[0.65rem] hover:underline cursor-pointer"
                 >
                   Remove
                 </button>
@@ -448,9 +455,9 @@ export default function Checkout() {
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
                     placeholder="Promo code"
-                    className="flex-1 border border-[var(--color-line)] bg-white px-3 py-2 text-xs uppercase focus:outline-none focus:border-[var(--color-primary)] font-mono min-w-0"
+                    className="input-luxury text-xs uppercase font-mono py-2"
                   />
-                  <button type="submit" className="btn-outline text-[0.68rem] uppercase font-bold text-[var(--color-ink)] px-3 shrink-0">
+                  <button type="submit" className="btn-outline text-[0.68rem] uppercase font-bold px-3.5 py-2 shrink-0">
                     Apply
                   </button>
                 </div>
@@ -459,23 +466,25 @@ export default function Checkout() {
             )}
 
             {couponMsg && (
-              <div className={`text-[0.68rem] p-2 rounded ${couponMsg.success ? 'bg-emerald-100 text-emerald-900 font-bold' : 'bg-rose-100 text-rose-800'}`}>
+              <div className={`text-[0.68rem] p-2 rounded-lg ${couponMsg.success ? 'bg-emerald-100 text-emerald-900 font-bold' : 'bg-rose-100 text-rose-800'}`}>
                 {couponMsg.message}
               </div>
             )}
           </div>
 
-          <div className="space-y-2 text-xs pt-3 border-t border-[var(--color-line)]">
-            <div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
+          <div className="space-y-2.5 text-xs pt-3 border-t border-[var(--color-line)]">
+            <div className="flex justify-between"><span>Subtotal</span><span className="font-serif font-semibold">{formatPrice(subtotal)}</span></div>
+            
             {discountAmount > 0 && (
-              <div className="flex justify-between text-emerald-700 font-bold">
+              <div className="flex justify-between text-emerald-800 font-bold">
                 <span>Promo Discount ({activeCoupon?.code})</span>
-                <span>-{formatPrice(discountAmount)}</span>
+                <span className="font-serif">-{formatPrice(discountAmount)}</span>
               </div>
             )}
+            
             <div className="flex justify-between items-center">
               <span>Shipping Charge</span>
-              <span className="font-bold">
+              <span className="font-bold font-serif">
                 {shipping === 0 ? (
                   <span className="text-emerald-700 font-mono">
                     FREE {isShippingEnabled && subtotal >= freeThreshold ? `(> ₹${freeThreshold})` : ''}
@@ -485,13 +494,16 @@ export default function Checkout() {
                 )}
               </span>
             </div>
+            
             {isShippingEnabled && shipping > 0 && subtotal < freeThreshold && (
-              <p className="text-[0.65rem] text-emerald-800 bg-emerald-50 border border-emerald-200 p-1.5 rounded font-semibold text-center">
+              <p className="text-[0.68rem] text-emerald-900 bg-emerald-50 border border-emerald-200 p-2 rounded-lg font-medium text-center">
                 ✨ Add {formatPrice(freeThreshold - subtotal)} more for <strong>FREE Shipping!</strong>
               </p>
             )}
-            <div className="flex justify-between font-[var(--font-display)] text-base sm:text-lg font-bold pt-3 border-t border-[var(--color-line)] text-[var(--color-ink)]">
-              <span>Total Amount</span><span className="text-[var(--color-primary)]">{formatPrice(total)}</span>
+            
+            <div className="flex justify-between font-[var(--font-display)] text-lg font-bold pt-3 border-t border-[var(--color-line)] text-[var(--color-ink)]">
+              <span>Total Amount</span>
+              <span className="text-[var(--color-primary)] font-serif">{formatPrice(total)}</span>
             </div>
           </div>
         </div>

@@ -8,7 +8,7 @@ export default function BrandIntro() {
     <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-10 sm:py-14 md:py-16 w-full max-w-full">
       <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4 sm:p-6 md:p-12 shadow-xl">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-14 items-center">
-          
+
           {/* Left Column: 3D Framed Photo */}
           <div className="md:col-span-5 flex justify-center">
             <Reveal>
