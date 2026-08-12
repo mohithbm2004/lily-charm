@@ -53,14 +53,20 @@ export default function Product() {
 
   const [activeImg, setActiveImg] = useState(product.image || allImages[0] || '')
 
+  useEffect(() => {
+    setActiveImg(product.image || allImages[0] || '')
+    setQty(1)
+  }, [product?.id])
+
   const currentImage = activeImg || product.image || allImages[0] || ''
 
   return (
-    <div className="max-w-7xl mx-auto px-6 md:px-10 pt-32 pb-24">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-14">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-24 sm:pt-32 pb-16 sm:pb-24 w-full max-w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-14 items-start">
+        {/* Left: Product Images */}
         <Reveal>
-          <div className="space-y-4">
-            <div className={`${isLandscape ? 'aspect-[16/11]' : 'aspect-[4/5]'} overflow-hidden bg-[var(--color-beige)]/40 border border-[var(--color-line)] relative`}>
+          <div className="space-y-3 sm:space-y-4">
+            <div className={`${isLandscape ? 'aspect-[16/11]' : 'aspect-[4/5]'} overflow-hidden bg-[var(--color-beige)]/40 border border-[var(--color-line)] relative w-full`}>
               <img
                 src={currentImage}
                 alt={product.title}
@@ -79,13 +85,13 @@ export default function Product() {
 
             {/* Thumbnail Gallery selector */}
             {allImages.length > 1 && (
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+              <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 scrollbar-thin">
                 {allImages.map((imgUrl, index) => (
                   <button
                     key={index}
                     type="button"
                     onClick={() => setActiveImg(imgUrl)}
-                    className={`w-16 h-20 shrink-0 border overflow-hidden transition-all ${
+                    className={`w-14 h-16 sm:w-16 sm:h-20 shrink-0 border overflow-hidden transition-all ${
                       currentImage === imgUrl
                         ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/30 scale-105'
                         : 'border-[var(--color-line)] opacity-70 hover:opacity-100'
@@ -98,95 +104,127 @@ export default function Product() {
             )}
           </div>
         </Reveal>
+
+        {/* Right: Product Info & Actions */}
         <Reveal delay={0.1}>
-          <p className="specimen-tag mb-3">{product.specimen}</p>
-          <h1 className="text-3xl md:text-4xl">{product.title}</h1>
-          <p className="text-xl text-[var(--color-primary)] mt-3">{formatPrice(product.price)}</p>
-
-          <div className="flex items-center gap-4 mt-8">
-            <div className="flex items-center border border-[var(--color-line)]">
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center"><Minus size={13} /></button>
-              <span className="w-10 text-center text-sm">{qty}</span>
-              <button onClick={() => setQty((q) => q + 1)} className="w-9 h-9 flex items-center justify-center"><Plus size={13} /></button>
+          <div className="space-y-4 sm:space-y-6">
+            <div>
+              <p className="specimen-tag mb-2 text-[0.62rem] sm:text-[0.68rem]">{product.specimen}</p>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-[var(--font-display)]">{product.title}</h1>
+              <p className="text-xl sm:text-2xl font-bold text-[var(--color-primary)] mt-2">{formatPrice(product.price)}</p>
             </div>
-            <button
-              onClick={() => { addItem(product, qty); openCart() }}
-              className="btn-primary flex-1"
-            >
-              Add to Cart
-            </button>
-            <button aria-label="Add to wishlist" className="w-11 h-11 border border-[var(--color-line)] flex items-center justify-center shrink-0">
-              <Heart size={16} strokeWidth={1.4} />
-            </button>
-          </div>
 
-          <div className="mt-10 border-t border-[var(--color-line)]">
-            <div className="flex gap-6 mt-6">
-              {['description', 'materials', 'reviews'].map((t) => (
+            <p className="text-xs sm:text-sm text-[var(--color-ink-soft)] leading-relaxed">
+              {product.description || 'Artfully preserved botanicals meticulously handcrafted in our atelier. Every creation is archival quality, capturing timeless organic beauty for years to come.'}
+            </p>
+
+            {/* Purchase Action Controls */}
+            <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-2.5 sm:gap-4 pt-2">
+              <div className="flex items-center border border-[var(--color-line)] bg-[var(--color-card-bg)] shrink-0">
                 <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={`text-xs tracking-[0.14em] uppercase font-[var(--font-button)] pb-2 border-b ${tab === t ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-transparent text-[var(--color-ink-soft)]'}`}
+                  onClick={() => setQty((q) => Math.max(1, q - 1))}
+                  className="w-10 h-11 flex items-center justify-center hover:bg-black/5"
+                  aria-label="Decrease quantity"
                 >
-                  {t}
+                  <Minus size={13} />
                 </button>
-              ))}
+                <span className="w-10 text-center text-sm font-bold font-mono">{qty}</span>
+                <button
+                  onClick={() => setQty((q) => q + 1)}
+                  className="w-10 h-11 flex items-center justify-center hover:bg-black/5"
+                  aria-label="Increase quantity"
+                >
+                  <Plus size={13} />
+                </button>
+              </div>
+
+              <button
+                onClick={() => { addItem(product, qty); openCart() }}
+                className="btn-primary flex-1 py-3 text-xs uppercase font-bold tracking-widest text-center"
+              >
+                Add to Cart • {formatPrice(product.price * qty)}
+              </button>
+
+              <button
+                aria-label="Add to wishlist"
+                className="w-11 h-11 border border-[var(--color-line)] bg-[var(--color-card-bg)] flex items-center justify-center shrink-0 hover:bg-black/5"
+              >
+                <Heart size={16} strokeWidth={1.4} />
+              </button>
             </div>
-            <div className="pt-5 text-sm text-[var(--color-ink-soft)] leading-relaxed">
+
+            {/* Details Accordion / Tabs */}
+            <div className="pt-6 border-t border-[var(--color-line)] space-y-3 text-xs sm:text-sm">
+              <div className="flex border-b border-[var(--color-line)] gap-6">
+                <button
+                  onClick={() => setTab('description')}
+                  className={`pb-2 uppercase font-bold text-xs tracking-wider border-b-2 transition-colors ${
+                    tab === 'description' ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-transparent text-[var(--color-ink-soft)]'
+                  }`}
+                >
+                  Details
+                </button>
+                <button
+                  onClick={() => setTab('care')}
+                  className={`pb-2 uppercase font-bold text-xs tracking-wider border-b-2 transition-colors ${
+                    tab === 'care' ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-transparent text-[var(--color-ink-soft)]'
+                  }`}
+                >
+                  Care Guide
+                </button>
+                <button
+                  onClick={() => setTab('reviews')}
+                  className={`pb-2 uppercase font-bold text-xs tracking-wider border-b-2 transition-colors ${
+                    tab === 'reviews' ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-transparent text-[var(--color-ink-soft)]'
+                  }`}
+                >
+                  Reviews ({productReviews.length})
+                </button>
+              </div>
+
               {tab === 'description' && (
-                <p>Every piece is one of a kind — natural variation in petal colour and shape is part of the work, not a flaw in it. Ships in a padded archival box with a certificate of care.</p>
+                <div className="space-y-2 text-[var(--color-ink-soft)] pt-2 leading-relaxed">
+                  <p>• Handcrafted individually using archival preservation techniques.</p>
+                  <p>• Retains rich organic colors and velvet textures indefinitely without water.</p>
+                  <p>• Dimensions: approx. 30cm × 22cm (custom sizing available on request).</p>
+                </div>
               )}
-              {tab === 'materials' && (
-                <ul className="space-y-1.5">
-                  <li>Materials: {product.materials}</li>
-                  <li>Dimensions: {product.dimensions}</li>
-                  <li>Care: keep out of direct sunlight, avoid humidity</li>
-                </ul>
+
+              {tab === 'care' && (
+                <div className="space-y-2 text-[var(--color-ink-soft)] pt-2 leading-relaxed">
+                  <p>• Keep away from direct harsh sunlight to prevent UV color shifting.</p>
+                  <p>• Display in a dry indoor area; do not expose to heavy moisture or water.</p>
+                  <p>• Lightly dust with a soft feather brush every few months.</p>
+                </div>
               )}
+
               {tab === 'reviews' && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3">
-                    <p className="font-bold text-xs uppercase tracking-wider text-[var(--color-ink)]">
-                      Customer Reviews & Feedback ({productReviews.length})
-                    </p>
+                <div className="space-y-4 pt-2">
+                  <div className="flex justify-between items-center">
+                    <p className="font-bold text-xs uppercase tracking-wider">Customer Reviews</p>
                     <button
-                      type="button"
                       onClick={() => setShowReviewModal(true)}
-                      className="btn-primary py-1.5 px-3 text-[0.65rem] flex items-center gap-1.5"
+                      className="text-xs text-[var(--color-primary)] font-bold hover:underline flex items-center gap-1"
                     >
-                      <Edit3 size={12} /> Write a Review
+                      <Edit3 size={12} /> Write Review
                     </button>
                   </div>
 
                   {productReviews.length === 0 ? (
-                    <div className="text-center py-6 space-y-2">
-                      <p className="text-xs text-[var(--color-ink-soft)] italic">
-                        No customer reviews yet for this piece. Be the first to share your thoughts!
-                      </p>
-                    </div>
+                    <p className="text-xs text-[var(--color-ink-soft)]">No reviews yet for this piece. Be the first to share your experience!</p>
                   ) : (
                     <div className="space-y-3">
                       {productReviews.map((r, i) => (
-                        <div key={r._id || r.id || i} className="p-3.5 bg-[var(--color-card-bg)] border border-[var(--color-line)] space-y-1.5">
+                        <div key={r._id || i} className="p-3 bg-[var(--color-card-bg)] border border-[var(--color-line)] space-y-1">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-xs text-[var(--color-ink)]">{r.name}</span>
-                              {r.isVerifiedBuyer !== false && (
-                                <span className="inline-flex items-center gap-0.5 text-[0.6rem] text-emerald-800 font-bold bg-emerald-100 px-1.5 py-0.5 rounded">
-                                  <CheckCircle2 size={10} /> Verified
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex gap-0.5 text-amber-500">
-                              {Array.from({ length: r.rating || 5 }).map((_, si) => (
-                                <Star key={si} size={13} fill="currentColor" strokeWidth={0} />
+                            <span className="font-bold text-xs">{r.name}</span>
+                            <div className="flex text-amber-500">
+                              {Array.from({ length: r.rating || 5 }).map((_, idx) => (
+                                <Star key={idx} size={11} fill="currentColor" />
                               ))}
                             </div>
                           </div>
-                          {r.title && <p className="font-bold text-xs text-[var(--color-ink)]">"{r.title}"</p>}
-                          <p className="text-xs text-[var(--color-ink-soft)] leading-relaxed italic">
-                            "{r.comment || r.quote}"
-                          </p>
+                          <p className="text-xs text-[var(--color-ink-soft)] italic">"{r.comment || r.quote}"</p>
                         </div>
                       ))}
                     </div>
@@ -198,26 +236,27 @@ export default function Product() {
         </Reveal>
       </div>
 
+      {/* Related Products Section */}
       {related.length > 0 && (
-        <div className="mt-28">
+        <div className="mt-20 pt-16 border-t border-[var(--color-line)]">
           <Reveal>
-            <p className="eyebrow mb-3">You May Also Like</p>
-            <h2 className="text-2xl md:text-3xl mb-10">More from this collection</h2>
+            <p className="eyebrow mb-2">You May Also Like</p>
+            <h2 className="text-2xl sm:text-3xl font-bold font-[var(--font-display)] mb-8">Related Creations</h2>
           </Reveal>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-12">
-            {related.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6 gap-y-8">
+            {related.map((p, idx) => (
+              <ProductCard key={p.id} product={p} index={idx} />
+            ))}
           </div>
         </div>
       )}
 
-      {/* Write Review Modal */}
+      {/* Review Modal */}
       <ReviewModal
         isOpen={showReviewModal}
         onClose={() => setShowReviewModal(false)}
         defaultProductTitle={product.title}
-        onSuccess={() => {
-          fetchProductReviews()
-        }}
+        onSuccess={fetchProductReviews}
       />
     </div>
   )

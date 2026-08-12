@@ -50,13 +50,13 @@ export default function Contact() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-6 md:px-10 pt-32 pb-24 space-y-12">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-10 pt-20 sm:pt-24 md:pt-32 pb-16 sm:pb-24 space-y-8 sm:space-y-12 w-full max-w-full">
       <Reveal>
-        <div className="text-center max-w-2xl mx-auto space-y-2 mb-8">
+        <div className="text-center max-w-2xl mx-auto space-y-2 mb-6 sm:mb-8">
           <span className="eyebrow inline-flex items-center gap-1.5 text-[var(--color-primary)] font-bold text-xs uppercase tracking-[0.24em]">
             <Sparkles size={13} /> Studio Inquiries & Bespoke Commissions
           </span>
-          <h1 className="text-4xl md:text-5xl font-bold font-[var(--font-display)] uppercase tracking-tight text-[var(--color-ink)]">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold font-[var(--font-display)] uppercase tracking-tight text-[var(--color-ink)]">
             Say Hello
           </h1>
           <p className="text-xs md:text-sm text-[var(--color-ink-soft)] leading-relaxed font-normal">
@@ -65,34 +65,34 @@ export default function Contact() {
         </div>
 
         {/* Contact Info Badges Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 mb-8 sm:mb-10">
           {/* Direct Email Card */}
-          <div className="p-5 border border-[var(--color-line)] bg-[var(--color-card-bg)] flex items-start gap-4 shadow-sm">
-            <div className="w-11 h-11 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center shrink-0 shadow-md">
-              <Mail size={20} />
+          <div className="p-4 sm:p-5 border border-[var(--color-line)] bg-[var(--color-card-bg)] flex items-start gap-3 sm:gap-4 shadow-sm">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center shrink-0 shadow-md">
+              <Mail size={18} className="sm:w-5 sm:h-5" />
             </div>
-            <div className="space-y-1 flex-1">
+            <div className="space-y-1 flex-1 min-w-0">
               <p className="font-bold text-xs uppercase tracking-wider text-[var(--color-ink)] font-[var(--font-button)]">
                 Studio Email
               </p>
               <a
                 href="mailto:keerthanabm@lilycharm.in"
-                className="text-xs md:text-sm text-[var(--color-primary)] font-bold hover:underline block break-all font-mono"
+                className="text-xs sm:text-sm text-[var(--color-primary)] font-bold hover:underline block break-all font-mono"
               >
                 keerthanabm@lilycharm.in
               </a>
-              <p className="text-[0.68rem] text-[var(--color-ink-soft)] flex items-center gap-1 font-medium">
+              <p className="text-[0.65rem] sm:text-[0.68rem] text-[var(--color-ink-soft)] flex items-center gap-1 font-medium">
                 <Clock size={11} /> Replies within 1–2 business days
               </p>
             </div>
           </div>
 
           {/* Instagram Connect Card */}
-          <div className="p-5 border border-[var(--color-line)] bg-[var(--color-card-bg)] flex items-start gap-4 shadow-sm">
-            <div className="w-11 h-11 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center shrink-0 shadow-md">
-              <Instagram size={20} />
+          <div className="p-4 sm:p-5 border border-[var(--color-line)] bg-[var(--color-card-bg)] flex items-start gap-3 sm:gap-4 shadow-sm">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center shrink-0 shadow-md">
+              <Instagram size={18} className="sm:w-5 sm:h-5" />
             </div>
-            <div className="space-y-1 flex-1">
+            <div className="space-y-1 flex-1 min-w-0">
               <p className="font-bold text-xs uppercase tracking-wider text-[var(--color-ink)] font-[var(--font-button)]">
                 Instagram Direct
               </p>
@@ -100,11 +100,11 @@ export default function Contact() {
                 href="https://www.instagram.com/lily._charm?igsh=bnkwdWViMjlpMjA1"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs md:text-sm text-[var(--color-primary)] font-bold hover:underline block font-mono"
+                className="text-xs sm:text-sm text-[var(--color-primary)] font-bold hover:underline block font-mono truncate"
               >
                 @lily._charm ↗
               </a>
-              <p className="text-[0.68rem] text-[var(--color-ink-soft)] font-medium">
+              <p className="text-[0.65rem] sm:text-[0.68rem] text-[var(--color-ink-soft)] font-medium">
                 Follow our daily creations & behind the scenes
               </p>
             </div>
@@ -112,14 +112,14 @@ export default function Contact() {
         </div>
 
         {/* Contact Form Card */}
-        <div className="border border-[var(--color-line)] bg-[var(--color-bg)] p-6 md:p-10 shadow-lg">
+        <div className="border border-[var(--color-line)] bg-[var(--color-bg)] p-4 sm:p-6 md:p-10 shadow-lg">
           {sentMessage ? (
-            <div className="p-8 border border-emerald-300 bg-emerald-50 text-emerald-950 space-y-3 text-center rounded">
+            <div className="p-6 sm:p-8 border border-emerald-300 bg-emerald-50 text-emerald-950 space-y-3 text-center rounded">
               <div className="w-12 h-12 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center mx-auto">
                 <CheckCircle2 size={26} />
               </div>
-              <h3 className="font-bold text-xl font-[var(--font-display)] uppercase">Message Sent Successfully!</h3>
-              <p className="text-xs md:text-sm leading-relaxed max-w-md mx-auto text-emerald-900">
+              <h3 className="font-bold text-lg sm:text-xl font-[var(--font-display)] uppercase">Message Sent Successfully!</h3>
+              <p className="text-xs sm:text-sm leading-relaxed max-w-md mx-auto text-emerald-900">
                 {sentMessage}
               </p>
               <div className="pt-2">
@@ -133,23 +133,23 @@ export default function Contact() {
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               <div className="border-b border-[var(--color-line)] pb-3 mb-4">
-                <h2 className="text-lg font-bold font-[var(--font-display)] uppercase text-[var(--color-ink)]">
+                <h2 className="text-base sm:text-lg font-bold font-[var(--font-display)] uppercase text-[var(--color-ink)]">
                   Send a Direct Note to Keerthana Bapu
                 </h2>
-                <p className="text-xs text-[var(--color-ink-soft)]">
+                <p className="text-xs text-[var(--color-ink-soft)] mt-0.5">
                   Messages are sent directly to <strong className="text-[var(--color-primary)] font-mono">keerthanabm@lilycharm.in</strong>.
                 </p>
               </div>
 
               {errorMessage && (
-                <div className="p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-semibold rounded">
+                <div className="p-2.5 sm:p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-semibold rounded">
                   ⚠️ {errorMessage}
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase mb-1">Your Name *</label>
                   <input
@@ -158,7 +158,7 @@ export default function Contact() {
                     placeholder="e.g. Maya Krishnan"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] px-4 py-3 text-xs font-medium focus:outline-none focus:border-[var(--color-primary)]"
+                    className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs font-medium focus:outline-none focus:border-[var(--color-primary)]"
                   />
                 </div>
                 <div>
@@ -169,12 +169,12 @@ export default function Contact() {
                     placeholder="e.g. customer@example.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] px-4 py-3 text-xs font-medium focus:outline-none focus:border-[var(--color-primary)]"
+                    className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs font-medium focus:outline-none focus:border-[var(--color-primary)]"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase mb-1">Phone Number (Optional)</label>
                   <input
@@ -182,7 +182,7 @@ export default function Contact() {
                     placeholder="e.g. +91 98765 43210"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] px-4 py-3 text-xs font-medium focus:outline-none focus:border-[var(--color-primary)]"
+                    className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs font-medium focus:outline-none focus:border-[var(--color-primary)]"
                   />
                 </div>
                 <div>
@@ -192,7 +192,7 @@ export default function Contact() {
                     placeholder="e.g. Custom Bridal Velvet Bouquet, Bulk Gifts"
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] px-4 py-3 text-xs font-medium focus:outline-none focus:border-[var(--color-primary)]"
+                    className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs font-medium focus:outline-none focus:border-[var(--color-primary)]"
                   />
                 </div>
               </div>
@@ -201,11 +201,11 @@ export default function Contact() {
                 <label className="block text-xs font-bold uppercase mb-1">Your Message / Idea *</label>
                 <textarea
                   required
-                  rows={5}
+                  rows={4}
                   placeholder="Share details about your desired flower types, color palette, occasion date, or questions..."
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] px-4 py-3 text-xs leading-relaxed font-medium focus:outline-none focus:border-[var(--color-primary)]"
+                  className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs leading-relaxed font-medium focus:outline-none focus:border-[var(--color-primary)]"
                 />
               </div>
 
@@ -213,9 +213,9 @@ export default function Contact() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-primary py-3.5 px-8 text-xs uppercase font-bold tracking-widest flex items-center gap-2 shadow-md hover:scale-105 transition-transform disabled:opacity-50"
+                  className="btn-primary py-3 px-6 sm:px-8 text-xs uppercase font-bold tracking-widest flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-transform disabled:opacity-50 w-full sm:w-auto text-center"
                 >
-                  <Send size={14} /> {isSubmitting ? 'Sending Message to Studio...' : 'Send Message to Studio'}
+                  <Send size={14} /> {isSubmitting ? 'Sending Message...' : 'Send Message to Studio'}
                 </button>
               </div>
             </form>

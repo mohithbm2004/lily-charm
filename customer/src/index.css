@@ -47,10 +47,16 @@
   :root {
     color-scheme: light;
   }
-  * {
+  *, *::before, *::after {
+    box-sizing: border-box;
     border-color: var(--color-line);
   }
-  html, body, #root {
+  html {
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
+  body, #root {
     color-scheme: light;
     background-color: var(--color-bg);
     color: var(--color-ink);
@@ -58,10 +64,21 @@
     -webkit-font-smoothing: antialiased;
     scroll-behavior: smooth;
     min-height: 100vh;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+  img, video, canvas, svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
   }
   input, select, textarea, option {
     color-scheme: light;
     color: var(--color-ink);
+    max-width: 100%;
+    box-sizing: border-box;
   }
   input::placeholder, textarea::placeholder {
     color: var(--color-ink-soft);
@@ -72,6 +89,11 @@
     font-weight: 600;
     letter-spacing: -0.01em;
     color: var(--color-ink);
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+  p, span, a, li {
+    overflow-wrap: break-word;
   }
   ::selection {
     background: var(--color-primary);
@@ -94,13 +116,15 @@
   .btn-primary {
     font-family: var(--font-button);
     font-size: 0.75rem;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
     background-color: var(--color-primary);
     color: #ffffff;
-    padding: 0.95rem 2.1rem;
+    padding: 0.85rem 1.75rem;
     border: 1px solid var(--color-line);
     transition: all 0.35s ease;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   .btn-primary:hover {
     background-color: #1c2518;
@@ -109,13 +133,15 @@
   .btn-outline {
     font-family: var(--font-button);
     font-size: 0.75rem;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
     background-color: var(--color-card-bg);
     color: var(--color-ink);
     border: 1px solid var(--color-line);
-    padding: 0.9rem 2.05rem;
+    padding: 0.8rem 1.7rem;
     transition: all 0.35s ease;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   .btn-outline:hover {
     background-color: var(--color-primary);
@@ -130,5 +156,17 @@
   .arch-frame {
     border-top-left-radius: 9999px;
     border-top-right-radius: 9999px;
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-primary) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 4px;
+    width: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--color-primary);
+    border-radius: 4px;
   }
 }

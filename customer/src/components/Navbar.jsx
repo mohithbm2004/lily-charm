@@ -35,7 +35,7 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const marqueeDisplay = Array(10).fill(marqueeText).join('   •   ')
+  const marqueeDisplay = Array(10).fill(marqueeText || '✨ Bespoke Handcrafted Velvet Florals & Botanical Keepsakes').join('   •   ')
 
   const handleAccountClick = () => {
     if (user) {
@@ -48,34 +48,34 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-[var(--color-bg)] transition-shadow duration-300">
+      <header className="sticky top-0 z-50 bg-[var(--color-bg)] transition-shadow duration-300 w-full max-w-full">
         {/* Top Main Navigation */}
         <div className="border-b border-[var(--color-line)] bg-[var(--color-bg)]">
-          <div className="max-w-7xl mx-auto px-6 md:px-10 h-16 md:h-20 flex items-center justify-between gap-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 h-16 md:h-20 flex items-center justify-between gap-3 sm:gap-6">
             
             {/* Left Brand Title & Official Logo Emblem */}
             <Link
               to="/"
-              className="flex items-center gap-3 shrink-0 hover:opacity-90 transition-opacity py-1 group"
+              className="flex items-center gap-2 sm:gap-3 shrink-0 hover:opacity-90 transition-opacity py-1 group min-w-0"
             >
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full border border-[var(--color-primary)]/40 p-0.5 shadow-sm overflow-hidden bg-white shrink-0 group-hover:scale-105 transition-transform">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full border border-[var(--color-primary)]/40 p-0.5 shadow-sm overflow-hidden bg-white shrink-0 group-hover:scale-105 transition-transform">
                 <img
                   src="/images/logo.png"
                   alt="Lily Charm Official Logo"
                   className="w-full h-full object-cover rounded-full"
                 />
               </div>
-              <div className="flex flex-col">
-                <span className="font-[var(--font-display)] text-xl md:text-2xl tracking-[0.18em] uppercase font-bold text-[var(--color-ink)] leading-none">
+              <div className="flex flex-col min-w-0">
+                <span className="font-[var(--font-display)] text-lg sm:text-xl md:text-2xl tracking-[0.14em] sm:tracking-[0.18em] uppercase font-bold text-[var(--color-ink)] leading-none truncate">
                   Lily Charm
                 </span>
-                <span className="text-[0.55rem] md:text-[0.58rem] tracking-[0.22em] uppercase font-serif text-[var(--color-primary)] font-medium mt-0.5">
+                <span className="text-[0.5rem] sm:text-[0.55rem] md:text-[0.58rem] tracking-[0.18em] sm:tracking-[0.22em] uppercase font-serif text-[var(--color-primary)] font-medium mt-0.5 truncate">
                   Floral Creations
                 </span>
               </div>
             </Link>
 
-            {/* Right Nav Links & Actions */}
+            {/* Right Nav Links & Actions (Desktop) */}
             <div className="hidden lg:flex items-center gap-5 xl:gap-7 justify-end flex-1">
               <nav className="flex items-center gap-5 xl:gap-7">
                 {navLinks.map((l) => (
@@ -130,11 +130,11 @@ export default function Navbar() {
               <button
                 onClick={openCart}
                 aria-label={`Open cart, ${count} items`}
-                className="relative flex items-center gap-1 text-[var(--color-ink)] hover:text-[var(--color-primary)] transition-colors ml-1"
+                className="relative flex items-center gap-1 text-[var(--color-ink)] hover:text-[var(--color-primary)] transition-colors ml-1 p-1"
               >
                 <ShoppingBag size={18} strokeWidth={1.5} />
                 {count > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-[var(--color-primary)] text-white text-[0.6rem] w-4 h-4 rounded-full flex items-center justify-center font-sans font-bold">
+                  <span className="absolute -top-1 -right-1 bg-[var(--color-primary)] text-white text-[0.6rem] w-4 h-4 rounded-full flex items-center justify-center font-sans font-bold shadow-sm">
                     {count}
                   </span>
                 )}
@@ -142,112 +142,105 @@ export default function Navbar() {
             </div>
 
             {/* Mobile Header Actions (Cart Icon + Hamburger Menu) */}
-            <div className="flex lg:hidden items-center gap-3">
+            <div className="flex lg:hidden items-center gap-2 sm:gap-3 shrink-0">
               <button
                 onClick={openCart}
                 aria-label={`Open cart, ${count} items`}
-                className="relative p-1 text-[var(--color-ink)] hover:text-[var(--color-primary)] transition-colors"
+                className="relative p-2 text-[var(--color-ink)] hover:text-[var(--color-primary)] transition-colors"
               >
-                <ShoppingBag size={22} strokeWidth={1.5} />
+                <ShoppingBag size={20} sm:size={22} strokeWidth={1.5} />
                 {count > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-[var(--color-primary)] text-white text-[0.6rem] w-4 h-4 rounded-full flex items-center justify-center font-sans font-bold shadow-sm">
+                  <span className="absolute 0 right-0 bg-[var(--color-primary)] text-white text-[0.58rem] w-4 h-4 rounded-full flex items-center justify-center font-sans font-bold shadow-sm">
                     {count}
                   </span>
                 )}
               </button>
 
               <button
-                className="p-1 text-[var(--color-ink)]"
+                className="p-2 text-[var(--color-ink)] hover:text-[var(--color-primary)] transition-colors cursor-pointer"
                 onClick={() => setMenuOpen((v) => !v)}
                 aria-label="Toggle menu"
               >
-                {menuOpen ? <X size={24} strokeWidth={1.5} /> : <Menu size={24} strokeWidth={1.5} />}
+                {menuOpen ? <X size={22} strokeWidth={1.5} /> : <Menu size={22} strokeWidth={1.5} />}
               </button>
             </div>
           </div>
         </div>
 
         {/* Marquee Banner Bar */}
-        <div className="bg-[var(--color-primary)] text-white py-2 overflow-hidden border-b border-[var(--color-line)]">
-          <div className="animate-marquee whitespace-nowrap text-[0.68rem] tracking-[0.28em] font-medium font-mono uppercase">
+        <div className="bg-[var(--color-primary)] text-white py-1.5 sm:py-2 overflow-hidden border-b border-[var(--color-line)] w-full max-w-full">
+          <div className="animate-marquee whitespace-nowrap text-[0.62rem] sm:text-[0.68rem] tracking-[0.24em] sm:tracking-[0.28em] font-medium font-mono uppercase">
             <span className="mx-4">{marqueeDisplay}</span>
             <span className="mx-4">{marqueeDisplay}</span>
           </div>
         </div>
 
-        {/* Mobile Drawer */}
+        {/* Mobile Drawer (Visible < lg) */}
         <AnimatePresence>
           {menuOpen && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="md:hidden overflow-hidden bg-[var(--color-bg)] border-b border-[var(--color-line)]"
+              className="lg:hidden overflow-hidden bg-[var(--color-bg)] border-b border-[var(--color-line)] shadow-xl max-h-[85vh] overflow-y-auto"
             >
-              <div className="flex flex-col px-6 py-6 gap-4">
+              <div className="flex flex-col px-5 sm:px-6 py-6 gap-4">
                 {navLinks.map((l) => (
                   <Link
                     key={l.label}
                     to={l.to}
                     onClick={() => setMenuOpen(false)}
-                    className="text-sm tracking-[0.16em] uppercase font-[var(--font-button)] text-[var(--color-ink)] hover:text-[var(--color-primary)] transition-colors"
+                    className="text-xs sm:text-sm tracking-[0.16em] uppercase font-[var(--font-button)] text-[var(--color-ink)] hover:text-[var(--color-primary)] py-1 transition-colors"
                   >
                     {l.label}
                   </Link>
                 ))}
-
-                {user ? (
-                  <div className="pt-2 border-t border-[var(--color-line)] flex items-center justify-between">
-                    <button
-                      onClick={() => {
-                        navigate('/dashboard')
-                        setMenuOpen(false)
-                      }}
-                      className="text-sm tracking-[0.16em] uppercase font-bold text-[var(--color-primary)] flex items-center gap-2"
-                    >
-                      <UserIcon size={16} /> ACCOUNT ({user.name})
-                    </button>
-                    <button
-                      onClick={() => {
-                        logout()
-                        setMenuOpen(false)
-                      }}
-                      className="text-xs text-rose-600 font-bold uppercase"
-                    >
-                      Sign Out
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setAuthMode('login')
-                      setIsAuthModalOpen(true)
-                      setMenuOpen(false)
-                    }}
-                    className="text-sm tracking-[0.16em] uppercase font-bold text-[var(--color-ink)] flex items-center gap-2 text-left"
-                  >
-                    <UserIcon size={16} /> SIGN IN / REGISTER
-                  </button>
-                )}
 
                 <button
                   onClick={() => {
                     setIsCustomModalOpen(true)
                     setMenuOpen(false)
                   }}
-                  className="text-sm tracking-[0.16em] uppercase font-[var(--font-button)] text-[var(--color-primary)] font-bold flex items-center gap-2 text-left"
+                  className="text-xs sm:text-sm tracking-[0.16em] uppercase font-[var(--font-button)] text-[var(--color-primary)] font-bold flex items-center gap-2 py-1 text-left cursor-pointer"
                 >
                   <Sparkles size={16} /> REQUEST CUSTOM DESIGN
                 </button>
-                <button
-                  onClick={() => {
-                    openCart()
-                    setMenuOpen(false)
-                  }}
-                  className="text-sm tracking-[0.16em] uppercase font-[var(--font-button)] text-[var(--color-ink)] hover:text-[var(--color-primary)] transition-colors text-left"
-                >
-                  CART ({count})
-                </button>
+
+                <div className="pt-3 border-t border-[var(--color-line)]">
+                  {user ? (
+                    <div className="flex items-center justify-between gap-3">
+                      <button
+                        onClick={() => {
+                          navigate('/dashboard')
+                          setMenuOpen(false)
+                        }}
+                        className="text-xs sm:text-sm tracking-[0.16em] uppercase font-bold text-[var(--color-primary)] flex items-center gap-2 truncate"
+                      >
+                        <UserIcon size={16} className="shrink-0" /> <span className="truncate">ACCOUNT ({user.name?.split(' ')[0] || 'User'})</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          logout()
+                          setMenuOpen(false)
+                        }}
+                        className="text-xs text-rose-600 font-bold uppercase shrink-0 p-1 hover:underline"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setAuthMode('login')
+                        setIsAuthModalOpen(true)
+                        setMenuOpen(false)
+                      }}
+                      className="text-xs sm:text-sm tracking-[0.16em] uppercase font-bold text-[var(--color-ink)] flex items-center gap-2 py-1 text-left w-full cursor-pointer"
+                    >
+                      <UserIcon size={16} /> SIGN IN / REGISTER
+                    </button>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}

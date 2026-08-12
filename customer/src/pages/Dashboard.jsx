@@ -424,26 +424,26 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 md:px-10 pt-32 pb-24 text-[var(--color-ink)]">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pt-24 sm:pt-32 pb-16 sm:pb-24 text-[var(--color-ink)] w-full max-w-full">
       <Reveal>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--color-line)] pb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full border-2 border-[var(--color-primary)] overflow-hidden bg-[var(--color-card-bg)] shrink-0 flex items-center justify-center">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-[var(--color-primary)] overflow-hidden bg-[var(--color-card-bg)] shrink-0 flex items-center justify-center">
               {avatarPreview ? (
                 <img src={avatarPreview} alt={userProfile?.name || 'Customer'} className="w-full h-full object-cover" />
               ) : (
-                <User size={32} className="text-[var(--color-primary)]" />
+                <User size={28} className="text-[var(--color-primary)] sm:w-8 sm:h-8" />
               )}
             </div>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold font-[var(--font-display)] uppercase">{userProfile?.name || 'Valued Customer'}</h1>
-              <p className="text-xs text-[var(--color-primary)] font-semibold font-mono">{userProfile?.email || 'customer@example.com'}</p>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-[var(--font-display)] uppercase truncate">{userProfile?.name || 'Valued Customer'}</h1>
+              <p className="text-xs text-[var(--color-primary)] font-semibold font-mono truncate">{userProfile?.email || 'customer@example.com'}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 self-start flex-wrap">
-            <div className="flex items-center gap-2 text-xs font-mono text-[var(--color-ink-soft)] bg-[var(--color-card-bg)] border border-[var(--color-line)] px-4 py-2">
-              <span>Customer Account:</span>
+          <div className="flex items-center gap-2 sm:gap-3 self-start sm:self-auto flex-wrap">
+            <div className="flex items-center gap-2 text-[0.68rem] sm:text-xs font-mono text-[var(--color-ink-soft)] bg-[var(--color-card-bg)] border border-[var(--color-line)] px-3 py-1.5 sm:px-4 sm:py-2">
+              <span>Account:</span>
               <strong className="text-emerald-700">Verified & Active</strong>
             </div>
 
@@ -456,7 +456,7 @@ export default function Dashboard() {
                 setUserCustomRequests([])
                 navigate('/')
               }}
-              className="border border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100 px-3.5 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors"
+              className="border border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 sm:px-3.5 sm:py-2 text-[0.68rem] sm:text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors"
               title="Sign Out from account"
             >
               <LogOut size={13} /> Sign Out
@@ -465,23 +465,23 @@ export default function Dashboard() {
         </div>
 
         {justOrdered && (
-          <div className="mt-4 p-4 bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-semibold flex items-center gap-2 rounded">
-            <CheckCircle2 size={16} /> Order confirmed — your order details have been saved to your profile and sent to our studio delivery team!
+          <div className="mt-4 p-3.5 sm:p-4 bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-semibold flex items-center gap-2 rounded">
+            <CheckCircle2 size={16} className="shrink-0" /> Order confirmed — your order details have been saved to your profile and sent to our studio delivery team!
           </div>
         )}
       </Reveal>
 
-      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-10 mt-8 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 md:gap-10 mt-6 sm:mt-8 items-start">
         {/* Tab Selector Sidebar */}
-        <aside className="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible">
+        <aside className="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0 scrollbar-thin w-full max-w-full">
           {tabs.map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`text-left text-xs font-bold uppercase tracking-wider px-4 py-3 whitespace-nowrap transition-colors border-l-2 ${
+              className={`shrink-0 text-left text-xs font-bold uppercase tracking-wider px-3.5 sm:px-4 py-2.5 sm:py-3 whitespace-nowrap transition-colors border-l-2 ${
                 tab === t
-                  ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
-                  : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-card-bg)] border-transparent'
+                  ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm'
+                  : 'text-[var(--color-ink-soft)] bg-[var(--color-card-bg)]/60 hover:bg-[var(--color-card-bg)] border-transparent'
               }`}
             >
               {t}
@@ -713,23 +713,23 @@ export default function Dashboard() {
                       </div>
 
                       {/* Footer Actions & Total */}
-                      <div className="pt-3 border-t border-[var(--color-line)] flex flex-wrap justify-between items-center gap-3">
+                      <div className="pt-3 border-t border-[var(--color-line)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 w-full">
                         <div>
-                          <span className="text-[0.68rem] text-[var(--color-ink-soft)] uppercase font-bold">Total Amount Paid</span>
-                          <p className="text-emerald-800 text-base font-mono font-bold">{formatPrice(o.grandTotal || o.total)}</p>
+                          <span className="text-[0.65rem] sm:text-[0.68rem] text-[var(--color-ink-soft)] uppercase font-bold">Total Amount Paid</span>
+                          <p className="text-emerald-800 text-sm sm:text-base font-mono font-bold">{formatPrice(o.grandTotal || o.total)}</p>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                           <button
                             onClick={() => setSelectedOrder(o)}
-                            className="btn-primary py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center gap-1"
+                            className="btn-primary py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center"
                           >
                             <Eye size={12} /> View Details & Timeline
                           </button>
 
                           <button
                             onClick={() => window.open(`${API_URL}/orders/${o._id}/invoice`, '_blank')}
-                            className="btn-outline py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center gap-1"
+                            className="btn-outline py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center"
                           >
                             <Download size={12} /> Invoice PDF
                           </button>

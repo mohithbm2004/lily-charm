@@ -49,14 +49,14 @@ export default function Reviews() {
   }
 
   return (
-    <section className="bg-[var(--color-beige)]/40 border-y border-[var(--color-line)] relative overflow-hidden">
-      <div className="max-w-4xl mx-auto px-6 md:px-10 py-20 md:py-28 text-center">
+    <section className="bg-[var(--color-beige)]/40 border-y border-[var(--color-line)] relative overflow-hidden w-full max-w-full">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-10 py-14 sm:py-20 md:py-28 text-center">
         <Reveal>
           <div className="flex flex-col items-center gap-2 mb-4">
             <span className="eyebrow inline-flex items-center gap-1.5 text-[var(--color-primary)] font-bold text-xs uppercase tracking-[0.24em]">
               <Sparkles size={13} /> Real Customer Stories & Feedback
             </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold font-[var(--font-display)] text-[var(--color-ink)] uppercase tracking-tight">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold font-[var(--font-display)] text-[var(--color-ink)] uppercase tracking-tight">
               Kept, Framed, and Cherished
             </h2>
             <p className="text-xs md:text-sm text-[var(--color-ink-soft)] max-w-md mx-auto">
@@ -66,7 +66,7 @@ export default function Reviews() {
         </Reveal>
 
         {/* Carousel Display Area */}
-        <div className="relative min-h-[220px] md:min-h-[200px] flex items-center justify-center mt-8">
+        <div className="relative min-h-[200px] md:min-h-[190px] flex items-center justify-center mt-6 sm:mt-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={review._id || review.id || index}
@@ -74,37 +74,37 @@ export default function Reviews() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.5 }}
-              className="flex flex-col items-center max-w-2xl px-4"
+              className="flex flex-col items-center max-w-2xl px-2 sm:px-4"
             >
               {/* Star Rating */}
-              <div className="flex gap-1.5 text-amber-500 mb-4">
+              <div className="flex gap-1.5 text-amber-500 mb-3 sm:mb-4">
                 {Array.from({ length: review.rating || 5 }).map((_, i) => (
-                  <Star key={i} size={18} fill="currentColor" strokeWidth={0} />
+                  <Star key={i} size={16} fill="currentColor" strokeWidth={0} />
                 ))}
               </div>
 
               {/* Review Title if present */}
               {review.title && (
-                <h3 className="font-bold text-base md:text-lg font-[var(--font-display)] text-[var(--color-ink)] mb-2">
+                <h3 className="font-bold text-sm sm:text-base md:text-lg font-[var(--font-display)] text-[var(--color-ink)] mb-1.5 sm:mb-2">
                   "{review.title}"
                 </h3>
               )}
 
               {/* Review Comment / Quote */}
-              <p className="font-[var(--font-display)] text-lg md:text-2xl leading-relaxed text-[var(--color-ink)] font-normal italic">
+              <p className="font-[var(--font-display)] text-base sm:text-xl md:text-2xl leading-relaxed text-[var(--color-ink)] font-normal italic">
                 "{review.comment || review.quote}"
               </p>
 
               {/* Reviewer Details */}
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs text-[var(--color-ink-soft)] font-medium">
-                <strong className="text-[var(--color-ink)] font-bold text-sm">{review.name}</strong>
+              <div className="mt-3 sm:mt-4 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 text-xs text-[var(--color-ink-soft)] font-medium">
+                <strong className="text-[var(--color-ink)] font-bold text-xs sm:text-sm">{review.name}</strong>
                 {review.productTitle && (
-                  <span className="text-[0.7rem] bg-[var(--color-bg)] border border-[var(--color-line)] px-2 py-0.5 rounded font-mono">
+                  <span className="text-[0.65rem] sm:text-[0.7rem] bg-[var(--color-bg)] border border-[var(--color-line)] px-2 py-0.5 rounded font-mono">
                     🌸 {review.productTitle}
                   </span>
                 )}
                 {review.isVerifiedBuyer !== false && (
-                  <span className="inline-flex items-center gap-1 text-[0.68rem] text-emerald-800 font-bold bg-emerald-100/80 px-2 py-0.5 rounded border border-emerald-300">
+                  <span className="inline-flex items-center gap-1 text-[0.62rem] sm:text-[0.68rem] text-emerald-800 font-bold bg-emerald-100/80 px-2 py-0.5 rounded border border-emerald-300">
                     <CheckCircle2 size={11} /> Verified Buyer
                   </span>
                 )}
@@ -146,11 +146,11 @@ export default function Reviews() {
         </div>
 
         {/* "Write a Review" CTA Button */}
-        <div className="pt-10 flex justify-center">
+        <div className="pt-8 sm:pt-10 flex justify-center">
           <button
             type="button"
             onClick={() => setShowReviewModal(true)}
-            className="btn-primary px-6 py-3 text-xs uppercase font-bold tracking-widest flex items-center gap-2 shadow-md hover:scale-105 transition-transform"
+            className="btn-primary px-4 sm:px-6 py-2.5 sm:py-3 text-xs uppercase font-bold tracking-widest flex items-center gap-2 shadow-md hover:scale-105 transition-transform"
           >
             <Edit3 size={14} /> Write a Review & Share Feedback
           </button>

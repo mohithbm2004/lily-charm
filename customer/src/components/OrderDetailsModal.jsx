@@ -67,18 +67,18 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-[var(--color-bg)] border border-[var(--color-line)] max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 shadow-2xl relative space-y-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-sm overflow-y-auto">
+      <div className="bg-[var(--color-bg)] border border-[var(--color-line)] max-w-3xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 md:p-8 shadow-2xl relative space-y-4 sm:space-y-6">
         
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-4">
-          <div>
-            <span className="eyebrow text-[var(--color-primary)] font-bold">Order Details & Timeline</span>
-            <h2 className="text-xl md:text-2xl font-bold font-[var(--font-display)] uppercase">
+        <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3 sm:pb-4">
+          <div className="min-w-0">
+            <span className="eyebrow text-[var(--color-primary)] font-bold text-[0.62rem] sm:text-[0.68rem]">Order Details & Timeline</span>
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold font-[var(--font-display)] uppercase truncate">
               {order.orderNumber || order._id}
             </h2>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-colors">
+          <button onClick={onClose} aria-label="Close details modal" className="p-1.5 hover:bg-black/5 rounded-full transition-colors shrink-0">
             <X size={20} />
           </button>
         </div>

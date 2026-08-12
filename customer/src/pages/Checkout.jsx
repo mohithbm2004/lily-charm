@@ -329,24 +329,24 @@ export default function Checkout() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 md:px-10 pt-32 pb-24 grid grid-cols-1 md:grid-cols-[1fr_380px] gap-14">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pt-24 sm:pt-32 pb-16 sm:pb-24 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 lg:gap-14 w-full max-w-full">
       <Reveal>
-        <h1 className="text-3xl mb-8 font-[var(--font-display)] font-bold uppercase">Checkout</h1>
-        <form onSubmit={handlePay} className="space-y-8">
+        <h1 className="text-2xl sm:text-3xl mb-6 sm:mb-8 font-[var(--font-display)] font-bold uppercase">Checkout</h1>
+        <form onSubmit={handlePay} className="space-y-6 sm:space-y-8">
           <div>
-            <p className="eyebrow mb-4">Contact Information</p>
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <input name="name" required onChange={handleChange} placeholder="Full name *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] col-span-2 sm:col-span-1" />
-              <input name="email" type="email" required onChange={handleChange} placeholder="Email address *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] col-span-2 sm:col-span-1" />
-              <input name="phone" required onChange={handleChange} placeholder="Phone number *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] col-span-2 font-mono" />
+            <p className="eyebrow mb-3 sm:mb-4">Contact Information</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
+              <input name="name" required onChange={handleChange} placeholder="Full name *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] w-full" />
+              <input name="email" type="email" required onChange={handleChange} placeholder="Email address *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] w-full" />
+              <input name="phone" required onChange={handleChange} placeholder="Phone number *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] col-span-1 sm:col-span-2 font-mono w-full" />
             </div>
           </div>
           <div>
-            <p className="eyebrow mb-4">Shipping Address</p>
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <input name="address" required value={form.address} onChange={handleChange} placeholder="Street address *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] col-span-2" />
-              <input name="city" required value={form.city} onChange={handleChange} placeholder="City / District *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] font-semibold" />
-              <div>
+            <p className="eyebrow mb-3 sm:mb-4">Shipping Address</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
+              <input name="address" required value={form.address} onChange={handleChange} placeholder="Street address *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] col-span-1 sm:col-span-2 w-full" />
+              <input name="city" required value={form.city} onChange={handleChange} placeholder="City / District *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] font-semibold w-full" />
+              <div className="w-full">
                 <input
                   name="pincode"
                   type="text"
@@ -380,23 +380,23 @@ export default function Checkout() {
             </div>
           </div>
           <div>
-            <p className="eyebrow mb-4">Payment Method</p>
-            <div className="border border-[var(--color-line)] px-4 py-3.5 text-xs flex items-center justify-between bg-[var(--color-beige)]/30">
+            <p className="eyebrow mb-3 sm:mb-4">Payment Method</p>
+            <div className="border border-[var(--color-line)] px-3.5 sm:px-4 py-3.5 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[var(--color-beige)]/30">
               <span className="font-semibold">Razorpay — Cards, UPI, Netbanking</span>
-              <span className="specimen-tag bg-emerald-800 text-white font-mono">100% SECURE</span>
+              <span className="specimen-tag bg-emerald-800 text-white font-mono px-2 py-0.5 self-start sm:self-auto">100% SECURE</span>
             </div>
           </div>
 
           {/* Cancellation Policy Disclaimer */}
-          <div className="p-4 bg-amber-50/90 border border-amber-300 text-[0.72rem] text-amber-900 leading-relaxed rounded space-y-1.5 shadow-sm">
+          <div className="p-3.5 sm:p-4 bg-amber-50/90 border border-amber-300 text-[0.7rem] sm:text-[0.72rem] text-amber-900 leading-relaxed rounded space-y-1.5 shadow-sm">
             <div className="font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-950 text-xs">
               <AlertTriangle size={15} className="text-amber-700 shrink-0" />
               Studio Cancellation & Refund Policy
             </div>
-            <p className="text-[0.7rem]">
+            <p className="text-[0.68rem] sm:text-[0.7rem]">
               • <strong>Online Self-Cancellation:</strong> You can cancel your order before handcrafting begins. Customer self-cancellation incurs a <strong>3% payment processing fee</strong> (97% net amount is refunded to your original payment method).
             </p>
-            <p className="text-[0.7rem]">
+            <p className="text-[0.68rem] sm:text-[0.7rem]">
               • <strong>Studio Admin Cancellation:</strong> If cancelled by Studio Admin, a <strong>100% full refund</strong> is issued immediately with 0% deduction.
             </p>
           </div>
@@ -408,17 +408,17 @@ export default function Checkout() {
       </Reveal>
 
       <Reveal delay={0.1}>
-        <div className="bg-[var(--color-beige)]/30 p-6 sticky top-28 border border-[var(--color-line)] space-y-5">
+        <div className="bg-[var(--color-beige)]/30 p-4 sm:p-6 lg:sticky lg:top-28 border border-[var(--color-line)] space-y-4 sm:space-y-5 w-full">
           <p className="eyebrow mb-2">Order Summary</p>
-          <div className="space-y-4 max-h-56 overflow-y-auto pr-1">
+          <div className="space-y-3 sm:space-y-4 max-h-56 overflow-y-auto pr-1">
             {items.map((item) => (
               <div key={item.id} className="flex gap-3">
-                <img src={item.image} alt={item.title} className="w-14 h-16 object-cover shrink-0 border border-[var(--color-line)]" />
+                <img src={item.image} alt={item.title} className="w-14 h-16 object-cover shrink-0 border border-[var(--color-line)] bg-[var(--color-card-bg)]" />
                 <div className="flex-1 min-w-0 text-xs">
-                  <p className="font-bold leading-tight">{item.title}</p>
+                  <p className="font-bold leading-tight truncate">{item.title}</p>
                   <p className="text-[var(--color-ink-soft)] mt-0.5">Qty: {item.qty}</p>
                 </div>
-                <p className="text-xs font-bold text-[var(--color-primary)]">{formatPrice(item.price * item.qty)}</p>
+                <p className="text-xs font-bold text-[var(--color-primary)] shrink-0">{formatPrice(item.price * item.qty)}</p>
               </div>
             ))}
           </div>
@@ -448,13 +448,13 @@ export default function Checkout() {
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
                     placeholder="Promo code"
-                    className="flex-1 border border-[var(--color-line)] bg-white px-3 py-2 text-xs uppercase focus:outline-none focus:border-[var(--color-primary)] font-mono"
+                    className="flex-1 border border-[var(--color-line)] bg-white px-3 py-2 text-xs uppercase focus:outline-none focus:border-[var(--color-primary)] font-mono min-w-0"
                   />
-                  <button type="submit" className="btn-outline text-[0.68rem] uppercase font-bold text-[var(--color-ink)] px-3">
+                  <button type="submit" className="btn-outline text-[0.68rem] uppercase font-bold text-[var(--color-ink)] px-3 shrink-0">
                     Apply
                   </button>
                 </div>
-                <p className="text-[0.65rem] text-[var(--color-ink-soft)]">Promo codes: <span className="font-mono font-bold text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('LILY10')}>LILY10</span> (10% OFF), <span className="font-mono font-bold text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('VELVET20')}>VELVET20</span> (20% OFF)</p>
+                <p className="text-[0.62rem] text-[var(--color-ink-soft)]">Promo codes: <span className="font-mono font-bold text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('LILY10')}>LILY10</span>, <span className="font-mono font-bold text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('VELVET20')}>VELVET20</span></p>
               </form>
             )}
 
@@ -478,7 +478,7 @@ export default function Checkout() {
               <span className="font-bold">
                 {shipping === 0 ? (
                   <span className="text-emerald-700 font-mono">
-                    FREE {isShippingEnabled && subtotal >= freeThreshold ? `(Orders > ₹${freeThreshold})` : ''}
+                    FREE {isShippingEnabled && subtotal >= freeThreshold ? `(> ₹${freeThreshold})` : ''}
                   </span>
                 ) : (
                   formatPrice(shipping)
@@ -486,11 +486,11 @@ export default function Checkout() {
               </span>
             </div>
             {isShippingEnabled && shipping > 0 && subtotal < freeThreshold && (
-              <p className="text-[0.68rem] text-emerald-800 bg-emerald-50 border border-emerald-200 p-2 rounded font-semibold text-center">
+              <p className="text-[0.65rem] text-emerald-800 bg-emerald-50 border border-emerald-200 p-1.5 rounded font-semibold text-center">
                 ✨ Add {formatPrice(freeThreshold - subtotal)} more for <strong>FREE Shipping!</strong>
               </p>
             )}
-            <div className="flex justify-between font-[var(--font-display)] text-lg font-bold pt-3 border-t border-[var(--color-line)] text-[var(--color-ink)]">
+            <div className="flex justify-between font-[var(--font-display)] text-base sm:text-lg font-bold pt-3 border-t border-[var(--color-line)] text-[var(--color-ink)]">
               <span>Total Amount</span><span className="text-[var(--color-primary)]">{formatPrice(total)}</span>
             </div>
           </div>

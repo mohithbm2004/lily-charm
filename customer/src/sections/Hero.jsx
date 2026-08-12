@@ -5,11 +5,11 @@ import TiltCard3D from '../components/TiltCard3D'
 
 export default function Hero() {
   return (
-    <section className="max-w-7xl mx-auto px-6 md:px-10 pt-6 md:pt-10 pb-12">
+    <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-4 sm:pt-6 md:pt-10 pb-8 sm:pb-12 w-full max-w-full">
       <TiltCard3D intensity={8} className="w-full">
-        <div className="relative border border-[var(--color-line)] bg-[var(--color-card-bg)] p-3 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.18)]">
+        <div className="relative border border-[var(--color-line)] bg-[var(--color-card-bg)] p-2 sm:p-3 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.18)] w-full">
           {/* Main Photo Frame with Perfect Aspect & Double Border */}
-          <div className="relative h-[480px] md:h-[620px] w-full border border-[var(--color-line)] overflow-hidden bg-[var(--color-bg)]">
+          <div className="relative h-[500px] xs:h-[520px] sm:h-[560px] md:h-[620px] w-full border border-[var(--color-line)] overflow-hidden bg-[var(--color-bg)]">
             <motion.img
               initial={{ scale: 1.08 }}
               animate={{ scale: 1 }}
@@ -18,37 +18,43 @@ export default function Hero() {
               alt="Handcrafting botanical floral arrangements by Lily Charm"
               className="w-full h-full object-cover object-center transition-transform duration-1000 ease-out"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
             
             {/* 3D Floating Content Card (translateZ) */}
             <div
               style={{ transform: 'translateZ(45px)' }}
-              className="absolute bottom-6 left-6 right-6 md:bottom-10 md:left-10 flex flex-col md:flex-row md:items-end justify-between gap-6 z-10"
+              className="absolute bottom-3 left-3 right-3 sm:bottom-6 sm:left-6 sm:right-6 md:bottom-10 md:left-10 flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 z-10"
             >
-              <div className="bg-[var(--color-bg)]/95 backdrop-blur-md p-6 md:p-8 max-w-xl border border-[var(--color-line)] shadow-2xl space-y-3">
-                <span className="eyebrow flex items-center gap-1.5 text-[var(--color-primary)] font-bold">
-                  <Sparkles size={13} /> Botanical Atelier & Studio
+              <div className="bg-[var(--color-bg)]/95 backdrop-blur-md p-4 sm:p-6 md:p-8 max-w-xl border border-[var(--color-line)] shadow-2xl space-y-2 sm:space-y-3 w-full md:w-auto">
+                <span className="eyebrow flex items-center gap-1.5 text-[var(--color-primary)] font-bold text-[0.62rem] sm:text-[0.68rem]">
+                  <Sparkles size={12} className="shrink-0" /> Botanical Atelier & Studio
                 </span>
-                <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-[var(--color-ink)] leading-tight font-[var(--font-display)]">
+                <h1 className="text-2xl xs:text-3xl md:text-5xl font-bold tracking-tight text-[var(--color-ink)] leading-tight font-[var(--font-display)] break-words">
                   Handcrafted Flowers That Last Forever
                 </h1>
-                <p className="text-[var(--color-ink-soft)] text-sm md:text-base leading-relaxed font-serif italic font-medium">
+                <p className="text-[var(--color-ink-soft)] text-xs sm:text-sm md:text-base leading-relaxed font-serif italic font-medium">
                   Made with love, inspired by creativity.
                 </p>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-3 w-full">
-                  <Link to="/shop" className="btn-primary inline-flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-transform text-center">
-                    EXPLORE SHOP <ArrowRight size={15} />
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-2 sm:pt-3 w-full">
+                  <Link
+                    to="/shop"
+                    className="btn-primary inline-flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-transform text-center w-full sm:w-auto py-2.5 sm:py-3.5 text-[0.7rem] sm:text-[0.75rem]"
+                  >
+                    EXPLORE SHOP <ArrowRight size={14} />
                   </Link>
-                  <Link to="/about" className="btn-outline inline-flex items-center justify-center gap-2 hover:scale-105 transition-transform text-center">
+                  <Link
+                    to="/about"
+                    className="btn-outline inline-flex items-center justify-center gap-2 hover:scale-105 transition-transform text-center w-full sm:w-auto py-2.5 sm:py-3 text-[0.7rem] sm:text-[0.75rem]"
+                  >
                     OUR STORY
                   </Link>
                 </div>
               </div>
 
-              {/* 3D Floating Badge */}
+              {/* 3D Floating Badge (Desktop) */}
               <div
                 style={{ transform: 'translateZ(60px)' }}
-                className="hidden md:flex bg-[var(--color-primary)] text-white p-4 border border-white/20 shadow-xl flex-col items-center justify-center text-center w-28 h-28 rounded-full"
+                className="hidden md:flex bg-[var(--color-primary)] text-white p-4 border border-white/20 shadow-xl flex-col items-center justify-center text-center w-28 h-28 rounded-full shrink-0"
               >
                 <span className="text-[0.6rem] uppercase tracking-widest font-bold">100% Handcrafted</span>
                 <span className="text-xs font-serif font-bold mt-1">Archival Quality</span>
@@ -60,4 +66,3 @@ export default function Hero() {
     </section>
   )
 }
-

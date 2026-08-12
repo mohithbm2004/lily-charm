@@ -20,7 +20,16 @@
     --font-button: 'Cinzel', serif;
   }
 
-  html, body, #root {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body, #root {
     color-scheme: light;
     background-color: var(--color-bg);
     color: var(--color-ink);
@@ -28,11 +37,22 @@
     margin: 0;
     padding: 0;
     min-height: 100vh;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  img, video, canvas, svg {
+    max-width: 100%;
+    height: auto;
   }
 
   input, select, textarea, option {
     color-scheme: light;
     color: var(--color-ink);
+    max-width: 100%;
+    box-sizing: border-box;
   }
   input::placeholder, textarea::placeholder {
     color: var(--color-ink-soft);
@@ -60,6 +80,8 @@
   border: 1px solid var(--color-line-dark);
   cursor: pointer;
   transition: all 0.2s ease;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .btn-primary:hover {
@@ -77,6 +99,8 @@
   border: 1px solid var(--color-line);
   cursor: pointer;
   transition: all 0.2s ease;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .btn-outline:hover {

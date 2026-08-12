@@ -64,14 +64,14 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="max-w-md mx-auto px-6 pt-36 pb-24 text-[var(--color-ink)]">
+    <div className="max-w-md mx-auto px-4 sm:px-6 pt-24 sm:pt-36 pb-16 sm:pb-24 text-[var(--color-ink)] w-full max-w-full">
       <Reveal>
-        <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 md:p-8 space-y-6 shadow-xl">
+        <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 shadow-xl">
           <div className="text-center space-y-2">
             <div className="w-12 h-12 bg-[var(--color-primary)] text-white rounded-full flex items-center justify-center mx-auto">
               <KeyRound size={24} />
             </div>
-            <h1 className="text-2xl font-bold font-[var(--font-display)] uppercase">Set New Password</h1>
+            <h1 className="text-xl sm:text-2xl font-bold font-[var(--font-display)] uppercase">Set New Password</h1>
             <p className="text-xs text-[var(--color-ink-soft)]">
               Enter your new strong password to update your customer account.
             </p>
@@ -100,7 +100,7 @@ export default function ResetPassword() {
                   placeholder="At least 6 characters..."
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] pl-10 pr-10 py-3 font-mono"
+                  className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] pl-10 pr-10 py-3 font-mono text-xs"
                 />
                 <button
                   type="button"
@@ -122,7 +122,7 @@ export default function ResetPassword() {
                   placeholder="Re-enter new password..."
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] pl-10 pr-10 py-3 font-mono"
+                  className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] pl-10 pr-10 py-3 font-mono text-xs"
                 />
               </div>
             </div>

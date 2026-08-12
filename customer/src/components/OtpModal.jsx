@@ -28,13 +28,7 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
     if (!isOpen) return
     setTimeLeft(300)
     setResendCooldown(60)
-
-    if (devOtp && String(devOtp).length === 6) {
-      setOtpDigits(String(devOtp).split(''))
-    } else {
-      setOtpDigits(['', '', '', '', '', ''])
-    }
-
+    setOtpDigits(['', '', '', '', '', ''])
     setErrorMessage('')
     setSuccessMessage('')
 
@@ -101,6 +95,7 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
 
     setIsVerifying(true)
     setErrorMessage('')
+    setSuccessMessage('')
 
     try {
       const res = await fetch(`${API_URL}/auth/verify-otp`, {
@@ -110,17 +105,20 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
       })
 
       const data = await res.json()
+
       if (res.ok) {
-        setSuccessMessage('🎉 Account verified successfully!')
+        setSuccessMessage('🎉 Email verified successfully!')
+        if (onVerified) onVerified(data)
         setTimeout(() => {
-          onVerified(data.user, data.token)
           onClose()
-        }, 1000)
+        }, 800)
       } else {
-        setErrorMessage(data.message || 'Verification failed. Invalid OTP.')
+        setErrorMessage(data.message || 'Invalid verification code. Please try again.')
+        setOtpDigits(['', '', '', '', '', ''])
+        inputRefs[0].current?.focus()
       }
     } catch (err) {
-      console.error('OTP Verify error:', err)
+      console.error('OTP verify error:', err)
       setErrorMessage('Connection error. Please try again.')
     } finally {
       setIsVerifying(false)
@@ -128,7 +126,7 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
   }
 
   const handleResend = async () => {
-    if (resendCooldown > 0) return
+    if (resendCooldown > 0 || isResending) return
     setIsResending(true)
     setErrorMessage('')
     setSuccessMessage('')
@@ -142,11 +140,11 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
 
       const data = await res.json()
       if (res.ok) {
-        setSuccessMessage('✉️ A new 6-digit OTP code has been sent!')
-        setTimeLeft(300)
+        setSuccessMessage('✨ A fresh 6-digit OTP code has been dispatched to your email.')
         setResendCooldown(60)
+        setTimeLeft(300)
         setOtpDigits(['', '', '', '', '', ''])
-        setTimeout(() => inputRefs[0].current?.focus(), 100)
+        inputRefs[0].current?.focus()
       } else {
         setErrorMessage(data.message || 'Failed to resend OTP.')
       }
@@ -168,46 +166,47 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-black/80 z-[110] flex items-center justify-center p-4 md:p-6 overflow-y-auto">
+      <div className="fixed inset-0 bg-black/80 z-[110] flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          className="border border-[var(--color-line)] bg-[var(--color-bg)] p-6 md:p-8 max-w-md w-full space-y-6 shadow-2xl relative text-[var(--color-ink)] text-center"
+          className="border border-[var(--color-line)] bg-[var(--color-bg)] p-4 sm:p-6 md:p-8 max-w-md w-full space-y-4 sm:space-y-6 shadow-2xl relative text-[var(--color-ink)] text-center max-h-[90vh] overflow-y-auto"
         >
           <button
             onClick={onClose}
-            className="absolute top-5 right-5 text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] transition-colors p-1"
+            className="absolute top-4 right-4 text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] transition-colors p-1"
+            aria-label="Close modal"
           >
             <X size={20} />
           </button>
 
-          <div className="w-14 h-14 bg-amber-100 text-amber-900 rounded-full flex items-center justify-center mx-auto border border-amber-300">
-            <ShieldCheck size={30} />
+          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-amber-100 text-amber-900 rounded-full flex items-center justify-center mx-auto border border-amber-300">
+            <ShieldCheck size={26} className="sm:w-7 sm:h-7" />
           </div>
 
           <div className="space-y-1">
-            <h2 className="text-2xl font-bold font-[var(--font-display)] uppercase">Email OTP Verification</h2>
+            <h2 className="text-xl sm:text-2xl font-bold font-[var(--font-display)] uppercase">Email OTP Verification</h2>
             <p className="text-xs text-[var(--color-ink-soft)]">
               We sent a 6-digit security verification code to:
             </p>
-            <p className="text-xs font-mono font-bold text-[var(--color-primary)]">{email}</p>
+            <p className="text-xs font-mono font-bold text-[var(--color-primary)] break-all">{email}</p>
           </div>
 
           {errorMessage && (
-            <div className="p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold rounded">
+            <div className="p-2.5 sm:p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold rounded">
               ⚠️ {errorMessage}
             </div>
           )}
 
           {successMessage && (
-            <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2 rounded">
+            <div className="p-2.5 sm:p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2 rounded">
               <CheckCircle2 size={16} /> {successMessage}
             </div>
           )}
 
-          {/* 6 Digit Inputs */}
-          <div className="flex justify-center gap-2 md:gap-3 py-2" onPaste={handlePaste}>
+          {/* 6 Digit Inputs — Fully Fluid for 320px screens */}
+          <div className="flex justify-center gap-1.5 xs:gap-2 sm:gap-2.5 md:gap-3 py-1 sm:py-2" onPaste={handlePaste}>
             {otpDigits.map((digit, idx) => (
               <input
                 key={idx}
@@ -217,14 +216,14 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
                 value={digit}
                 onChange={(e) => handleDigitChange(idx, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(idx, e)}
-                className="w-11 h-13 md:w-12 md:h-14 border-2 border-[var(--color-line)] focus:border-[var(--color-primary)] text-center text-xl font-mono font-bold bg-[var(--color-card-bg)] focus:outline-none rounded transition-colors"
+                className="w-9 h-11 xs:w-10 xs:h-12 sm:w-11 sm:h-13 md:w-12 md:h-14 border-2 border-[var(--color-line)] focus:border-[var(--color-primary)] text-center text-lg sm:text-xl font-mono font-bold bg-[var(--color-card-bg)] focus:outline-none rounded transition-colors"
               />
             ))}
           </div>
 
-          <div className="flex items-center justify-between text-xs text-[var(--color-ink-soft)] px-2 font-mono">
+          <div className="flex flex-wrap items-center justify-between text-xs text-[var(--color-ink-soft)] px-1 font-mono gap-2">
             <span className="flex items-center gap-1">
-              <Clock size={13} /> Code Expires: <strong className={timeLeft < 60 ? 'text-rose-600' : 'text-amber-800'}>{formatMinutes(timeLeft)}</strong>
+              <Clock size={12} /> Code Expires: <strong className={timeLeft < 60 ? 'text-rose-600' : 'text-amber-800'}>{formatMinutes(timeLeft)}</strong>
             </span>
 
             <button
@@ -233,7 +232,7 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
               disabled={resendCooldown > 0 || isResending}
               className="text-[var(--color-primary)] font-bold hover:underline disabled:opacity-50 flex items-center gap-1"
             >
-              <RefreshCw size={12} className={isResending ? 'animate-spin' : ''} />
+              <RefreshCw size={11} className={isResending ? 'animate-spin' : ''} />
               {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
             </button>
           </div>

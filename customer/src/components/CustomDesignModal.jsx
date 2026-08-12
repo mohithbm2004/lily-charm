@@ -304,25 +304,26 @@ export default function CustomDesignModal({ isOpen, onClose }) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-black/75 z-[100] flex items-center justify-center p-4 md:p-6 overflow-y-auto">
+      <div className="fixed inset-0 bg-black/75 z-[100] flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          className="border border-[var(--color-line)] bg-[var(--color-bg)] p-6 md:p-8 max-w-2xl w-full space-y-6 max-h-[90vh] overflow-y-auto shadow-2xl relative text-[var(--color-ink)]"
+          className="border border-[var(--color-line)] bg-[var(--color-bg)] p-4 sm:p-6 md:p-8 max-w-2xl w-full space-y-4 sm:space-y-6 max-h-[90vh] overflow-y-auto shadow-2xl relative text-[var(--color-ink)]"
         >
           <button
             onClick={handleResetAndClose}
-            className="absolute top-5 right-5 text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] transition-colors p-1 z-10"
+            className="absolute top-4 right-4 text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] transition-colors p-1 z-10"
+            aria-label="Close modal"
           >
             <X size={20} />
           </button>
 
           {/* Modal Header Tabs */}
-          <div className="flex border-b border-[var(--color-line)] gap-4 pt-1">
+          <div className="flex flex-col sm:flex-row border-b border-[var(--color-line)] gap-2 sm:gap-4 pt-1">
             <button
               onClick={() => setActiveTab('submit')}
-              className={`pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
+              className={`pb-2 sm:pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 text-left sm:text-center ${
                 activeTab === 'submit'
                   ? 'border-[var(--color-primary)] text-[var(--color-primary)] font-bold'
                   : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
@@ -335,13 +336,13 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                 setActiveTab('check-quotes')
                 if (searchEmail) fetchCustomerQuotes(searchEmail)
               }}
-              className={`pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
+              className={`pb-2 sm:pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 text-left sm:text-center ${
                 activeTab === 'check-quotes'
                   ? 'border-[var(--color-primary)] text-[var(--color-primary)] font-bold'
                   : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
               }`}
             >
-              💰 2. Check Price Quotes & Accept Orders
+              💰 2. Check Quotes & Orders
             </button>
           </div>
 

@@ -331,30 +331,31 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-black/75 z-[100] flex items-center justify-center p-4 md:p-6 overflow-y-auto">
+      <div className="fixed inset-0 bg-black/75 z-[100] flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          className="border border-[var(--color-line)] bg-[var(--color-bg)] p-6 md:p-8 max-w-md w-full space-y-6 shadow-2xl relative text-[var(--color-ink)]"
+          className="border border-[var(--color-line)] bg-[var(--color-bg)] p-4 sm:p-6 md:p-8 max-w-md w-full space-y-4 sm:space-y-6 shadow-2xl relative text-[var(--color-ink)] max-h-[90vh] overflow-y-auto"
         >
           <button
             onClick={onClose}
-            className="absolute top-5 right-5 text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] transition-colors p-1 z-10"
+            className="absolute top-4 right-4 text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] transition-colors p-1 z-10"
+            aria-label="Close modal"
           >
             <X size={20} />
           </button>
 
           {/* Header & Tabs */}
-          <div className="space-y-4 text-center">
-            <div className="inline-flex items-center gap-1.5 text-[var(--color-primary)] text-xs font-bold uppercase tracking-widest">
-              <Sparkles size={14} /> Lily Charm Customer Account
+          <div className="space-y-3 sm:space-y-4 text-center">
+            <div className="inline-flex items-center gap-1.5 text-[var(--color-primary)] text-[0.65rem] sm:text-xs font-bold uppercase tracking-widest">
+              <Sparkles size={13} /> Lily Charm Customer Account
             </div>
-            <h2 className="text-2xl font-bold font-[var(--font-display)] uppercase">
+            <h2 className="text-xl sm:text-2xl font-bold font-[var(--font-display)] uppercase">
               {mode === 'login'
                 ? 'Customer Sign In'
                 : mode === 'register'
-                ? 'Create Customer Account'
+                ? 'Create Account'
                 : mode === 'forgot'
                 ? 'Forgot Password'
                 : 'Verify Email OTP'}
@@ -365,7 +366,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                 <button
                   type="button"
                   onClick={() => handleModeSwitch('login')}
-                  className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
+                  className={`flex-1 pb-2 sm:pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
                     mode === 'login'
                       ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
                       : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
@@ -376,7 +377,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                 <button
                   type="button"
                   onClick={() => handleModeSwitch('register')}
-                  className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
+                  className={`flex-1 pb-2 sm:pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
                     mode === 'register'
                       ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
                       : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
@@ -389,20 +390,20 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
           </div>
 
           {errorMessage && (
-            <div className="p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold rounded">
+            <div className="p-2.5 sm:p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold rounded">
               ⚠️ {errorMessage}
             </div>
           )}
 
           {successMessage && (
-            <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center gap-2 rounded">
+            <div className="p-2.5 sm:p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center gap-2 rounded">
               <CheckCircle2 size={16} /> {successMessage}
             </div>
           )}
 
           {/* MODE: OTP VERIFICATION */}
           {mode === 'otp' ? (
-            <div className="space-y-5 text-center">
+            <div className="space-y-4 sm:space-y-5 text-center">
               <div className="w-12 h-12 bg-amber-100 text-amber-900 rounded-full flex items-center justify-center mx-auto border border-amber-300">
                 <ShieldCheck size={26} />
               </div>
@@ -411,11 +412,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                 <p className="text-xs text-[var(--color-ink-soft)]">
                   We sent a 6-digit verification code to your email:
                 </p>
-                <p className="text-xs font-mono font-bold text-[var(--color-primary)]">{formData.email}</p>
+                <p className="text-xs font-mono font-bold text-[var(--color-primary)] break-all">{formData.email}</p>
               </div>
 
-              {/* 6 Digit Inputs */}
-              <div className="flex justify-center gap-2 md:gap-3 py-2" onPaste={handlePaste}>
+              {/* 6 Digit Inputs — Fully Fluid for 320px screens */}
+              <div className="flex justify-center gap-1.5 xs:gap-2 sm:gap-2.5 md:gap-3 py-1 sm:py-2" onPaste={handlePaste}>
                 {otpDigits.map((digit, idx) => (
                   <input
                     key={idx}
@@ -425,14 +426,14 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                     value={digit}
                     onChange={(e) => handleDigitChange(idx, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(idx, e)}
-                    className="w-10 h-12 md:w-11 md:h-13 border-2 border-[var(--color-line)] focus:border-[var(--color-primary)] text-center text-xl font-mono font-bold bg-[var(--color-card-bg)] focus:outline-none rounded transition-colors"
+                    className="w-9 h-11 xs:w-10 xs:h-12 sm:w-11 sm:h-13 md:w-12 md:h-14 border-2 border-[var(--color-line)] focus:border-[var(--color-primary)] text-center text-lg sm:text-xl font-mono font-bold bg-[var(--color-card-bg)] focus:outline-none rounded transition-colors"
                   />
                 ))}
               </div>
 
-              <div className="flex items-center justify-between text-xs text-[var(--color-ink-soft)] px-1 font-mono">
+              <div className="flex flex-wrap items-center justify-between text-xs text-[var(--color-ink-soft)] px-1 font-mono gap-2">
                 <span className="flex items-center gap-1">
-                  <Clock size={13} /> Expires: <strong className={timeLeft < 60 ? 'text-rose-600' : 'text-amber-800'}>{formatMinutes(timeLeft)}</strong>
+                  <Clock size={12} /> Expires: <strong className={timeLeft < 60 ? 'text-rose-600' : 'text-amber-800'}>{formatMinutes(timeLeft)}</strong>
                 </span>
 
                 <button
@@ -441,7 +442,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                   disabled={resendCooldown > 0 || isLoading}
                   className="text-[var(--color-primary)] font-bold hover:underline disabled:opacity-50 flex items-center gap-1"
                 >
-                  <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />
+                  <RefreshCw size={11} className={isLoading ? 'animate-spin' : ''} />
                   {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
                 </button>
               </div>
