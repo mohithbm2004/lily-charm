@@ -66,7 +66,7 @@ export default function Product() {
         {/* Left: Product Images */}
         <Reveal>
           <div className="space-y-3 sm:space-y-4">
-            <div className={`${isLandscape ? 'aspect-[16/11]' : 'aspect-[4/5]'} overflow-hidden bg-[var(--color-beige)]/40 border border-[var(--color-line)] relative w-full`}>
+            <div className={`${isLandscape ? 'aspect-[16/11]' : 'aspect-[4/5]'} overflow-hidden rounded-3xl bg-[var(--color-beige)]/40 border border-[var(--color-line)] relative w-full`}>
               <img
                 src={currentImage}
                 alt={product.title}
@@ -79,7 +79,7 @@ export default function Product() {
                   transformOrigin: `${ix}% ${iy}%`,
                   transition: 'all 0.5s ease',
                 }}
-                className="w-full h-full object-cover hover:scale-105"
+                className="w-full h-full object-cover hover:scale-105 rounded-3xl"
               />
             </div>
 
@@ -91,13 +91,13 @@ export default function Product() {
                     key={index}
                     type="button"
                     onClick={() => setActiveImg(imgUrl)}
-                    className={`w-14 h-16 sm:w-16 sm:h-20 shrink-0 border overflow-hidden transition-all ${
+                    className={`w-14 h-16 sm:w-16 sm:h-20 shrink-0 border rounded-2xl overflow-hidden transition-all ${
                       currentImage === imgUrl
                         ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/30 scale-105'
                         : 'border-[var(--color-line)] opacity-70 hover:opacity-100'
                     }`}
                   >
-                    <img src={imgUrl} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+                    <img src={imgUrl} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover rounded-2xl" />
                   </button>
                 ))}
               </div>
@@ -120,10 +120,10 @@ export default function Product() {
 
             {/* Purchase Action Controls */}
             <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-2.5 sm:gap-4 pt-2">
-              <div className="flex items-center border border-[var(--color-line)] bg-[var(--color-card-bg)] shrink-0">
+              <div className="flex items-center border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-full shrink-0 overflow-hidden px-1">
                 <button
                   onClick={() => setQty((q) => Math.max(1, q - 1))}
-                  className="w-10 h-11 flex items-center justify-center hover:bg-black/5"
+                  className="w-10 h-11 flex items-center justify-center hover:bg-black/5 rounded-full"
                   aria-label="Decrease quantity"
                 >
                   <Minus size={13} />
@@ -131,7 +131,7 @@ export default function Product() {
                 <span className="w-10 text-center text-sm font-bold font-mono">{qty}</span>
                 <button
                   onClick={() => setQty((q) => q + 1)}
-                  className="w-10 h-11 flex items-center justify-center hover:bg-black/5"
+                  className="w-10 h-11 flex items-center justify-center hover:bg-black/5 rounded-full"
                   aria-label="Increase quantity"
                 >
                   <Plus size={13} />
@@ -140,14 +140,14 @@ export default function Product() {
 
               <button
                 onClick={() => { addItem(product, qty); openCart() }}
-                className="btn-primary flex-1 py-3 text-xs uppercase font-bold tracking-widest text-center"
+                className="btn-primary flex-1 py-3 text-xs uppercase font-bold tracking-widest text-center rounded-full"
               >
                 Add to Cart • {formatPrice(product.price * qty)}
               </button>
 
               <button
                 aria-label="Add to wishlist"
-                className="w-11 h-11 border border-[var(--color-line)] bg-[var(--color-card-bg)] flex items-center justify-center shrink-0 hover:bg-black/5"
+                className="w-11 h-11 border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-full flex items-center justify-center shrink-0 hover:bg-black/5"
               >
                 <Heart size={16} strokeWidth={1.4} />
               </button>
@@ -215,7 +215,7 @@ export default function Product() {
                   ) : (
                     <div className="space-y-3">
                       {productReviews.map((r, i) => (
-                        <div key={r._id || i} className="p-3 bg-[var(--color-card-bg)] border border-[var(--color-line)] space-y-1">
+                        <div key={r._id || i} className="p-3.5 bg-[var(--color-card-bg)] border border-[var(--color-line)] rounded-2xl space-y-1">
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-xs">{r.name}</span>
                             <div className="flex text-amber-500">

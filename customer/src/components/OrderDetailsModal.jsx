@@ -68,7 +68,7 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
 
   return (
     <div className="fixed inset-0 z-[1200] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-[var(--color-bg)] border border-[var(--color-line)] max-w-3xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 md:p-8 shadow-2xl relative space-y-4 sm:space-y-6">
+      <div className="bg-[var(--color-bg)] border border-[var(--color-line)] rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 md:p-8 shadow-2xl relative space-y-4 sm:space-y-6">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3 sm:pb-4">

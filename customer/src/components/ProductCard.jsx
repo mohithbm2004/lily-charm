@@ -27,12 +27,12 @@ export default function ProductCard({ product, index = 0 }) {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-40px' }}
         transition={{ duration: 0.6, delay: (index % 4) * 0.06, ease: [0.16, 1, 0.3, 1] }}
-        className="group border border-[var(--color-line)] bg-[var(--color-card-bg)] p-2.5 sm:p-3.5 flex flex-col justify-between shadow-md hover:shadow-xl transition-all relative text-center h-full w-full"
+        className="group border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-3 sm:p-4 flex flex-col justify-between shadow-md hover:shadow-xl transition-all relative text-center h-full w-full overflow-hidden"
       >
         {/* Vertically Centered Image Section */}
         <div className="flex-1 flex flex-col justify-center items-center my-auto w-full py-1 sm:py-2">
-          <Link to={`/product/${product.id}`} className="block relative overflow-hidden border border-[var(--color-line)] bg-[var(--color-bg)] w-full">
-            <div className={`${isLandscape ? 'aspect-[16/11]' : 'aspect-[4/4.5]'} overflow-hidden relative flex items-center justify-center w-full`}>
+          <Link to={`/product/${product.id}`} className="block relative overflow-hidden border border-[var(--color-line)] bg-[var(--color-bg)] w-full rounded-2xl">
+            <div className={`${isLandscape ? 'aspect-[16/11]' : 'aspect-[4/4.5]'} overflow-hidden relative flex items-center justify-center w-full rounded-2xl`}>
               {firstImg ? (
                 <>
                   <img
@@ -48,7 +48,7 @@ export default function ProductCard({ product, index = 0 }) {
                       transformOrigin: `${ix}% ${iy}%`,
                       transition: 'opacity 0.5s ease, transform 0.7s ease-out',
                     }}
-                    className={`w-full h-full object-cover ${secondImg ? 'group-hover:opacity-0' : 'group-hover:scale-105'}`}
+                    className={`w-full h-full object-cover rounded-2xl ${secondImg ? 'group-hover:opacity-0' : 'group-hover:scale-105'}`}
                   />
                   {secondImg && (
                     <img
@@ -64,7 +64,7 @@ export default function ProductCard({ product, index = 0 }) {
                         transformOrigin: `${ix}% ${iy}%`,
                         transition: 'opacity 0.5s ease, transform 0.7s ease-out',
                       }}
-                      className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 group-hover:scale-105"
+                      className="absolute inset-0 w-full h-full object-cover rounded-2xl opacity-0 group-hover:opacity-100 group-hover:scale-105"
                     />
                   )}
                 </>
@@ -73,7 +73,7 @@ export default function ProductCard({ product, index = 0 }) {
               )}
             </div>
 
-            <span className="absolute top-2 left-2 sm:top-3 sm:left-3 specimen-tag bg-[var(--color-bg)] border border-[var(--color-line)] px-1.5 sm:px-2 py-0.5 font-medium text-[0.58rem] sm:text-[0.65rem] uppercase tracking-wider">
+            <span className="absolute top-2 left-2 sm:top-3 sm:left-3 specimen-tag bg-[var(--color-bg)] border border-[var(--color-line)] rounded-full px-2 sm:px-2.5 py-0.5 font-medium text-[0.58rem] sm:text-[0.65rem] uppercase tracking-wider">
               {product.specimen || 'Specimen'}
             </span>
 
@@ -82,7 +82,7 @@ export default function ProductCard({ product, index = 0 }) {
                 e.preventDefault()
               }}
               aria-label="Add to wishlist"
-              className="absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--color-bg)] border border-[var(--color-line)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--color-bg)] border border-[var(--color-line)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
             >
               <Heart size={13} strokeWidth={1.5} />
             </button>
@@ -106,7 +106,7 @@ export default function ProductCard({ product, index = 0 }) {
               addItem(product)
               openCart()
             }}
-            className="w-full btn-outline py-2 px-1 text-[0.6rem] sm:text-[0.68rem] tracking-wider uppercase font-bold flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis"
+            className="w-full btn-outline rounded-full py-2 px-1 text-[0.6rem] sm:text-[0.68rem] tracking-wider uppercase font-bold flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis shadow-sm"
           >
             <Plus size={12} /> ADD TO CART
           </button>

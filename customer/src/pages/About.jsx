@@ -26,12 +26,12 @@ export default function About() {
         <div className="md:col-span-5 flex justify-center">
           <Reveal delay={0.1}>
             <TiltCard3D intensity={14} className="w-full max-w-sm">
-              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-2.5 sm:p-3.5 shadow-2xl">
-                <div className="relative overflow-hidden aspect-[4/5] arch-frame border border-[var(--color-line)] bg-[var(--color-bg)]">
+              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-2.5 sm:p-3.5 shadow-2xl overflow-hidden">
+                <div className="relative overflow-hidden aspect-[4/5] arch-frame rounded-b-2xl border border-[var(--color-line)] bg-[var(--color-bg)]">
                   <img
                     src="/images/products/flower-crimson-velvet-bouquet.png"
                     alt="Lily Charm handcrafted crimson red velvet flower bouquet"
-                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-105 rounded-b-2xl"
                   />
                 </div>
               </div>
@@ -42,7 +42,7 @@ export default function About() {
         {/* Right Story Text */}
         <div className="md:col-span-7 space-y-4 sm:space-y-6 text-xs sm:text-sm md:text-base leading-relaxed text-[var(--color-ink)] font-normal">
           <Reveal delay={0.15}>
-            <p className="text-base sm:text-lg font-serif italic font-bold text-[var(--color-primary)] border-l-4 border-[var(--color-primary)] pl-3 sm:pl-4 py-1 bg-[var(--color-card-bg)]">
+            <p className="text-base sm:text-lg font-serif italic font-bold text-[var(--color-primary)] border-l-4 border-[var(--color-primary)] rounded-r-2xl pl-3 sm:pl-4 py-1.5 bg-[var(--color-card-bg)]">
               Lily Charm is more than a brand—it's a dream that grew with me.
             </p>
           </Reveal>
@@ -64,7 +64,7 @@ export default function About() {
       {/* Continuation Story Cards */}
       <div className="space-y-6 sm:space-y-8 max-w-4xl mx-auto">
         <Reveal delay={0.3}>
-          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4 sm:p-6 md:p-8 shadow-sm space-y-2 sm:space-y-3">
+          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-2 sm:space-y-3">
             <h2 className="text-lg sm:text-xl font-bold font-[var(--font-display)] uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-2">
               <Heart size={18} fill="currentColor" /> The Heart Behind the Name
             </h2>
@@ -75,7 +75,7 @@ export default function About() {
         </Reveal>
 
         <Reveal delay={0.35}>
-          <div className="border border-[var(--color-line)] bg-[var(--color-bg)] p-4 sm:p-6 md:p-8 shadow-sm space-y-4">
+          <div className="border border-[var(--color-line)] bg-[var(--color-bg)] rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-4">
             <p className="text-xs sm:text-sm md:text-base leading-relaxed text-[var(--color-ink)]">
               Today, every everlasting flower, bouquet, and handcrafted gift is thoughtfully designed to celebrate life's most precious moments. Each piece is made with meticulous attention to detail, ensuring it becomes more than a gift—it becomes a cherished keepsake that lasts for years.
             </p>
@@ -83,7 +83,7 @@ export default function About() {
               <p className="text-sm sm:text-base md:text-lg font-serif font-bold text-[var(--color-primary)] leading-snug flex-1">
                 At Lily Charm, we don't simply create flowers; we create timeless memories, handcrafted with love, inspired by creativity, and made to be treasured forever.
               </p>
-              <div className="flex items-center gap-3 bg-[var(--color-card-bg)] border border-[var(--color-line)] p-2 sm:p-2.5 shadow-sm shrink-0 w-full sm:w-auto">
+              <div className="flex items-center gap-3 bg-[var(--color-card-bg)] border border-[var(--color-line)] rounded-2xl p-2.5 sm:p-3 shadow-sm shrink-0 w-full sm:w-auto">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-[var(--color-primary)]/40 p-0.5 overflow-hidden bg-white shrink-0">
                   <img
                     src="/images/logo.png"

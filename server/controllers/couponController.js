@@ -1,4 +1,6 @@
+import mongoose from 'mongoose'
 import Coupon from '../models/Coupon.js'
+import { emitCouponCreated, emitCouponUpdated, emitCouponDeleted } from '../socket.js'
 
 // @desc    Get all coupons (Admin)
 // @route   GET /api/coupons
@@ -8,7 +10,7 @@ export const getCoupons = async (req, res) => {
     res.json(coupons)
   } catch (error) {
     console.error('Error fetching coupons:', error)
-    res.status(500).json({ message: 'Server error fetching coupons' })
+    res.status(500).json({ success: false, message: 'Server error fetching coupons' })
   }
 }
 
@@ -20,7 +22,7 @@ export const getActiveCoupons = async (req, res) => {
     res.json(coupons)
   } catch (error) {
     console.error('Error fetching active coupons:', error)
-    res.status(500).json({ message: 'Server error fetching active coupons' })
+    res.status(500).json({ success: false, message: 'Server error fetching active coupons' })
   }
 }
 
@@ -30,26 +32,32 @@ export const createCoupon = async (req, res) => {
   try {
     const { code, title, discountType, discountValue, minOrderAmount, maxDiscountCap, targetSegment, isActive } = req.body
 
-    const existing = await Coupon.findOne({ code: code.toUpperCase().trim() })
+    if (!code) {
+      return res.status(400).json({ success: false, message: 'Coupon code is required' })
+    }
+
+    const cleanCode = code.toUpperCase().trim()
+    const existing = await Coupon.findOne({ code: cleanCode })
     if (existing) {
-      return res.status(400).json({ message: `Coupon code "${code}" already exists` })
+      return res.status(400).json({ success: false, message: `Coupon code "${cleanCode}" already exists` })
     }
 
     const coupon = await Coupon.create({
-      code: code.toUpperCase().trim(),
+      code: cleanCode,
       title: title || `${discountValue}${discountType === 'percentage' ? '%' : '₹'} OFF Offer`,
       discountType: discountType || 'percentage',
-      discountValue: Number(discountValue),
+      discountValue: Number(discountValue || 10),
       minOrderAmount: Number(minOrderAmount || 0),
       maxDiscountCap: Number(maxDiscountCap || 0),
       targetSegment: targetSegment || 'All Products',
       isActive: isActive !== false,
     })
 
+    emitCouponCreated(coupon)
     res.status(201).json(coupon)
   } catch (error) {
     console.error('Error creating coupon:', error)
-    res.status(500).json({ message: 'Server error creating coupon' })
+    res.status(500).json({ success: false, message: 'Server error creating coupon' })
   }
 }
 
@@ -58,15 +66,23 @@ export const createCoupon = async (req, res) => {
 export const updateCoupon = async (req, res) => {
   try {
     const { id } = req.params
-    const coupon = await Coupon.findById(id)
+    let coupon = null
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      coupon = await Coupon.findById(id)
+    }
     if (!coupon) {
-      return res.status(404).json({ message: 'Coupon not found' })
+      coupon = await Coupon.findOne({ code: id.toUpperCase().trim() })
+    }
+
+    if (!coupon) {
+      return res.status(404).json({ success: false, message: 'Coupon not found' })
     }
 
     const { code, title, discountType, discountValue, minOrderAmount, maxDiscountCap, targetSegment, isActive } = req.body
 
     if (code) coupon.code = code.toUpperCase().trim()
-    if (title) coupon.title = title
+    if (title !== undefined) coupon.title = title
     if (discountType) coupon.discountType = discountType
     if (discountValue !== undefined) coupon.discountValue = Number(discountValue)
     if (minOrderAmount !== undefined) coupon.minOrderAmount = Number(minOrderAmount)
@@ -75,10 +91,11 @@ export const updateCoupon = async (req, res) => {
     if (isActive !== undefined) coupon.isActive = Boolean(isActive)
 
     await coupon.save()
+    emitCouponUpdated(coupon)
     res.json(coupon)
   } catch (error) {
     console.error('Error updating coupon:', error)
-    res.status(500).json({ message: 'Server error updating coupon' })
+    res.status(500).json({ success: false, message: 'Server error updating coupon' })
   }
 }
 
@@ -87,10 +104,23 @@ export const updateCoupon = async (req, res) => {
 export const deleteCoupon = async (req, res) => {
   try {
     const { id } = req.params
-    await Coupon.findByIdAndDelete(id)
-    res.json({ message: 'Coupon deleted successfully' })
+    let deleted = null
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      deleted = await Coupon.findByIdAndDelete(id)
+    }
+    if (!deleted) {
+      deleted = await Coupon.findOneAndDelete({ code: id.toUpperCase().trim() })
+    }
+
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Coupon not found or already deleted' })
+    }
+
+    emitCouponDeleted(deleted._id || id)
+    res.json({ success: true, message: 'Coupon deleted successfully' })
   } catch (error) {
     console.error('Error deleting coupon:', error)
-    res.status(500).json({ message: 'Server error deleting coupon' })
+    res.status(500).json({ success: false, message: 'Server error deleting coupon' })
   }
 }

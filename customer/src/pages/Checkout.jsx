@@ -35,6 +35,11 @@ export default function Checkout() {
     }
   }
 
+  const handleRemoveCoupon = () => {
+    removeCoupon()
+    setCouponMsg(null)
+  }
+
   const [form, setForm] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -336,16 +341,16 @@ export default function Checkout() {
           <div>
             <p className="eyebrow mb-3 sm:mb-4">Contact Information</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
-              <input name="name" required onChange={handleChange} placeholder="Full name *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] w-full" />
-              <input name="email" type="email" required onChange={handleChange} placeholder="Email address *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] w-full" />
-              <input name="phone" required onChange={handleChange} placeholder="Phone number *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] col-span-1 sm:col-span-2 font-mono w-full" />
+              <input name="name" required onChange={handleChange} placeholder="Full name *" className="border border-[var(--color-line)] bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] w-full" />
+              <input name="email" type="email" required onChange={handleChange} placeholder="Email address *" className="border border-[var(--color-line)] bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] w-full" />
+              <input name="phone" required onChange={handleChange} placeholder="Phone number *" className="border border-[var(--color-line)] bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] col-span-1 sm:col-span-2 font-mono w-full" />
             </div>
           </div>
           <div>
             <p className="eyebrow mb-3 sm:mb-4">Shipping Address</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
-              <input name="address" required value={form.address} onChange={handleChange} placeholder="Street address *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] col-span-1 sm:col-span-2 w-full" />
-              <input name="city" required value={form.city} onChange={handleChange} placeholder="City / District *" className="border border-[var(--color-line)] bg-transparent px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] font-semibold w-full" />
+              <input name="address" required value={form.address} onChange={handleChange} placeholder="Street address *" className="border border-[var(--color-line)] bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] col-span-1 sm:col-span-2 w-full" />
+              <input name="city" required value={form.city} onChange={handleChange} placeholder="City / District *" className="border border-[var(--color-line)] bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] font-semibold w-full" />
               <div className="w-full">
                 <input
                   name="pincode"
@@ -357,7 +362,7 @@ export default function Checkout() {
                   value={form.pincode}
                   onChange={handlePincodeChange}
                   placeholder="PIN code (6 digits) *"
-                  className={`w-full border bg-transparent px-4 py-3 text-xs focus:outline-none font-mono ${
+                  className={`w-full border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none font-mono ${
                     pincodeStatus.message && !pincodeStatus.success && !pincodeStatus.loading
                       ? 'border-amber-600 focus:border-amber-600'
                       : pincodeStatus.success
@@ -381,14 +386,14 @@ export default function Checkout() {
           </div>
           <div>
             <p className="eyebrow mb-3 sm:mb-4">Payment Method</p>
-            <div className="border border-[var(--color-line)] px-3.5 sm:px-4 py-3.5 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[var(--color-beige)]/30">
+            <div className="border border-[var(--color-line)] rounded-2xl px-3.5 sm:px-4 py-3.5 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[var(--color-beige)]/30">
               <span className="font-semibold">Razorpay — Cards, UPI, Netbanking</span>
-              <span className="specimen-tag bg-emerald-800 text-white font-mono px-2 py-0.5 self-start sm:self-auto">100% SECURE</span>
+              <span className="specimen-tag bg-emerald-800 text-white font-mono px-2.5 py-0.5 rounded-full self-start sm:self-auto">100% SECURE</span>
             </div>
           </div>
 
           {/* Cancellation Policy Disclaimer */}
-          <div className="p-3.5 sm:p-4 bg-amber-50/90 border border-amber-300 text-[0.7rem] sm:text-[0.72rem] text-amber-900 leading-relaxed rounded space-y-1.5 shadow-sm">
+          <div className="p-3.5 sm:p-4 bg-amber-50/90 border border-amber-300 text-[0.7rem] sm:text-[0.72rem] text-amber-900 leading-relaxed rounded-2xl space-y-1.5 shadow-sm">
             <div className="font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-950 text-xs">
               <AlertTriangle size={15} className="text-amber-700 shrink-0" />
               Studio Cancellation & Refund Policy
@@ -401,19 +406,19 @@ export default function Checkout() {
             </p>
           </div>
 
-          <button type="submit" disabled={processing} className="btn-primary w-full py-3.5 text-xs uppercase tracking-widest font-bold disabled:opacity-60">
+          <button type="submit" disabled={processing} className="btn-primary w-full py-3.5 text-xs uppercase tracking-widest font-bold disabled:opacity-60 rounded-full">
             {processing ? 'Processing Payment & Saving Order...' : `Pay ${formatPrice(total)} Now`}
           </button>
         </form>
       </Reveal>
 
       <Reveal delay={0.1}>
-        <div className="bg-[var(--color-beige)]/30 p-4 sm:p-6 lg:sticky lg:top-28 border border-[var(--color-line)] space-y-4 sm:space-y-5 w-full">
+        <div className="bg-[var(--color-beige)]/30 p-4 sm:p-6 lg:sticky lg:top-28 border border-[var(--color-line)] rounded-3xl space-y-4 sm:space-y-5 w-full">
           <p className="eyebrow mb-2">Order Summary</p>
           <div className="space-y-3 sm:space-y-4 max-h-56 overflow-y-auto pr-1">
             {items.map((item) => (
               <div key={item.id} className="flex gap-3">
-                <img src={item.image} alt={item.title} className="w-14 h-16 object-cover shrink-0 border border-[var(--color-line)] bg-[var(--color-card-bg)]" />
+                <img src={item.image} alt={item.title} className="w-14 h-16 object-cover shrink-0 border border-[var(--color-line)] rounded-xl bg-[var(--color-card-bg)]" />
                 <div className="flex-1 min-w-0 text-xs">
                   <p className="font-bold leading-tight truncate">{item.title}</p>
                   <p className="text-[var(--color-ink-soft)] mt-0.5">Qty: {item.qty}</p>
@@ -426,7 +431,7 @@ export default function Checkout() {
           {/* Promo Code Entry Box */}
           <div className="pt-3 border-t border-[var(--color-line)] space-y-2">
             {activeCoupon ? (
-              <div className="bg-emerald-50 border border-emerald-300 p-2.5 text-xs flex justify-between items-center rounded">
+              <div className="bg-emerald-50 border border-emerald-300 p-2.5 text-xs flex justify-between items-center rounded-2xl">
                 <div>
                   <p className="font-bold text-emerald-900 flex items-center gap-1">
                     ✨ {activeCoupon.code}
@@ -435,7 +440,7 @@ export default function Checkout() {
                 </div>
                 <button
                   type="button"
-                  onClick={removeCoupon}
+                  onClick={handleRemoveCoupon}
                   className="text-rose-600 font-bold uppercase text-[0.65rem] hover:underline"
                 >
                   Remove
@@ -446,11 +451,14 @@ export default function Checkout() {
                 <div className="flex gap-2">
                   <input
                     value={couponInput}
-                    onChange={(e) => setCouponInput(e.target.value)}
+                    onChange={(e) => {
+                      setCouponInput(e.target.value)
+                      if (couponMsg) setCouponMsg(null)
+                    }}
                     placeholder="Promo code"
-                    className="flex-1 border border-[var(--color-line)] bg-white px-3 py-2 text-xs uppercase focus:outline-none focus:border-[var(--color-primary)] font-mono min-w-0"
+                    className="flex-1 border border-[var(--color-line)] bg-transparent rounded-full px-3.5 py-2 text-xs focus:outline-none"
                   />
-                  <button type="submit" className="btn-outline text-[0.68rem] uppercase font-bold text-[var(--color-ink)] px-3 shrink-0">
+                  <button type="submit" className="btn-primary text-[0.65rem] py-2 px-3 rounded-full uppercase tracking-wider font-bold">
                     Apply
                   </button>
                 </div>
@@ -458,7 +466,7 @@ export default function Checkout() {
               </form>
             )}
 
-            {couponMsg && (
+            {!activeCoupon && couponMsg && (
               <div className={`text-[0.68rem] p-2 rounded ${couponMsg.success ? 'bg-emerald-100 text-emerald-900 font-bold' : 'bg-rose-100 text-rose-800'}`}>
                 {couponMsg.message}
               </div>

@@ -40,7 +40,7 @@ function CollectionHero({ collection, isEven = true }) {
   return (
     <div className="space-y-3 w-full max-w-full">
       <div
-        className={`relative overflow-hidden border border-[var(--color-line)] bg-[var(--color-card-bg)] transition-all duration-500 shadow-sm w-full ${
+        className={`relative overflow-hidden border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl transition-all duration-500 shadow-sm w-full ${
           isPortrait
             ? `max-w-full md:max-w-[420px] h-[380px] xs:h-[440px] sm:h-[500px] md:h-[580px] ${isEven ? 'md:ml-auto md:mr-0' : 'md:ml-0 md:mr-auto'}`
             : 'h-[260px] xs:h-[300px] sm:h-[340px] md:h-[400px]'
@@ -58,8 +58,9 @@ function CollectionHero({ collection, isEven = true }) {
             transformOrigin: `${ix}% ${iy}%`,
             transition: 'all 0.5s ease',
           }}
+          className="rounded-3xl"
         />
-        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-black/60 backdrop-blur-md text-white text-[0.55rem] sm:text-[0.6rem] uppercase tracking-widest px-2 py-1 font-mono">
+        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-black/60 backdrop-blur-md text-white text-[0.55rem] sm:text-[0.6rem] uppercase tracking-widest px-2.5 py-1 rounded-full font-mono">
           {isPortrait ? '▬ Portrait Series' : '⬛ Landscape Series'}
         </div>
       </div>
@@ -71,11 +72,11 @@ function CollectionHero({ collection, isEven = true }) {
               key={i}
               type="button"
               onClick={() => setActiveImg(img)}
-              className={`w-11 h-11 sm:w-12 sm:h-12 shrink-0 border overflow-hidden transition-all ${
+              className={`w-11 h-11 sm:w-12 sm:h-12 shrink-0 border rounded-xl overflow-hidden transition-all ${
                 currentBanner === img ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/30 scale-105' : 'border-[var(--color-line)] opacity-60 hover:opacity-100'
               }`}
             >
-              <img src={img} alt={`Series thumbnail ${i + 1}`} className="w-full h-full object-cover" />
+              <img src={img} alt={`Series thumbnail ${i + 1}`} className="w-full h-full object-cover rounded-xl" />
             </button>
           ))}
         </div>
@@ -123,7 +124,7 @@ export default function Collections() {
                       <div className="pt-2">
                         <Link
                           to={`/shop?category=${slug}`}
-                          className="btn-primary inline-flex items-center justify-center gap-2 text-xs py-2.5 sm:py-3 w-full sm:w-auto"
+                          className="btn-primary inline-flex items-center justify-center gap-2 text-xs py-2.5 sm:py-3 w-full sm:w-auto rounded-full"
                         >
                           Explore {c.title} Catalog <ArrowUpRight size={15} />
                         </Link>
@@ -150,7 +151,7 @@ export default function Collections() {
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-6 border border-dashed border-[var(--color-line)] p-4 bg-[var(--color-card-bg)]/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <div className="mt-6 border border-dashed border-[var(--color-line)] rounded-2xl p-4 bg-[var(--color-card-bg)]/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                     <p className="text-xs text-[var(--color-ink-soft)] font-medium">
                       ✨ New pieces for {c.title} are being handcrafted in studio by Lily Charm Lead Artisans.
                     </p>
@@ -164,12 +165,12 @@ export default function Collections() {
           })}
         </div>
       ) : (
-        <Reveal className="text-center py-16 border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 sm:p-8">
+        <Reveal className="text-center py-16 border border-[var(--color-line)] rounded-3xl bg-[var(--color-card-bg)] p-6 sm:p-8">
           <p className="font-[var(--font-display)] text-xl sm:text-2xl mb-2 font-bold">New Collections Coming Soon</p>
           <p className="text-xs sm:text-sm text-[var(--color-ink-soft)] max-w-md mx-auto mb-6">
             Our studio is currently handcrafting new signature floral series. Visit our full catalog to explore available creations.
           </p>
-          <Link to="/shop" className="btn-primary inline-block">
+          <Link to="/shop" className="btn-primary inline-block rounded-full">
             View Full Shop Catalog
           </Link>
         </Reveal>

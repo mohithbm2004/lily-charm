@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react'
 import { products as initialProducts, categories as initialCategories } from '../data/products'
 
 import { API_URL } from '../config/api'
+import { getSocket } from '../services/socket'
 
 const StudioContext = createContext(null)
 
@@ -59,26 +60,22 @@ export function StudioProvider({ children }) {
       if (res.ok) {
         const data = await res.json()
         if (data.marqueeText) setMarqueeText(data.marqueeText)
-        setShippingSettings((prev) => {
-          const newFeeEnabled = data.shippingFeeEnabled ?? true
-          const newStandardFee = data.standardShippingFee ?? 100
-          const newThreshold = data.freeShippingThreshold ?? 2500
-          if (
-            prev &&
-            prev.shippingFeeEnabled === newFeeEnabled &&
-            prev.standardShippingFee === newStandardFee &&
-            prev.freeShippingThreshold === newThreshold
-          ) {
-            return prev
-          }
-          const updated = {
-            shippingFeeEnabled: newFeeEnabled,
-            standardShippingFee: newStandardFee,
-            freeShippingThreshold: newThreshold,
-          }
-          localStorage.setItem('lilycharm_shipping_settings', JSON.stringify(updated))
-          return updated
-        })
+        if (data.offerCode) {
+          setActiveOffer((prev) => ({
+            ...prev,
+            code: data.offerCode,
+            discountPercent: data.discountPercent ?? prev.discountPercent,
+            bannerText: data.offerTitle || prev.bannerText,
+            enabled: data.isOfferActive ?? prev.enabled,
+          }))
+        }
+        const updated = {
+          shippingFeeEnabled: data.shippingFeeEnabled !== undefined ? Boolean(data.shippingFeeEnabled) : true,
+          standardShippingFee: data.standardShippingFee !== undefined ? Number(data.standardShippingFee) : 100,
+          freeShippingThreshold: data.freeShippingThreshold !== undefined ? Number(data.freeShippingThreshold) : 2500,
+        }
+        setShippingSettings(updated)
+        localStorage.setItem('lilycharm_shipping_settings', JSON.stringify(updated))
       }
     } catch {}
   }
@@ -134,12 +131,107 @@ export function StudioProvider({ children }) {
     refreshProductsFromApi()
     refreshCollectionsFromApi()
     refreshSettingsFromApi()
+
+    const socket = getSocket()
+
+    const handleProductCreated = (newProd) => {
+      if (!newProd) return
+      const formatted = {
+        ...newProd,
+        id: newProd._id || newProd.id,
+        mongoId: newProd._id,
+        image: newProd.image || (Array.isArray(newProd.images) ? (typeof newProd.images[0] === 'object' ? newProd.images[0].url : newProd.images[0]) : ''),
+      }
+      setProducts((prev) => [formatted, ...prev.filter((p) => (p.id || p._id) !== formatted.id)])
+    }
+
+    const handleProductUpdated = (updatedProd) => {
+      if (!updatedProd) return
+      const targetId = updatedProd._id || updatedProd.id
+      const formatted = {
+        ...updatedProd,
+        id: targetId,
+        mongoId: updatedProd._id,
+        image: updatedProd.image || (Array.isArray(updatedProd.images) ? (typeof updatedProd.images[0] === 'object' ? updatedProd.images[0].url : updatedProd.images[0]) : ''),
+      }
+      setProducts((prev) => prev.map((p) => ((p.id === targetId || p._id === targetId || p.slug === updatedProd.slug) ? formatted : p)))
+    }
+
+    const handleProductDeleted = ({ productId }) => {
+      if (!productId) return
+      if (productId === 'ALL') {
+        setProducts([])
+      } else {
+        setProducts((prev) => prev.filter((p) => p.id !== productId && p._id !== productId && p.slug !== productId))
+      }
+    }
+
+    const handleCollectionCreated = (newCol) => {
+      if (!newCol) return
+      const formatted = { ...newCol, id: newCol.slug || newCol._id || newCol.id, mongoId: newCol._id }
+      setCollections((prev) => [...prev.filter((c) => (c.id || c._id) !== formatted.id), formatted])
+    }
+
+    const handleCollectionUpdated = (updatedCol) => {
+      if (!updatedCol) return
+      const targetId = updatedCol._id || updatedCol.id || updatedCol.slug
+      const formatted = { ...updatedCol, id: updatedCol.slug || updatedCol._id, mongoId: updatedCol._id }
+      setCollections((prev) => prev.map((c) => ((c.id === targetId || c._id === targetId || c.slug === updatedCol.slug) ? formatted : c)))
+    }
+
+    const handleCollectionDeleted = ({ collectionId }) => {
+      if (!collectionId) return
+      if (collectionId === 'ALL') {
+        setCollections([])
+      } else {
+        setCollections((prev) => prev.filter((c) => c.id !== collectionId && c._id !== collectionId && c.slug !== collectionId))
+      }
+    }
+
+    const handleSettingsUpdated = (data) => {
+      if (!data) return
+      if (data.marqueeText) setMarqueeText(data.marqueeText)
+      if (data.offerCode) {
+        setActiveOffer((prev) => ({
+          ...prev,
+          code: data.offerCode,
+          discountPercent: data.discountPercent ?? prev.discountPercent,
+          bannerText: data.offerTitle || prev.bannerText,
+          enabled: data.isOfferActive ?? prev.enabled,
+        }))
+      }
+      setShippingSettings({
+        shippingFeeEnabled: data.shippingFeeEnabled ?? true,
+        standardShippingFee: data.standardShippingFee ?? 100,
+        freeShippingThreshold: data.freeShippingThreshold ?? 2500,
+      })
+    }
+
+    socket.on('PRODUCT_CREATED', handleProductCreated)
+    socket.on('PRODUCT_UPDATED', handleProductUpdated)
+    socket.on('PRODUCT_DELETED', handleProductDeleted)
+    socket.on('COLLECTION_CREATED', handleCollectionCreated)
+    socket.on('COLLECTION_UPDATED', handleCollectionUpdated)
+    socket.on('COLLECTION_DELETED', handleCollectionDeleted)
+    socket.on('SETTINGS_UPDATED', handleSettingsUpdated)
+
+    // Fallback sync interval for offline resilience
     const interval = setInterval(() => {
       refreshProductsFromApi()
       refreshCollectionsFromApi()
       refreshSettingsFromApi()
-    }, 2000)
-    return () => clearInterval(interval)
+    }, 15000)
+
+    return () => {
+      socket.off('PRODUCT_CREATED', handleProductCreated)
+      socket.off('PRODUCT_UPDATED', handleProductUpdated)
+      socket.off('PRODUCT_DELETED', handleProductDeleted)
+      socket.off('COLLECTION_CREATED', handleCollectionCreated)
+      socket.off('COLLECTION_UPDATED', handleCollectionUpdated)
+      socket.off('COLLECTION_DELETED', handleCollectionDeleted)
+      socket.off('SETTINGS_UPDATED', handleSettingsUpdated)
+      clearInterval(interval)
+    }
   }, [])
 
   useEffect(() => {
@@ -161,6 +253,12 @@ export function StudioProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('lilycharm_offer', JSON.stringify(activeOffer))
   }, [activeOffer])
+
+  useEffect(() => {
+    if (shippingSettings) {
+      localStorage.setItem('lilycharm_shipping_settings', JSON.stringify(shippingSettings))
+    }
+  }, [shippingSettings])
 
   const addProduct = async (newProduct) => {
     const payload = {

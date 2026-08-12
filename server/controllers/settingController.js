@@ -1,4 +1,5 @@
 import Setting from '../models/Setting.js'
+import { emitSettingsUpdated } from '../socket.js'
 
 // @desc    Get studio settings (offer code, percentage, marquee)
 // @route   GET /api/settings
@@ -58,6 +59,7 @@ export const updateSettings = async (req, res) => {
     if (freeShippingThreshold !== undefined) settings.freeShippingThreshold = Math.max(0, Number(freeShippingThreshold))
 
     await settings.save()
+    emitSettingsUpdated(settings)
     res.json({ message: 'Settings updated successfully', settings })
   } catch (error) {
     console.error('Error updating settings:', error)

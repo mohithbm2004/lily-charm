@@ -9,4 +9,6 @@ export const API_URL =
     ? 'https://lily-charm-server.onrender.com/api'
     : 'http://localhost:5000/api'
 
+export const SOCKET_URL = API_URL.replace(/\/api\/?$/, '')
+
 export default API_URL

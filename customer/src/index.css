@@ -77,6 +77,7 @@
     color: var(--color-ink);
     max-width: 100%;
     box-sizing: border-box;
+    border-radius: 1rem; /* soft rounded inputs */
   }
   input::placeholder, textarea::placeholder {
     color: var(--color-ink-soft);
@@ -120,6 +121,7 @@
     color: #ffffff;
     padding: 0.85rem 1.75rem;
     border: 1px solid var(--color-line);
+    border-radius: 9999px; /* soft rounded pill buttons */
     transition: all 0.35s ease;
     max-width: 100%;
     box-sizing: border-box;
@@ -136,6 +138,7 @@
     background-color: var(--color-card-bg);
     color: var(--color-ink);
     border: 1px solid var(--color-line);
+    border-radius: 9999px; /* soft rounded pill buttons */
     padding: 0.8rem 1.7rem;
     transition: all 0.35s ease;
     max-width: 100%;
@@ -150,6 +153,7 @@
     font-size: 0.62rem;
     letter-spacing: 0.2em;
     text-transform: uppercase;
+    border-radius: 9999px;
   }
   .arch-frame {
     border-top-left-radius: 9999px;

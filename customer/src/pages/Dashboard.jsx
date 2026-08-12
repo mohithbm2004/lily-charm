@@ -8,6 +8,7 @@ import { useAlert } from '../context/AlertContext'
 import OrderDetailsModal from '../components/OrderDetailsModal'
 import OrderTimeline from '../components/OrderTimeline'
 import { API_URL } from '../config/api'
+import { getSocket } from '../services/socket'
 
 const tabs = ['My Orders', 'Profile Details', 'Custom Price Quotes', 'Saved Addresses']
 
@@ -127,7 +128,76 @@ export default function Dashboard() {
   useEffect(() => {
     fetchProfileFromApi(currentEmail)
     fetchUserOrdersAndRequests(currentEmail)
-  }, [currentEmail])
+
+    if (!currentEmail) return
+
+    const socket = getSocket()
+    const cleanEmail = currentEmail.toLowerCase().trim()
+
+    const handleOrderCreated = (order) => {
+      if (!order) return
+      const orderEmail = (order?.shippingAddress?.email || order?.email || '').toLowerCase().trim()
+      if (orderEmail === cleanEmail || order.user === user?._id) {
+        setUserOrders((prev) => [order, ...prev.filter((o) => (o._id || o.id) !== (order._id || order.id))])
+      }
+    }
+
+    const handleOrderUpdated = (order) => {
+      if (!order) return
+      const targetId = String(order._id || order.id)
+      setUserOrders((prev) =>
+        prev.map((o) => (String(o._id || o.id) === targetId ? { ...o, ...order } : o))
+      )
+    }
+
+    const handleOrderCancelled = ({ orderId }) => {
+      if (!orderId) return
+      setUserOrders((prev) =>
+        prev.map((o) =>
+          String(o._id || o.id) === String(orderId) ? { ...o, status: 'Cancelled & Refunded' } : o
+        )
+      )
+    }
+
+    const handleCustomRequestCreated = (req) => {
+      if (!req) return
+      const reqEmail = (req.email || '').toLowerCase().trim()
+      if (reqEmail === cleanEmail) {
+        setUserCustomRequests((prev) => [req, ...prev.filter((r) => r._id !== req._id)])
+      }
+    }
+
+    const handleCustomRequestUpdated = (req) => {
+      if (!req) return
+      const targetId = String(req._id || req.id)
+      setUserCustomRequests((prev) =>
+        prev.map((r) => (String(r._id || r.id) === targetId ? { ...r, ...req } : r))
+      )
+    }
+
+    const handleCustomRequestDeleted = ({ requestId }) => {
+      if (!requestId) return
+      setUserCustomRequests((prev) => prev.filter((r) => String(r._id) !== String(requestId)))
+    }
+
+    socket.on('ORDER_CREATED', handleOrderCreated)
+    socket.on('ORDER_UPDATED', handleOrderUpdated)
+    socket.on('ORDER_STATUS_UPDATED', handleOrderUpdated)
+    socket.on('ORDER_CANCELLED', handleOrderCancelled)
+    socket.on('CUSTOM_REQUEST_CREATED', handleCustomRequestCreated)
+    socket.on('CUSTOM_REQUEST_UPDATED', handleCustomRequestUpdated)
+    socket.on('CUSTOM_REQUEST_DELETED', handleCustomRequestDeleted)
+
+    return () => {
+      socket.off('ORDER_CREATED', handleOrderCreated)
+      socket.off('ORDER_UPDATED', handleOrderUpdated)
+      socket.off('ORDER_STATUS_UPDATED', handleOrderUpdated)
+      socket.off('ORDER_CANCELLED', handleOrderCancelled)
+      socket.off('CUSTOM_REQUEST_CREATED', handleCustomRequestCreated)
+      socket.off('CUSTOM_REQUEST_UPDATED', handleCustomRequestUpdated)
+      socket.off('CUSTOM_REQUEST_DELETED', handleCustomRequestDeleted)
+    }
+  }, [currentEmail, user?._id])
 
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0]
@@ -442,7 +512,7 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 self-start sm:self-auto flex-wrap">
-            <div className="flex items-center gap-2 text-[0.68rem] sm:text-xs font-mono text-[var(--color-ink-soft)] bg-[var(--color-card-bg)] border border-[var(--color-line)] px-3 py-1.5 sm:px-4 sm:py-2">
+            <div className="flex items-center gap-2 text-[0.68rem] sm:text-xs font-mono text-[var(--color-ink-soft)] bg-[var(--color-card-bg)] border border-[var(--color-line)] rounded-full px-3 py-1.5 sm:px-4 sm:py-2">
               <span>Account:</span>
               <strong className="text-emerald-700">Verified & Active</strong>
             </div>
@@ -456,7 +526,7 @@ export default function Dashboard() {
                 setUserCustomRequests([])
                 navigate('/')
               }}
-              className="border border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 sm:px-3.5 sm:py-2 text-[0.68rem] sm:text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors"
+              className="border border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-full px-3.5 py-1.5 sm:px-4 sm:py-2 text-[0.68rem] sm:text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors shadow-sm"
               title="Sign Out from account"
             >
               <LogOut size={13} /> Sign Out
@@ -465,7 +535,7 @@ export default function Dashboard() {
         </div>
 
         {justOrdered && (
-          <div className="mt-4 p-3.5 sm:p-4 bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-semibold flex items-center gap-2 rounded">
+          <div className="mt-4 p-3.5 sm:p-4 bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-semibold flex items-center gap-2 rounded-2xl">
             <CheckCircle2 size={16} className="shrink-0" /> Order confirmed — your order details have been saved to your profile and sent to our studio delivery team!
           </div>
         )}
@@ -478,10 +548,10 @@ export default function Dashboard() {
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`shrink-0 text-left text-xs font-bold uppercase tracking-wider px-3.5 sm:px-4 py-2.5 sm:py-3 whitespace-nowrap transition-colors border-l-2 ${
+              className={`shrink-0 text-left text-xs font-bold uppercase tracking-wider px-4 py-3 rounded-full whitespace-nowrap transition-colors border ${
                 tab === t
                   ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm'
-                  : 'text-[var(--color-ink-soft)] bg-[var(--color-card-bg)]/60 hover:bg-[var(--color-card-bg)] border-transparent'
+                  : 'text-[var(--color-ink-soft)] bg-[var(--color-card-bg)]/60 hover:bg-[var(--color-card-bg)] border-[var(--color-line)]'
               }`}
             >
               {t}
@@ -493,7 +563,7 @@ export default function Dashboard() {
         <div className="space-y-6">
           {/* TAB 1: PROFILE DETAILS */}
           {tab === 'Profile Details' && (
-            <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl text-xs border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 md:p-8 shadow-sm">
+            <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl text-xs border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-6 md:p-8 shadow-sm">
               <div className="border-b border-[var(--color-line)] pb-4 space-y-1">
                 <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
                   <User size={18} className="text-[var(--color-primary)]" /> User Profile Information
@@ -643,21 +713,21 @@ export default function Dashboard() {
                 </div>
                 <button
                   onClick={() => fetchUserOrdersAndRequests(userProfile.email)}
-                  className="p-2 border border-[var(--color-line)] bg-[var(--color-card-bg)] hover:bg-black/5 flex items-center gap-1 font-bold text-[0.65rem] uppercase"
+                  className="px-3 py-1.5 border border-[var(--color-line)] bg-[var(--color-card-bg)] hover:bg-black/5 rounded-full flex items-center gap-1 font-bold text-[0.65rem] uppercase shadow-sm"
                 >
                   <RefreshCw size={12} /> Refresh
                 </button>
               </div>
 
               {userOrders.length === 0 ? (
-                <div className="border border-dashed border-[var(--color-line)] p-8 text-center text-[var(--color-ink-soft)] space-y-3">
+                <div className="border border-dashed border-[var(--color-line)] rounded-3xl p-8 text-center text-[var(--color-ink-soft)] space-y-3 bg-[var(--color-card-bg)]/40">
                   <p className="font-bold uppercase text-sm">No Orders Found for {userProfile.email}</p>
                   <p className="text-[0.7rem]">Place an order at checkout to track delivery status live right here!</p>
                 </div>
               ) : (
                 <div className="space-y-6">
                   {userOrders.map((o) => (
-                    <div key={o._id} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div key={o._id} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow">
                       {/* Order Header */}
                       <div className="flex flex-wrap justify-between items-start border-b border-[var(--color-line)] pb-3 gap-2">
                         <div>
@@ -666,7 +736,7 @@ export default function Dashboard() {
                         </div>
                         <div className="flex items-center gap-2">
                           <span
-                            className={`font-mono font-bold uppercase px-2.5 py-1 text-[0.65rem] rounded tracking-wider shadow-sm border ${
+                            className={`font-mono font-bold uppercase px-3 py-1 text-[0.65rem] rounded-full tracking-wider shadow-sm border ${
                               o.status === 'Cancelled'
                                 ? 'bg-rose-800 text-white border-rose-950'
                                 : o.status === 'Delivered'
@@ -680,7 +750,7 @@ export default function Dashboard() {
                           </span>
 
                           <span
-                            className={`font-mono font-bold uppercase px-2.5 py-1 text-[0.65rem] rounded tracking-wider shadow-sm border ${
+                            className={`font-mono font-bold uppercase px-3 py-1 text-[0.65rem] rounded-full tracking-wider shadow-sm border ${
                               o.paymentStatus === 'Failed'
                                 ? 'bg-rose-800 text-white border-rose-950'
                                 : 'bg-emerald-800 text-white border-emerald-950'
@@ -692,16 +762,16 @@ export default function Dashboard() {
                       </div>
 
                       {/* Timeline Preview */}
-                      <div className="bg-[var(--color-bg)] p-3 border border-[var(--color-line)]">
+                      <div className="bg-[var(--color-bg)] p-3 border border-[var(--color-line)] rounded-2xl">
                         <OrderTimeline status={o.status} history={o.statusHistory} notes={o.notes} refundId={o.razorpayRefundId} cancellationFee={o.cancellationFee} refundAmount={o.refundAmount} />
                       </div>
 
                       {/* Items Preview */}
                       <div className="space-y-2">
                         {o.items?.map((it, idx) => (
-                          <div key={idx} className="flex items-center justify-between gap-3 p-2 bg-[var(--color-bg)] border border-[var(--color-line)]">
+                          <div key={idx} className="flex items-center justify-between gap-3 p-2 bg-[var(--color-bg)] border border-[var(--color-line)] rounded-2xl">
                             <div className="flex items-center gap-3">
-                              <img src={it.image || '/images/products/flower-1-1.jpg'} alt={it.title} className="w-10 h-12 object-cover border border-[var(--color-line)]" />
+                              <img src={it.image || '/images/products/flower-1-1.jpg'} alt={it.title} className="w-10 h-12 object-cover border border-[var(--color-line)] rounded-xl" />
                               <div>
                                 <p className="font-bold text-xs">{it.title}</p>
                                 <p className="text-[0.65rem] text-[var(--color-ink-soft)]">Qty: {it.qty || 1} × {formatPrice(it.price)}</p>
@@ -722,14 +792,14 @@ export default function Dashboard() {
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                           <button
                             onClick={() => setSelectedOrder(o)}
-                            className="btn-primary py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center"
+                            className="btn-primary py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center rounded-full"
                           >
                             <Eye size={12} /> View Details & Timeline
                           </button>
 
                           <button
                             onClick={() => window.open(`${API_URL}/orders/${o._id}/invoice`, '_blank')}
-                            className="btn-outline py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center"
+                            className="btn-outline py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center rounded-full"
                           >
                             <Download size={12} /> Invoice PDF
                           </button>
@@ -883,7 +953,6 @@ export default function Dashboard() {
 
                               <button
                                 onClick={async () => {
-                                  if (!confirm('Decline this price quote?')) return
                                   try {
                                     await fetch(`${API_URL}/custom-requests/${req._id}/decline`, { method: 'PATCH' })
                                     fetchUserOrdersAndRequests(userProfile.email)

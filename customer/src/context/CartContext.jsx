@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, useState } from 'react'
 
 import { API_URL } from '../config/api'
+import { getSocket } from '../services/socket'
 
 const CartContext = createContext(null)
 
@@ -61,12 +62,45 @@ export function CartProvider({ children }) {
           setDbCoupons(data)
         }
       } catch (e) {
-        console.error('Failed to fetch segment coupons:', e)
+        // offline safe
       }
     }
     fetchCoupons()
-    const interval = setInterval(fetchCoupons, 5000)
-    return () => clearInterval(interval)
+
+    const socket = getSocket()
+
+    const handleCouponCreated = (newCoupon) => {
+      if (newCoupon && newCoupon.isActive !== false) {
+        setDbCoupons((prev) => [newCoupon, ...prev.filter((c) => c.code !== newCoupon.code)])
+      }
+    }
+
+    const handleCouponUpdated = (updatedCoupon) => {
+      if (!updatedCoupon) return
+      setDbCoupons((prev) => {
+        if (updatedCoupon.isActive === false) {
+          return prev.filter((c) => c.code !== updatedCoupon.code && c._id !== updatedCoupon._id)
+        }
+        return [updatedCoupon, ...prev.filter((c) => c.code !== updatedCoupon.code && c._id !== updatedCoupon._id)]
+      })
+    }
+
+    const handleCouponDeleted = ({ couponId }) => {
+      if (!couponId) return
+      setDbCoupons((prev) => prev.filter((c) => c._id !== couponId && c.code !== couponId))
+    }
+
+    socket.on('COUPON_CREATED', handleCouponCreated)
+    socket.on('COUPON_UPDATED', handleCouponUpdated)
+    socket.on('COUPON_DELETED', handleCouponDeleted)
+
+    const interval = setInterval(fetchCoupons, 20000)
+    return () => {
+      socket.off('COUPON_CREATED', handleCouponCreated)
+      socket.off('COUPON_UPDATED', handleCouponUpdated)
+      socket.off('COUPON_DELETED', handleCouponDeleted)
+      clearInterval(interval)
+    }
   }, [])
 
   const availableCoupons = useMemo(() => {

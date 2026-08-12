@@ -1,6 +1,7 @@
 import Collection from '../models/Collection.js'
 import mongoose from 'mongoose'
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryHelper.js'
+import { emitCollectionCreated, emitCollectionUpdated, emitCollectionDeleted } from '../socket.js'
 
 // GET /api/collections — List all collection categories from MongoDB
 export async function listCollections(req, res, next) {
@@ -66,6 +67,7 @@ export async function createCollection(req, res, next) {
     }
 
     const collection = await Collection.create(body)
+    emitCollectionCreated(collection)
     res.status(201).json(collection)
   } catch (err) {
     next(err)
@@ -96,6 +98,7 @@ export async function updateCollection(req, res, next) {
       runValidators: false,
     })
 
+    emitCollectionUpdated(collection)
     res.json(collection)
   } catch (err) {
     next(err)
@@ -118,6 +121,7 @@ export async function deleteCollection(req, res, next) {
       if (imgUrl) await deleteFromCloudinary(imgUrl)
     }
 
+    emitCollectionDeleted(collection._id || id)
     res.json({ message: 'Collection deleted successfully', deleted: collection })
   } catch (err) {
     next(err)
@@ -135,6 +139,7 @@ export async function deleteAllCollections(req, res, next) {
       }
     }
     await Collection.deleteMany({})
+    emitCollectionDeleted('ALL')
     res.json({ message: 'All collections deleted successfully' })
   } catch (err) {
     next(err)

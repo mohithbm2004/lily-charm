@@ -1,4 +1,5 @@
 import Review from '../models/Review.js'
+import { emitReviewCreated, emitReviewUpdated, emitReviewDeleted } from '../socket.js'
 
 const DEFAULT_REVIEWS = [
   {
@@ -84,6 +85,7 @@ export async function createReview(req, res, next) {
       isVerifiedBuyer: true,
     })
 
+    emitReviewCreated(newReview)
     res.status(201).json(newReview)
   } catch (err) {
     next(err)
@@ -105,6 +107,7 @@ export async function toggleReviewDisplay(req, res, next) {
     }
 
     await review.save()
+    emitReviewUpdated(review)
     res.json(review)
   } catch (err) {
     next(err)
@@ -118,6 +121,7 @@ export async function updateReview(req, res, next) {
     if (!updated) {
       return res.status(404).json({ message: 'Review not found.' })
     }
+    emitReviewUpdated(updated)
     res.json(updated)
   } catch (err) {
     next(err)
@@ -131,6 +135,7 @@ export async function deleteReview(req, res, next) {
     if (!deleted) {
       return res.status(404).json({ message: 'Review not found.' })
     }
+    emitReviewDeleted(req.params.id)
     res.json({ message: 'Review successfully removed.', id: req.params.id })
   } catch (err) {
     next(err)

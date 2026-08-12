@@ -66,7 +66,7 @@ export default function ResetPassword() {
   return (
     <div className="max-w-md mx-auto px-4 sm:px-6 pt-24 sm:pt-36 pb-16 sm:pb-24 text-[var(--color-ink)] w-full max-w-full">
       <Reveal>
-        <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 shadow-xl">
+        <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 shadow-xl">
           <div className="text-center space-y-2">
             <div className="w-12 h-12 bg-[var(--color-primary)] text-white rounded-full flex items-center justify-center mx-auto">
               <KeyRound size={24} />
@@ -78,13 +78,13 @@ export default function ResetPassword() {
           </div>
 
           {errorMessage && (
-            <div className="p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold rounded">
+            <div className="p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold rounded-2xl">
               ⚠️ {errorMessage}
             </div>
           )}
 
           {successMessage && (
-            <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center gap-2 rounded">
+            <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center gap-2 rounded-2xl">
               <CheckCircle2 size={16} /> {successMessage}
             </div>
           )}
@@ -100,7 +100,7 @@ export default function ResetPassword() {
                   placeholder="At least 6 characters..."
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] pl-10 pr-10 py-3 font-mono text-xs"
+                  className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] rounded-xl pl-10 pr-10 py-3 font-mono text-xs"
                 />
                 <button
                   type="button"
@@ -122,7 +122,7 @@ export default function ResetPassword() {
                   placeholder="Re-enter new password..."
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] pl-10 pr-10 py-3 font-mono text-xs"
+                  className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] rounded-xl pl-10 pr-10 py-3 font-mono text-xs"
                 />
               </div>
             </div>
@@ -130,7 +130,7 @@ export default function ResetPassword() {
             <button
               type="submit"
               disabled={isSubmitting || !token}
-              className="btn-primary w-full py-3 font-bold uppercase tracking-widest text-[0.7rem] flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
+              className="btn-primary w-full py-3 font-bold uppercase tracking-widest text-[0.7rem] flex items-center justify-center gap-2 disabled:opacity-50 mt-4 rounded-full"
             >
               {isSubmitting ? (
                 <>

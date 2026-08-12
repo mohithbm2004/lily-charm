@@ -21,7 +21,7 @@ export default function Process() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-14 sm:py-20 md:py-28 relative z-10">
         <Reveal>
           <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 text-[#D5C29D] font-bold text-xs uppercase tracking-[0.24em] font-[var(--font-button)] mb-3 bg-[#2D3926] px-3.5 py-1 rounded border border-[#D5C29D]/30">
+            <span className="inline-flex items-center gap-2 text-[#D5C29D] font-bold text-xs uppercase tracking-[0.24em] font-[var(--font-button)] mb-3 bg-[#2D3926] px-3.5 py-1 rounded-full border border-[#D5C29D]/30">
               <Sparkles size={13} className="text-[#D5C29D]" /> The Creation Journey
             </span>
             <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold font-[var(--font-display)] text-[#FAF7F2] tracking-tight leading-tight">

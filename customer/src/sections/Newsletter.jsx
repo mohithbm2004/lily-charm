@@ -26,9 +26,9 @@ export default function Newsletter() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Your email address"
-              className="flex-1 border border-[var(--color-line)] bg-transparent px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm focus:outline-none focus:border-[var(--color-primary)] min-w-0"
+              className="flex-1 border border-[var(--color-line)] bg-transparent rounded-full px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm focus:outline-none focus:border-[var(--color-primary)] min-w-0"
             />
-            <button type="submit" className="btn-primary py-2.5 sm:py-3 text-xs">Subscribe</button>
+            <button type="submit" className="btn-primary py-2.5 sm:py-3 text-xs rounded-full">Subscribe</button>
           </form>
         )}
       </Reveal>

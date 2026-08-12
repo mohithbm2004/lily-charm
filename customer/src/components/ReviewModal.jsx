@@ -86,11 +86,11 @@ export default function ReviewModal({ isOpen, onClose, defaultProductTitle = '',
 
   return (
     <div className="fixed inset-0 z-[1200] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
-      <div className="bg-[var(--color-bg)] border border-[var(--color-line)] p-4 sm:p-6 md:p-8 max-w-lg w-full shadow-2xl relative space-y-4 sm:space-y-6 text-[var(--color-ink)] my-auto max-h-[90vh] overflow-y-auto">
+      <div className="bg-[var(--color-bg)] border border-[var(--color-line)] rounded-3xl p-4 sm:p-6 md:p-8 max-w-lg w-full shadow-2xl relative space-y-4 sm:space-y-6 text-[var(--color-ink)] my-auto max-h-[90vh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={handleClose}
-          className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] transition-colors p-1"
+          className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] transition-colors p-1.5 rounded-full hover:bg-black/5"
           aria-label="Close review modal"
         >
           <X size={18} />

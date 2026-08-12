@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { products as initialProducts, categories as initialCategories } from '../data/products'
+import { getSocket } from '../services/socket'
 
 const StudioContext = createContext(null)
 
@@ -212,6 +213,218 @@ export function StudioProvider({ children }) {
     refreshOrdersFromApi()
     refreshUsersFromApi()
     refreshSettingsFromApi()
+    refreshReviewsFromApi()
+    refreshCouponsFromApi()
+
+    const socket = getSocket()
+
+    const handleOrderCreated = (newOrder) => {
+      if (!newOrder) return
+      const mapped = {
+        ...newOrder,
+        id: newOrder.orderNumber || newOrder._id || newOrder.id,
+        mongoId: newOrder._id,
+        customerName: newOrder.shippingAddress?.name || 'Customer',
+        email: newOrder.shippingAddress?.email || '',
+        phone: newOrder.shippingAddress?.phone || '',
+        address: newOrder.shippingAddress?.address || newOrder.shippingAddress?.line1 || '',
+        city: newOrder.shippingAddress?.city || '',
+        pincode: newOrder.shippingAddress?.pincode || '',
+        paymentStatus: newOrder.paymentStatus || 'Paid',
+        orderStatus: newOrder.status || 'Confirmed',
+        date: new Date(newOrder.createdAt || Date.now()).toLocaleDateString(),
+      }
+      setOrders((prev) => [mapped, ...prev.filter((o) => (o.mongoId || o._id || o.id) !== mapped.mongoId)])
+    }
+
+    const handleOrderUpdated = (updatedOrder) => {
+      if (!updatedOrder) return
+      const targetId = String(updatedOrder._id || updatedOrder.id || '')
+      const targetOrderNum = String(updatedOrder.orderNumber || '')
+      setOrders((prev) =>
+        prev.map((o) => {
+          const oMongoId = String(o.mongoId || o._id || '')
+          const oId = String(o.id || '')
+          const oOrderNum = String(o.orderNumber || '')
+          if (
+            (targetId && (oMongoId === targetId || oId === targetId)) ||
+            (targetOrderNum && (oId === targetOrderNum || oOrderNum === targetOrderNum))
+          ) {
+            return {
+              ...o,
+              ...updatedOrder,
+              id: updatedOrder.orderNumber || o.id,
+              mongoId: updatedOrder._id || o.mongoId,
+              orderStatus: updatedOrder.status || o.orderStatus,
+              status: updatedOrder.status || o.status,
+              paymentStatus: updatedOrder.paymentStatus || o.paymentStatus,
+              customerName: updatedOrder.shippingAddress?.name || o.customerName,
+              email: updatedOrder.shippingAddress?.email || o.email,
+              phone: updatedOrder.shippingAddress?.phone || o.phone,
+              address: updatedOrder.shippingAddress?.address || o.address,
+              city: updatedOrder.shippingAddress?.city || o.city,
+              pincode: updatedOrder.shippingAddress?.pincode || o.pincode,
+            }
+          }
+          return o
+        })
+      )
+    }
+
+    const handleOrderCancelled = ({ orderId }) => {
+      if (!orderId) return
+      if (orderId === 'ALL') {
+        setOrders([])
+      } else {
+        setOrders((prev) =>
+          prev.map((o) =>
+            (o.mongoId === orderId || o._id === orderId || o.id === orderId)
+              ? { ...o, orderStatus: 'Cancelled & Refunded', status: 'Cancelled & Refunded' }
+              : o
+          )
+        )
+      }
+    }
+
+    const handleProductCreated = (newProd) => {
+      if (!newProd) return
+      const formatted = {
+        ...newProd,
+        id: newProd._id || newProd.id,
+        mongoId: newProd._id,
+        image: newProd.image || (Array.isArray(newProd.images) ? (typeof newProd.images[0] === 'object' ? newProd.images[0].url : newProd.images[0]) : ''),
+      }
+      setProducts((prev) => [formatted, ...prev.filter((p) => (p.id || p._id) !== formatted.id)])
+    }
+
+    const handleProductUpdated = (updatedProd) => {
+      if (!updatedProd) return
+      const targetId = updatedProd._id || updatedProd.id
+      const formatted = {
+        ...updatedProd,
+        id: targetId,
+        mongoId: updatedProd._id,
+        image: updatedProd.image || (Array.isArray(updatedProd.images) ? (typeof updatedProd.images[0] === 'object' ? updatedProd.images[0].url : updatedProd.images[0]) : ''),
+      }
+      setProducts((prev) => prev.map((p) => ((p.id === targetId || p._id === targetId || p.slug === updatedProd.slug) ? formatted : p)))
+    }
+
+    const handleProductDeleted = ({ productId }) => {
+      if (!productId) return
+      if (productId === 'ALL') {
+        setProducts([])
+      } else {
+        setProducts((prev) => prev.filter((p) => p.id !== productId && p._id !== productId && p.slug !== productId))
+      }
+    }
+
+    const handleCollectionCreated = (newCol) => {
+      if (!newCol) return
+      const formatted = { ...newCol, id: newCol.slug || newCol._id || newCol.id, mongoId: newCol._id }
+      setCollections((prev) => [...prev.filter((c) => (c.id || c._id) !== formatted.id), formatted])
+    }
+
+    const handleCollectionUpdated = (updatedCol) => {
+      if (!updatedCol) return
+      const targetId = updatedCol._id || updatedCol.id || updatedCol.slug
+      const formatted = { ...updatedCol, id: updatedCol.slug || updatedCol._id, mongoId: updatedCol._id }
+      setCollections((prev) => prev.map((c) => ((c.id === targetId || c._id === targetId || c.slug === updatedCol.slug) ? formatted : c)))
+    }
+
+    const handleCollectionDeleted = ({ collectionId }) => {
+      if (!collectionId) return
+      if (collectionId === 'ALL') {
+        setCollections([])
+      } else {
+        setCollections((prev) => prev.filter((c) => c.id !== collectionId && c._id !== collectionId && c.slug !== collectionId))
+      }
+    }
+
+    const handleCustomRequestCreated = (req) => {
+      if (!req) return
+      setCustomRequests((prev) => [req, ...prev.filter((r) => r._id !== req._id)])
+    }
+
+    const handleCustomRequestUpdated = (req) => {
+      if (!req) return
+      setCustomRequests((prev) => prev.map((r) => (r._id === req._id ? req : r)))
+    }
+
+    const handleCustomRequestDeleted = ({ requestId }) => {
+      if (!requestId) return
+      setCustomRequests((prev) => prev.filter((r) => r._id !== requestId))
+    }
+
+    const handleReviewCreated = (review) => {
+      if (!review) return
+      setReviews((prev) => [review, ...prev.filter((r) => r._id !== review._id)])
+    }
+
+    const handleReviewUpdated = (review) => {
+      if (!review) return
+      setReviews((prev) => prev.map((r) => (r._id === review._id ? review : r)))
+    }
+
+    const handleReviewDeleted = ({ reviewId }) => {
+      if (!reviewId) return
+      setReviews((prev) => prev.filter((r) => r._id !== reviewId))
+    }
+
+    const handleCouponCreated = (coupon) => {
+      if (!coupon) return
+      setCoupons((prev) => [coupon, ...prev.filter((c) => c.code !== coupon.code)])
+    }
+
+    const handleCouponUpdated = (coupon) => {
+      if (!coupon) return
+      setCoupons((prev) => prev.map((c) => (c._id === coupon._id || c.code === coupon.code ? coupon : c)))
+    }
+
+    const handleCouponDeleted = ({ couponId }) => {
+      if (!couponId) return
+      setCoupons((prev) => prev.filter((c) => c._id !== couponId && c.code !== couponId))
+    }
+
+    const handleSettingsUpdated = (data) => {
+      if (!data) return
+      if (data.marqueeText) setMarqueeText(data.marqueeText)
+      if (data.offerCode) {
+        setActiveOffer({
+          code: data.offerCode,
+          discountPercent: data.discountPercent,
+          title: data.offerTitle || `${data.discountPercent}% OFF Studio Discount`,
+          isActive: data.isOfferActive !== false,
+        })
+      }
+      setShippingSettings({
+        shippingFeeEnabled: data.shippingFeeEnabled ?? true,
+        standardShippingFee: data.standardShippingFee ?? 100,
+        freeShippingThreshold: data.freeShippingThreshold ?? 2500,
+      })
+    }
+
+    socket.on('ORDER_CREATED', handleOrderCreated)
+    socket.on('ORDER_UPDATED', handleOrderUpdated)
+    socket.on('ORDER_STATUS_UPDATED', handleOrderUpdated)
+    socket.on('ORDER_CANCELLED', handleOrderCancelled)
+    socket.on('PRODUCT_CREATED', handleProductCreated)
+    socket.on('PRODUCT_UPDATED', handleProductUpdated)
+    socket.on('PRODUCT_DELETED', handleProductDeleted)
+    socket.on('COLLECTION_CREATED', handleCollectionCreated)
+    socket.on('COLLECTION_UPDATED', handleCollectionUpdated)
+    socket.on('COLLECTION_DELETED', handleCollectionDeleted)
+    socket.on('CUSTOM_REQUEST_CREATED', handleCustomRequestCreated)
+    socket.on('CUSTOM_REQUEST_UPDATED', handleCustomRequestUpdated)
+    socket.on('CUSTOM_REQUEST_DELETED', handleCustomRequestDeleted)
+    socket.on('REVIEW_CREATED', handleReviewCreated)
+    socket.on('REVIEW_UPDATED', handleReviewUpdated)
+    socket.on('REVIEW_DELETED', handleReviewDeleted)
+    socket.on('COUPON_CREATED', handleCouponCreated)
+    socket.on('COUPON_UPDATED', handleCouponUpdated)
+    socket.on('COUPON_DELETED', handleCouponDeleted)
+    socket.on('SETTINGS_UPDATED', handleSettingsUpdated)
+
+    // Fallback sync interval
     const interval = setInterval(() => {
       refreshProductsFromApi()
       refreshCollectionsFromApi()
@@ -219,8 +432,31 @@ export function StudioProvider({ children }) {
       refreshOrdersFromApi()
       refreshUsersFromApi()
       refreshSettingsFromApi()
-    }, 2000)
-    return () => clearInterval(interval)
+    }, 15000)
+
+    return () => {
+      socket.off('ORDER_CREATED', handleOrderCreated)
+      socket.off('ORDER_UPDATED', handleOrderUpdated)
+      socket.off('ORDER_STATUS_UPDATED', handleOrderUpdated)
+      socket.off('ORDER_CANCELLED', handleOrderCancelled)
+      socket.off('PRODUCT_CREATED', handleProductCreated)
+      socket.off('PRODUCT_UPDATED', handleProductUpdated)
+      socket.off('PRODUCT_DELETED', handleProductDeleted)
+      socket.off('COLLECTION_CREATED', handleCollectionCreated)
+      socket.off('COLLECTION_UPDATED', handleCollectionUpdated)
+      socket.off('COLLECTION_DELETED', handleCollectionDeleted)
+      socket.off('CUSTOM_REQUEST_CREATED', handleCustomRequestCreated)
+      socket.off('CUSTOM_REQUEST_UPDATED', handleCustomRequestUpdated)
+      socket.off('CUSTOM_REQUEST_DELETED', handleCustomRequestDeleted)
+      socket.off('REVIEW_CREATED', handleReviewCreated)
+      socket.off('REVIEW_UPDATED', handleReviewUpdated)
+      socket.off('REVIEW_DELETED', handleReviewDeleted)
+      socket.off('COUPON_CREATED', handleCouponCreated)
+      socket.off('COUPON_UPDATED', handleCouponUpdated)
+      socket.off('COUPON_DELETED', handleCouponDeleted)
+      socket.off('SETTINGS_UPDATED', handleSettingsUpdated)
+      clearInterval(interval)
+    }
   }, [])
 
   useEffect(() => {
@@ -305,14 +541,14 @@ export function StudioProvider({ children }) {
   }
 
   const deleteProduct = async (productOrId) => {
-    const id = typeof productOrId === 'object' ? (productOrId._id || productOrId.mongoId || productOrId.id) : productOrId
+    const id = typeof productOrId === 'object' ? (productOrId.mongoId || productOrId._id || productOrId.id) : productOrId
     const specimen = typeof productOrId === 'object' ? productOrId.specimen : null
 
-    setProducts((prev) => prev.filter((p) => p.id !== id && p._id !== id && p.specimen !== specimen))
+    setProducts((prev) => prev.filter((p) => p.id !== id && p._id !== id && p.mongoId !== id && p.specimen !== specimen))
 
     try {
       if (id) await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' })
-      if (specimen) await fetch(`${API_URL}/products/${specimen}`, { method: 'DELETE' })
+      else if (specimen) await fetch(`${API_URL}/products/${specimen}`, { method: 'DELETE' })
       refreshProductsFromApi()
     } catch (e) {
       console.error('Failed to delete creation in MongoDB API:', e)
@@ -397,7 +633,7 @@ export function StudioProvider({ children }) {
 
     try {
       if (id) await fetch(`${API_URL}/collections/${id}`, { method: 'DELETE' })
-      if (slug && slug !== id) await fetch(`${API_URL}/collections/${slug}`, { method: 'DELETE' })
+      else if (slug) await fetch(`${API_URL}/collections/${slug}`, { method: 'DELETE' })
       refreshCollectionsFromApi()
     } catch (e) {
       console.error('Failed to delete collection:', e)
@@ -415,27 +651,47 @@ export function StudioProvider({ children }) {
     }
   }
 
-  const updateOrderStatus = async (orderId, newStatus) => {
+  const updateOrderStatus = async (orderOrId, newStatus, trackingNumber, carrier, note) => {
+    const id = typeof orderOrId === 'object' ? (orderOrId.mongoId || orderOrId._id || orderOrId.orderNumber || orderOrId.id) : orderOrId
     setOrders((prev) =>
-      prev.map((o) => (o.id === orderId || o.mongoId === orderId || o._id === orderId ? { ...o, orderStatus: newStatus, status: newStatus } : o))
+      prev.map((o) =>
+        (o.id === id || o.mongoId === id || o._id === id || o.orderNumber === id)
+          ? {
+              ...o,
+              orderStatus: newStatus || o.orderStatus,
+              status: newStatus || o.status,
+              ...(trackingNumber !== undefined ? { trackingNumber } : {}),
+              ...(carrier !== undefined ? { carrier } : {}),
+            }
+          : o
+      )
     )
     try {
-      const targetId = orderId
-      await fetch(`${API_URL}/orders/${targetId}/status`, {
+      const payload = {}
+      if (newStatus) payload.status = newStatus
+      if (trackingNumber !== undefined) payload.trackingNumber = trackingNumber
+      if (carrier !== undefined) payload.carrier = carrier
+      if (note !== undefined) payload.note = note
+
+      const res = await fetch(`${API_URL}/orders/${id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(payload),
       })
+      if (!res.ok) {
+        console.error('Failed to update status in API:', res.status, await res.text())
+      }
       refreshOrdersFromApi()
     } catch (e) {
       console.error('Failed to update order status:', e)
     }
   }
 
-  const deleteOrder = async (orderId) => {
-    setOrders((prev) => prev.filter((o) => o.id !== orderId && o.mongoId !== orderId && o._id !== orderId))
+  const deleteOrder = async (orderOrId) => {
+    const id = typeof orderOrId === 'object' ? (orderOrId.mongoId || orderOrId._id || orderOrId.orderNumber || orderOrId.id) : orderOrId
+    setOrders((prev) => prev.filter((o) => o.id !== id && o.mongoId !== id && o._id !== id && o.orderNumber !== id))
     try {
-      await fetch(`${API_URL}/orders/${orderId}`, { method: 'DELETE' })
+      await fetch(`${API_URL}/orders/${id}`, { method: 'DELETE' })
       refreshOrdersFromApi()
     } catch (e) {
       console.error('Failed to delete order:', e)
@@ -597,6 +853,99 @@ export function StudioProvider({ children }) {
     }
   }
 
+  const [coupons, setCoupons] = useState(() => {
+    const saved = localStorage.getItem('lilycharm_coupons')
+    return saved ? JSON.parse(saved) : []
+  })
+
+  const refreshCouponsFromApi = async () => {
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 4000)
+      const res = await fetch(`${API_URL}/coupons`, { signal: controller.signal })
+      clearTimeout(timeoutId)
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          setCoupons(data)
+          localStorage.setItem('lilycharm_coupons', JSON.stringify(data))
+        }
+      }
+    } catch (e) {
+      // offline safe
+    }
+  }
+
+  const addCoupon = async (newCoupon) => {
+    try {
+      const res = await fetch(`${API_URL}/coupons`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(newCoupon),
+      })
+      if (res.ok) {
+        const saved = await res.json()
+        setCoupons((prev) => [saved, ...prev.filter((c) => c.code !== saved.code)])
+        refreshCouponsFromApi()
+        return { success: true, coupon: saved }
+      } else {
+        const err = await res.json()
+        return { success: false, message: err.message || 'Failed to create coupon' }
+      }
+    } catch (e) {
+      console.error('Failed to create coupon:', e)
+      return { success: false, message: 'Server error creating coupon' }
+    }
+  }
+
+  const toggleCoupon = async (coupon) => {
+    const couponId = coupon._id || coupon.id || coupon.code
+    const newStatus = !coupon.isActive
+    setCoupons((prev) =>
+      prev.map((c) => (c._id === couponId || c.code === coupon.code ? { ...c, isActive: newStatus } : c))
+    )
+    try {
+      await fetch(`${API_URL}/coupons/${couponId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ isActive: newStatus }),
+      })
+      refreshCouponsFromApi()
+    } catch (e) {
+      console.error('Failed to toggle coupon status:', e)
+    }
+  }
+
+  const deleteCoupon = async (couponOrId) => {
+    const id = typeof couponOrId === 'object' ? (couponOrId._id || couponOrId.id || couponOrId.code) : couponOrId
+    const code = typeof couponOrId === 'object' ? couponOrId.code : null
+
+    // Immediately remove from UI and localStorage
+    setCoupons((prev) => prev.filter((c) => c._id !== id && c.id !== id && c.code !== code && c.code !== id))
+    const current = JSON.parse(localStorage.getItem('lilycharm_coupons') || '[]')
+    const filtered = current.filter((c) => c._id !== id && c.id !== id && c.code !== code && c.code !== id)
+    localStorage.setItem('lilycharm_coupons', JSON.stringify(filtered))
+
+    try {
+      if (id) {
+        await fetch(`${API_URL}/coupons/${id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        })
+      }
+      refreshCouponsFromApi()
+    } catch (e) {
+      console.error('Failed to delete coupon in MongoDB API:', e)
+    }
+  }
+
+  useEffect(() => {
+    refreshCouponsFromApi()
+  }, [])
+
   return (
     <StudioContext.Provider
       value={{
@@ -609,6 +958,7 @@ export function StudioProvider({ children }) {
         marqueeText,
         activeOffer,
         shippingSettings,
+        updateShippingSettings,
         addProduct,
         updateProduct,
         deleteProduct,
@@ -628,7 +978,11 @@ export function StudioProvider({ children }) {
         refreshReviewsFromApi,
         updateMarquee,
         updateOffer,
-        updateShippingSettings,
+        coupons,
+        addCoupon,
+        toggleCoupon,
+        deleteCoupon,
+        refreshCouponsFromApi,
         refreshProductsFromApi,
         refreshCollectionsFromApi,
         refreshCustomRequestsFromApi,

@@ -85,14 +85,14 @@ export default function Shop() {
       <div className="flex items-center justify-between mt-6 sm:mt-10 mb-6 md:hidden gap-3">
         <button
           onClick={() => setFiltersOpen(true)}
-          className="flex items-center gap-2 text-xs sm:text-sm border border-[var(--color-line)] bg-[var(--color-card-bg)] px-3 py-2 font-bold uppercase tracking-wider"
+          className="flex items-center gap-2 text-xs sm:text-sm border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-full px-4 py-2 font-bold uppercase tracking-wider shadow-sm"
         >
           <SlidersHorizontal size={14} /> Filters
         </button>
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value)}
-          className="text-xs sm:text-sm border border-[var(--color-line)] px-2.5 py-2 bg-[var(--color-bg)] font-semibold"
+          className="text-xs sm:text-sm border border-[var(--color-line)] rounded-xl px-3 py-2 bg-[var(--color-bg)] font-semibold"
         >
           {sortOptions.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
         </select>
@@ -100,7 +100,7 @@ export default function Shop() {
 
       <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-8 md:gap-12 mt-4 items-start">
         {/* Desktop Sidebar Filter */}
-        <aside className="hidden md:block sticky top-28 bg-[var(--color-card-bg)]/50 p-6 border border-[var(--color-line)]">
+        <aside className="hidden md:block sticky top-28 bg-[var(--color-card-bg)]/50 p-6 border border-[var(--color-line)] rounded-3xl shadow-sm">
           {FilterPanel}
         </aside>
 
@@ -110,7 +110,7 @@ export default function Shop() {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
-              className="text-sm border border-[var(--color-line)] px-3 py-2 bg-transparent font-medium"
+              className="text-sm border border-[var(--color-line)] rounded-xl px-3 py-2 bg-transparent font-medium"
             >
               {sortOptions.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
@@ -123,11 +123,11 @@ export default function Shop() {
           </div>
 
           {filtered.length === 0 && (
-            <div className="text-center py-16 border border-dashed border-[var(--color-line)] p-8">
+            <div className="text-center py-16 border border-dashed border-[var(--color-line)] rounded-2xl p-8">
               <p className="text-sm text-[var(--color-ink-soft)]">No pieces match those filters.</p>
               <button
                 onClick={() => { setParams({}); setMaxPrice(12000); setInStockOnly(false); }}
-                className="mt-4 btn-outline text-xs"
+                className="mt-4 btn-outline text-xs rounded-full"
               >
                 Reset Filters
               </button>
@@ -138,26 +138,18 @@ export default function Shop() {
 
       {/* Mobile Filter Modal */}
       {filtersOpen && (
-        <div className="fixed inset-0 z-[1100] bg-[var(--color-bg)] p-5 sm:p-6 overflow-y-auto md:hidden">
+        <div className="fixed inset-0 z-[1100] bg-[var(--color-bg)] p-5 sm:p-6 overflow-y-auto md:hidden rounded-t-3xl">
           <div className="flex justify-between items-center mb-6 pb-4 border-b border-[var(--color-line)]">
             <p className="font-[var(--font-display)] text-xl font-bold uppercase">Filters</p>
             <button
               onClick={() => setFiltersOpen(false)}
-              className="p-1 text-[var(--color-ink)]"
+              className="p-1.5 text-[var(--color-ink)] rounded-full hover:bg-black/5"
               aria-label="Close filters"
             >
               <X size={22} />
             </button>
           </div>
           {FilterPanel}
-          <div className="pt-8">
-            <button
-              onClick={() => setFiltersOpen(false)}
-              className="btn-primary w-full py-3 text-xs uppercase font-bold tracking-widest"
-            >
-              Show {filtered.length} Results
-            </button>
-          </div>
         </div>
       )}
     </div>

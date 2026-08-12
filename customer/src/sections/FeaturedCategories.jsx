@@ -18,27 +18,27 @@ export default function FeaturedCategories() {
             <TiltCard3D intensity={12} className="h-full w-full">
               <Link
                 to={`/product/${p.id}`}
-                className="group block border border-[var(--color-line)] bg-[var(--color-card-bg)] p-2.5 sm:p-3.5 shadow-md hover:shadow-2xl transition-all duration-500 h-full flex flex-col justify-between"
+                className="group block border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-3 sm:p-4 shadow-md hover:shadow-2xl transition-all duration-500 h-full flex flex-col justify-between overflow-hidden"
               >
-                {/* Perfect 3D Image Frame */}
-                <div className="relative overflow-hidden aspect-[4/4.5] border border-[var(--color-line)] bg-[var(--color-bg)] shadow-inner">
+                {/* Perfect 3D Image Frame with Rounded Corners */}
+                <div className="relative overflow-hidden aspect-[4/4.5] border border-[var(--color-line)] bg-[var(--color-bg)] rounded-2xl shadow-inner">
                   {p.image ? (
                     <img
                       src={p.image}
                       alt={p.title}
                       loading="lazy"
-                      className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
+                      className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-108 rounded-2xl"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-xs text-[var(--color-ink-soft)] font-mono">No Photo</div>
                   )}
-                  <div className="absolute inset-0 bg-black/5 group-hover:bg-black/0 transition-colors duration-500" />
+                  <div className="absolute inset-0 bg-black/5 group-hover:bg-black/0 transition-colors duration-500 rounded-2xl" />
                 </div>
 
                 {/* Bottom Label Button Strip with 3D translateZ */}
                 <div
                   style={{ transform: 'translateZ(25px)' }}
-                  className="mt-2.5 sm:mt-3.5 bg-[var(--color-bg)] border border-[var(--color-line)] py-2.5 sm:py-3 px-3 sm:px-4 flex items-center justify-center gap-2 group-hover:bg-[var(--color-primary)] group-hover:text-white transition-colors duration-300 shadow-sm"
+                  className="mt-2.5 sm:mt-3.5 bg-[var(--color-bg)] border border-[var(--color-line)] rounded-full py-2.5 sm:py-3 px-3 sm:px-4 flex items-center justify-center gap-2 group-hover:bg-[var(--color-primary)] group-hover:text-white transition-colors duration-300 shadow-sm"
                 >
                   <span className="text-[0.65rem] sm:text-[0.72rem] tracking-[0.2em] sm:tracking-[0.24em] font-bold uppercase font-[var(--font-button)] truncate">
                     {p.specimen || p.title} ⟶

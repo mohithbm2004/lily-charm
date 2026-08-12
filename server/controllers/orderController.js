@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import mongoose from 'mongoose'
 import Order from '../models/Order.js'
 import User from '../models/User.js'
 import Payment from '../models/Payment.js'
@@ -7,6 +8,7 @@ import razorpay from '../config/razorpay.js'
 import Setting from '../models/Setting.js'
 import { generateInvoicePDF } from '../utils/pdfGenerator.js'
 import { sendOrderConfirmationEmail, sendOrderStatusEmail, sendAdminNewOrderNotification } from '../utils/emailService.js'
+import { emitOrderCreated, emitOrderUpdated, emitOrderCancelled } from '../socket.js'
 
 // POST /api/create-order or /api/orders/create-razorpay-order
 export async function createRazorpayOrder(req, res, next) {
@@ -197,6 +199,8 @@ export async function createOrder(req, res, next) {
       }
     }
 
+    emitOrderCreated(order)
+
     res.status(201).json({
       ...order.toObject(),
       razorpayOrderId,
@@ -285,6 +289,8 @@ export async function verifyPayment(req, res, next) {
       // Send Confirmation Emails asynchronously without blocking request or throwing unhandled rejections
       sendOrderConfirmationEmail(updatedOrder).catch((e) => console.warn('[ORDER CONFIRMATION EMAIL NOTICE]:', e.message))
       sendAdminNewOrderNotification(updatedOrder).catch((e) => console.warn('[ADMIN ORDER NOTIFICATION NOTICE]:', e.message))
+
+      emitOrderUpdated(updatedOrder)
     }
 
     return res.status(200).json({
@@ -476,6 +482,9 @@ export async function cancelOrder(req, res, next) {
     await order.save()
 
     sendOrderStatusEmail(order, order.status, `Reason: ${reason} — ${feeText}${refundId ? ` (Refund Ref: ${refundId})` : ''}`)
+    emitOrderUpdated(order)
+    emitOrderCancelled(order)
+
     res.json({
       success: true,
       message: refundProcessed
@@ -501,6 +510,8 @@ export async function requestRefund(req, res, next) {
     order.refundStatus = 'Pending Approval'
     order.statusHistory.push({ status: 'Refund Requested', note: reason })
     await order.save()
+
+    emitOrderUpdated(order)
 
     res.json({ success: true, message: 'Refund request submitted to studio admin', order })
   } catch (err) {
@@ -549,6 +560,10 @@ export async function processRefund(req, res, next) {
 
     await order.save()
     sendOrderStatusEmail(order, order.status, note)
+    emitOrderUpdated(order)
+    if (action === 'approve') {
+      emitOrderCancelled(order)
+    }
     res.json({ success: true, message: `Refund request ${action}d successfully`, order })
   } catch (err) {
     next(err)
@@ -601,8 +616,10 @@ export async function listAllOrders(req, res, next) {
 // PATCH /api/orders/:id/status — Admin Update Status
 export async function updateOrderStatus(req, res, next) {
   try {
+    const id = req.params.id
+    const filter = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { orderNumber: id }
     const { status, trackingNumber, carrier, note } = req.body
-    const order = await Order.findById(req.params.id)
+    const order = await Order.findOne(filter)
     if (!order) return res.status(404).json({ message: 'Order not found' })
 
     if (status) order.status = status
@@ -619,6 +636,7 @@ export async function updateOrderStatus(req, res, next) {
 
     // Send status update email notification
     sendOrderStatusEmail(order, status || order.status, note)
+    emitOrderUpdated(order)
 
     res.json(order)
   } catch (err) {
@@ -629,8 +647,11 @@ export async function updateOrderStatus(req, res, next) {
 // DELETE /api/orders/:id — Delete order
 export async function deleteOrder(req, res, next) {
   try {
-    const order = await Order.findByIdAndDelete(req.params.id)
+    const id = req.params.id
+    const filter = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { orderNumber: id }
+    const order = await Order.findOneAndDelete(filter)
     if (!order) return res.status(404).json({ message: 'Order not found' })
+    emitOrderCancelled(order)
     res.json({ message: 'Order deleted successfully', deleted: order })
   } catch (err) {
     next(err)
@@ -641,6 +662,7 @@ export async function deleteOrder(req, res, next) {
 export async function deleteAllOrders(req, res, next) {
   try {
     await Order.deleteMany({})
+    emitOrderCancelled('ALL')
     res.json({ message: 'All orders deleted successfully' })
   } catch (err) {
     next(err)

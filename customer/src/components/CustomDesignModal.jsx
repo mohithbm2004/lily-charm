@@ -309,11 +309,11 @@ export default function CustomDesignModal({ isOpen, onClose }) {
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          className="border border-[var(--color-line)] bg-[var(--color-bg)] p-4 sm:p-6 md:p-8 max-w-2xl w-full space-y-4 sm:space-y-6 max-h-[90vh] overflow-y-auto shadow-2xl relative text-[var(--color-ink)]"
+          className="border border-[var(--color-line)] bg-[var(--color-bg)] rounded-3xl p-4 sm:p-6 md:p-8 max-w-2xl w-full space-y-4 sm:space-y-6 max-h-[90vh] overflow-y-auto shadow-2xl relative text-[var(--color-ink)]"
         >
           <button
             onClick={handleResetAndClose}
-            className="absolute top-4 right-4 text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] transition-colors p-1 z-10"
+            className="absolute top-4 right-4 text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] transition-colors p-1.5 z-10 rounded-full hover:bg-black/5"
             aria-label="Close modal"
           >
             <X size={20} />

@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Package,
   Truck,
@@ -24,14 +25,24 @@ import {
   Download,
   CheckCircle2,
   XCircle,
+  RefreshCw,
+  CreditCard,
+  RotateCcw,
+  FileText,
 } from 'lucide-react'
 import { useStudio } from '../context/StudioContext'
+import { useAdminAuth } from '../context/AdminAuthContext'
+import StepUpMfaModal from '../components/StepUpMfaModal'
 import { formatPrice, formatDateTime, formatDateOnly } from '../lib/format'
 import { exportOrdersToCSV, exportUsersToCSV, exportCustomRequestsToCSV, exportReviewsToCSV } from '../lib/exportCSV'
 import ImageFocusPicker from '../components/ImageFocusPicker'
 import { API_URL } from '../config/api'
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ activeTabName = 'Products' }) {
+  const { admin, logout, changePassword, logoutAllSessions } = useAdminAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+
   const {
     products,
     collections = [],
@@ -61,6 +72,10 @@ export default function AdminDashboard() {
     updateOffer,
     shippingSettings,
     updateShippingSettings,
+    coupons = [],
+    addCoupon,
+    toggleCoupon,
+    deleteCoupon,
   } = useStudio()
 
   // Double Confirmation Modal state for safe bulk deletion
@@ -102,12 +117,73 @@ export default function AdminDashboard() {
     setTimeout(() => setSavedShippingMsg(false), 3000)
   }
 
-  const [pinInput, setPinInput] = useState('')
-  const [isUnlocked, setIsUnlocked] = useState(() => {
-    return localStorage.getItem('lilycharm_admin_unlocked') === 'true'
+  const [activeTab, setActiveTab] = useState(() => {
+    const p = location.pathname
+    if (p.includes('/admin/orders')) return 'orders'
+    if (p.includes('/admin/customers')) return 'users'
+    if (p.includes('/admin/custom-designs')) return 'custom-requests'
+    if (p.includes('/admin/reviews')) return 'reviews'
+    if (p.includes('/admin/payments')) return 'payments'
+    if (p.includes('/admin/refunds')) return 'refunds'
+    if (p.includes('/admin/coupons')) return 'coupons'
+    if (p.includes('/admin/settings')) return 'offers'
+    if (p.includes('/admin/audit-logs')) return 'audit-logs'
+    if (p.includes('/admin/dashboard')) return 'dashboard'
+    return activeTabName ? activeTabName.toLowerCase().replace(/\s+/g, '-') : 'products'
   })
-  const [pinError, setPinError] = useState(false)
-  const [activeTab, setActiveTab] = useState('products')
+
+  useEffect(() => {
+    const p = location.pathname
+    if (p.includes('/admin/orders')) setActiveTab('orders')
+    else if (p.includes('/admin/customers')) setActiveTab('users')
+    else if (p.includes('/admin/custom-designs')) setActiveTab('custom-requests')
+    else if (p.includes('/admin/reviews')) setActiveTab('reviews')
+    else if (p.includes('/admin/payments')) setActiveTab('payments')
+    else if (p.includes('/admin/refunds')) setActiveTab('refunds')
+    else if (p.includes('/admin/coupons')) setActiveTab('coupons')
+    else if (p.includes('/admin/settings')) setActiveTab('offers')
+    else if (p.includes('/admin/audit-logs')) setActiveTab('audit-logs')
+    else if (p.includes('/admin/dashboard')) setActiveTab('dashboard')
+    else if (p.includes('/admin/products')) setActiveTab('products')
+  }, [location.pathname])
+
+  const handleTabChange = (tabKey, routePath) => {
+    setActiveTab(tabKey)
+    if (routePath) navigate(routePath)
+  }
+
+  // Audit Logs State
+  const [auditLogs, setAuditLogs] = useState([])
+  const [loadingAuditLogs, setLoadingAuditLogs] = useState(false)
+
+  const fetchAuditLogs = useCallback(async () => {
+    setLoadingAuditLogs(true)
+    try {
+      const res = await fetch(`${API_URL}/admin/audit-logs`, { credentials: 'include' })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success) setAuditLogs(data.logs || [])
+      }
+    } catch (err) {
+      console.error('Fetch audit logs error:', err)
+    } finally {
+      setLoadingAuditLogs(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'audit-logs') {
+      fetchAuditLogs()
+    }
+  }, [activeTab, fetchAuditLogs])
+
+  // Step-Up MFA Modal State for High-Risk Actions
+  const [stepUpModal, setStepUpModal] = useState({
+    isOpen: false,
+    title: '',
+    actionMessage: '',
+    onConfirm: null,
+  })
 
   // Search & Filter state for products
   const [searchQuery, setSearchQuery] = useState('')
@@ -116,6 +192,48 @@ export default function AdminDashboard() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
+
+  // Security Settings Form State
+  const [currentPass, setCurrentPass] = useState('')
+  const [newPass, setNewPass] = useState('')
+  const [confirmPass, setConfirmPass] = useState('')
+  const [securityMsg, setSecurityMsg] = useState('')
+  const [securityErr, setSecurityErr] = useState('')
+  const [changingPass, setChangingPass] = useState(false)
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault()
+    setSecurityMsg('')
+    setSecurityErr('')
+
+    if (!currentPass || !newPass || !confirmPass) {
+      setSecurityErr('Please fill in all password fields.')
+      return
+    }
+
+    if (newPass !== confirmPass) {
+      setSecurityErr('New passwords do not match.')
+      return
+    }
+
+    if (newPass.length < 12) {
+      setSecurityErr('New password must be at least 12 characters long.')
+      return
+    }
+
+    setChangingPass(true)
+    try {
+      const data = await changePassword(currentPass, newPass, confirmPass)
+      setSecurityMsg(data.message || 'Password changed successfully! Please sign in with your new password.')
+      setCurrentPass('')
+      setNewPass('')
+      setConfirmPass('')
+    } catch (err) {
+      setSecurityErr(err.message || 'Failed to change password.')
+    } finally {
+      setChangingPass(false)
+    }
+  }
 
   const [newFlower, setNewFlower] = useState({
     title: '',
@@ -152,8 +270,7 @@ export default function AdminDashboard() {
   const [tempMarquee, setTempMarquee] = useState(marqueeText)
   const [tempOffer, setTempOffer] = useState(() => activeOffer)
 
-  // Segment Coupons State
-  const [coupons, setCoupons] = useState([])
+  // Segment Coupon Form State
   const [newCoupon, setNewCoupon] = useState({
     code: '',
     title: '',
@@ -164,22 +281,6 @@ export default function AdminDashboard() {
     targetSegment: 'All Products',
     isActive: true,
   })
-
-  const fetchCouponsFromApi = async () => {
-    try {
-      const res = await fetch(`${API_URL}/coupons`)
-      if (res.ok) {
-        const data = await res.json()
-        setCoupons(data)
-      }
-    } catch (e) {
-      console.error('Failed to fetch coupons:', e)
-    }
-  }
-
-  useEffect(() => {
-    fetchCouponsFromApi()
-  }, [])
 
   // Field validation & preview states
   const [previewImageModal, setPreviewImageModal] = useState(null)
@@ -709,56 +810,30 @@ export default function AdminDashboard() {
   const handleCreateCoupon = async (e) => {
     e.preventDefault()
     if (!newCoupon.code) return
-    try {
-      const res = await fetch(`${API_URL}/coupons`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newCoupon),
+    const res = await addCoupon(newCoupon)
+    if (res.success) {
+      alert(`✨ Segment Coupon "${newCoupon.code.toUpperCase()}" created successfully!`)
+      setNewCoupon({
+        code: '',
+        title: '',
+        discountType: 'percentage',
+        discountValue: 10,
+        minOrderAmount: 0,
+        maxDiscountCap: 0,
+        targetSegment: 'All Products',
+        isActive: true,
       })
-      if (res.ok) {
-        alert(`✨ Segment Coupon "${newCoupon.code.toUpperCase()}" created successfully!`)
-        setNewCoupon({
-          code: '',
-          title: '',
-          discountType: 'percentage',
-          discountValue: 10,
-          minOrderAmount: 0,
-          maxDiscountCap: 0,
-          targetSegment: 'All Products',
-          isActive: true,
-        })
-        fetchCouponsFromApi()
-      } else {
-        const err = await res.json()
-        alert(`Error: ${err.message || 'Failed to create coupon'}`)
-      }
-    } catch (err) {
-      console.error('Failed to create coupon:', err)
-      alert('Server error creating coupon')
+    } else {
+      alert(`Error: ${res.message || 'Failed to create coupon'}`)
     }
   }
 
-  const handleDeleteCoupon = async (id, code) => {
-    if (!window.confirm(`Are you sure you want to delete coupon "${code}"?`)) return
-    try {
-      await fetch(`${API_URL}/coupons/${id}`, { method: 'DELETE' })
-      fetchCouponsFromApi()
-    } catch (err) {
-      console.error('Failed to delete coupon:', err)
-    }
+  const handleDeleteCoupon = async (coupon) => {
+    await deleteCoupon(coupon)
   }
 
   const handleToggleCoupon = async (coupon) => {
-    try {
-      await fetch(`${API_URL}/coupons/${coupon._id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: !coupon.isActive }),
-      })
-      fetchCouponsFromApi()
-    } catch (err) {
-      console.error('Failed to toggle coupon status:', err)
-    }
+    await toggleCoupon(coupon)
   }
 
   const handleSaveMarquee = (e) => {
@@ -802,79 +877,11 @@ export default function AdminDashboard() {
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0)
   const pendingOrdersCount = orders.filter((o) => o.orderStatus !== 'Delivered').length
 
-  if (!isUnlocked) {
-    return (
-      <div className="min-h-screen bg-[var(--color-bg)] flex items-center justify-center p-6">
-        <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-8 max-w-md w-full shadow-lg space-y-6">
-          <div className="text-center space-y-3">
-            <div className="w-20 h-20 rounded-full border-2 border-[var(--color-primary)]/40 p-1 shadow-md overflow-hidden bg-white mx-auto">
-              <img
-                src="/images/logo.png"
-                alt="Lily Charm Official Brand Logo"
-                className="w-full h-full object-cover rounded-full"
-              />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold font-[var(--font-display)] uppercase tracking-wider text-[var(--color-ink)]">
-                Lily Charm Admin Portal
-              </h1>
-              <p className="text-[0.68rem] tracking-[0.2em] uppercase font-serif text-[var(--color-primary)] font-semibold mt-0.5">
-                Floral Creations by Keerthana Bapu
-              </p>
-            </div>
-            <p className="text-xs text-[var(--color-ink-soft)] max-w-xs mx-auto">
-              Enter security PIN to manage flower catalog, collections, offers, and delivery tracking.
-            </p>
-          </div>
-
-          <form onSubmit={handleUnlock} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider mb-2">
-                SECURITY PIN (Default: 1234)
-              </label>
-              <input
-                type="password"
-                value={pinInput}
-                onChange={(e) => setPinInput(e.target.value)}
-                placeholder="Enter PIN"
-                className="w-full border border-[var(--color-line)] p-3 text-center text-lg font-mono tracking-widest focus:outline-none focus:border-[var(--color-primary)]"
-                autoFocus
-              />
-              {pinError && (
-                <p className="text-xs text-red-600 font-semibold mt-1 text-center">
-                  Incorrect PIN. Please enter 1234 or admin1234.
-                </p>
-              )}
-            </div>
-
-            <button type="submit" className="btn-primary w-full py-3 text-xs flex items-center justify-center gap-2">
-              <ShieldCheck size={16} /> Unlock Studio Manager
-            </button>
-          </form>
-
-          <div className="pt-4 border-t border-[var(--color-line)] text-center space-y-2">
-            <button
-              type="button"
-              onClick={() => {
-                setPinInput('1234')
-                setIsUnlocked(true)
-                localStorage.setItem('lilycharm_admin_unlocked', 'true')
-              }}
-              className="text-xs text-[var(--color-primary)] hover:underline font-semibold"
-            >
-              ⚡ Quick One-Click Studio Unlock
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">
       {/* Dedicated Admin Header */}
-      <header className="bg-[var(--color-primary)] text-white border-b border-[var(--color-line)] sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 md:px-10 h-16 flex items-center justify-between">
+      <header className="bg-[var(--color-primary)] text-white border-b border-[var(--color-line)] sticky top-0 z-50 shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full border border-white/40 p-0.5 shadow-sm overflow-hidden bg-white shrink-0">
               <img
@@ -893,41 +900,46 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 text-xs text-emerald-200 font-mono bg-emerald-900/60 px-3 py-1 rounded-full border border-emerald-500/30">
+              <ShieldCheck size={14} />
+              <span>{admin?.email || 'keerthanabm@lilycharm.in'}</span>
+            </div>
             <a
               href="http://localhost:5173"
               target="_blank"
               rel="noreferrer"
-              className="text-xs tracking-wider uppercase font-medium bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 border border-white/20 transition-colors inline-flex items-center gap-1.5"
+              className="text-xs tracking-wider uppercase font-medium bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-full border border-white/20 transition-colors inline-flex items-center gap-1.5"
             >
-              <ExternalLink size={13} /> Open Storefront ↗
+              <ExternalLink size={13} /> Storefront ↗
             </a>
             <button
-              onClick={handleLock}
-              className="text-xs tracking-wider uppercase font-medium bg-red-600/80 hover:bg-red-600 text-white px-3 py-1.5 transition-colors inline-flex items-center gap-1.5"
+              onClick={logout}
+              className="text-xs tracking-wider uppercase font-bold bg-rose-700 hover:bg-rose-800 text-white px-3.5 py-1.5 rounded-full transition-colors inline-flex items-center gap-1.5 shadow-sm"
+              title="Sign Out from Admin Panel"
             >
-              <LogOut size={13} /> Lock Panel
+              <LogOut size={13} /> Sign Out
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Admin Content */}
-      <main className="max-w-7xl mx-auto px-6 md:px-10 py-10 space-y-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-8 space-y-8">
         {/* Welcome Banner */}
-        <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-sm">
           <div>
-            <span className="eyebrow block mb-1">Standalone Admin Application</span>
-            <h1 className="text-3xl font-bold font-[var(--font-display)] uppercase tracking-wider text-[var(--color-ink)]">
-              Welcome back, Studio Manager!
+            <span className="eyebrow block mb-1 text-[var(--color-primary)] font-bold">Studio Administrative Portal</span>
+            <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-display)] uppercase tracking-wider text-[var(--color-ink)]">
+              Welcome back, Keerthana!
             </h1>
             <p className="text-xs text-[var(--color-ink-soft)] mt-1">
-              Manage your handcrafted flower catalog, collections, update offers, edit prices, and track delivery orders.
+              Manage your handcrafted flower catalog, collections, update offers, edit prices, track orders, and view security audit logs.
             </p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="btn-primary py-3 px-5 text-xs flex items-center gap-2"
+            className="btn-primary py-3 px-5 text-xs flex items-center gap-2 rounded-full"
           >
             <Plus size={15} /> Add New Flower Creation
           </button>
@@ -935,24 +947,24 @@ export default function AdminDashboard() {
 
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5">
+          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-5 shadow-sm">
             <p className="eyebrow mb-1">Total Studio Sales</p>
             <p className="text-2xl font-bold font-[var(--font-display)] text-[var(--color-primary)]">
               {formatPrice(totalRevenue)}
             </p>
             <p className="text-xs text-[var(--color-ink-soft)] mt-1">Lifetime Revenue</p>
           </div>
-          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5">
+          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-5 shadow-sm">
             <p className="eyebrow mb-1">Active Creations</p>
             <p className="text-2xl font-bold font-[var(--font-display)]">{products.length} Flowers</p>
             <p className="text-xs text-[var(--color-ink-soft)] mt-1">Live in Store</p>
           </div>
-          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5">
+          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-5 shadow-sm">
             <p className="eyebrow mb-1">Live Collections</p>
             <p className="text-2xl font-bold font-[var(--font-display)] text-emerald-800">{collections.length} Series</p>
             <p className="text-xs text-[var(--color-ink-soft)] mt-1">Active Categories</p>
           </div>
-          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5">
+          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-5 shadow-sm">
             <p className="eyebrow mb-1">Total Orders</p>
             <p className="text-2xl font-bold font-[var(--font-display)]">{orders.length} Received</p>
             <p className="text-xs text-[var(--color-ink-soft)] mt-1">Customer Orders</p>
@@ -960,82 +972,104 @@ export default function AdminDashboard() {
         </div>
 
         {/* Admin Navigation Tabs */}
-        <div className="flex border-b border-[var(--color-line)] overflow-x-auto gap-2">
+        <div className="flex border-b border-[var(--color-line)] overflow-x-auto gap-2 scrollbar-thin pb-1">
           <button
-            onClick={() => setActiveTab('products')}
-            className={`px-5 py-3.5 text-xs font-semibold tracking-[0.16em] uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors ${
+            onClick={() => handleTabChange('products', '/admin/products')}
+            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
               activeTab === 'products'
-                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)]'
+                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Package size={15} /> 1. Flowers & Products ({products.length})
+            <Package size={15} /> Products ({products.length})
           </button>
 
           <button
-            onClick={() => setActiveTab('collections')}
-            className={`px-5 py-3.5 text-xs font-semibold tracking-[0.16em] uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors ${
+            onClick={() => handleTabChange('collections', '/admin/products')}
+            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
               activeTab === 'collections'
-                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)]'
+                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Layers size={15} /> 2. Collections Manager ({collections.length})
+            <Layers size={15} /> Collections ({collections.length})
           </button>
 
           <button
-            onClick={() => setActiveTab('orders')}
-            className={`px-5 py-3.5 text-xs font-semibold tracking-[0.16em] uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors ${
+            onClick={() => handleTabChange('orders', '/admin/orders')}
+            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
               activeTab === 'orders'
-                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)]'
+                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Truck size={15} /> 3. Order Delivery Tracking ({orders.length})
+            <Truck size={15} /> Orders ({orders.length})
           </button>
 
           <button
-            onClick={() => setActiveTab('offers')}
-            className={`px-5 py-3.5 text-xs font-semibold tracking-[0.16em] uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors ${
+            onClick={() => handleTabChange('offers', '/admin/settings')}
+            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
               activeTab === 'offers'
-                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)]'
+                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Tag size={15} /> 4. Header Marquee & Offers
+            <Tag size={15} /> Settings & Offers
           </button>
 
           <button
-            onClick={() => setActiveTab('custom-requests')}
-            className={`px-5 py-3.5 text-xs font-semibold tracking-[0.16em] uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors ${
+            onClick={() => handleTabChange('custom-requests', '/admin/custom-designs')}
+            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
               activeTab === 'custom-requests'
-                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)]'
+                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Sparkles size={15} /> 5. Custom Requests ({customRequests.length})
+            <Sparkles size={15} /> Custom Designs ({customRequests.length})
           </button>
 
           <button
-            onClick={() => setActiveTab('users')}
-            className={`px-5 py-3.5 text-xs font-semibold tracking-[0.16em] uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors ${
+            onClick={() => handleTabChange('users', '/admin/customers')}
+            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
               activeTab === 'users'
-                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)]'
+                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Users size={15} /> 6. Registered Users ({users.length})
+            <Users size={15} /> Customers ({users.length})
           </button>
 
           <button
-            onClick={() => setActiveTab('reviews')}
-            className={`px-5 py-3.5 text-xs font-semibold tracking-[0.16em] uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors ${
+            onClick={() => handleTabChange('reviews', '/admin/reviews')}
+            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
               activeTab === 'reviews'
-                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)]'
+                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Star size={15} className="text-amber-500 fill-amber-400" /> 7. Reviews & Feedback ({reviews.length})
+            <Star size={15} className="text-amber-500 fill-amber-400" /> Reviews ({reviews.length})
+          </button>
+
+          <button
+            onClick={() => handleTabChange('coupons', '/admin/coupons')}
+            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+              activeTab === 'coupons'
+                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
+                : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
+            }`}
+          >
+            <Tag size={15} /> Coupons ({coupons.length})
+          </button>
+
+          <button
+            onClick={() => handleTabChange('audit-logs', '/admin/audit-logs')}
+            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+              activeTab === 'audit-logs'
+                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
+                : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
+            }`}
+          >
+            <ShieldCheck size={15} /> Audit Logs
           </button>
         </div>
 
@@ -1103,11 +1137,7 @@ export default function AdminDashboard() {
                           <Edit2 size={14} /> Edit
                         </button>
                         <button
-                          onClick={() => {
-                            if (confirm(`Are you sure you want to delete "${p.title}"?`)) {
-                              deleteProduct(p)
-                            }
-                          }}
+                          onClick={() => deleteProduct(p)}
                           className="p-1.5 border border-red-300 text-red-600 hover:bg-red-50 transition-colors inline-flex items-center gap-1 text-xs"
                           title="Delete Creation"
                         >
@@ -1224,11 +1254,7 @@ export default function AdminDashboard() {
                           <Edit2 size={13} /> Edit
                         </button>
                         <button
-                          onClick={() => {
-                            if (confirm(`Are you sure you want to delete collection "${c.title}"?`)) {
-                              deleteCollection(c)
-                            }
-                          }}
+                          onClick={() => deleteCollection(c)}
                           className="px-3 py-1.5 border border-red-300 text-red-600 text-xs hover:bg-red-50 flex items-center gap-1"
                         >
                           <Trash2 size={13} /> Delete
@@ -1444,11 +1470,7 @@ export default function AdminDashboard() {
 
                           <td className="p-4 text-right align-top">
                             <button
-                              onClick={() => {
-                                if (confirm(`Are you sure you want to delete order "${o.id || o._id}"?`)) {
-                                  deleteOrder(o.id || o._id)
-                                }
-                              }}
+                              onClick={() => deleteOrder(o)}
                               className="text-rose-600 hover:text-rose-800 text-xs font-bold flex items-center gap-1 ml-auto hover:underline"
                             >
                               <Trash2 size={13} /> Delete
@@ -1670,8 +1692,108 @@ export default function AdminDashboard() {
               </form>
             </div>
 
+            {/* ADMIN SECURITY & PASSWORD SETTINGS */}
+            <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-6 space-y-5 shadow-sm md:col-span-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--color-line)] pb-3 gap-2">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck size={20} className="text-[var(--color-primary)]" />
+                  <h2 className="text-xl font-bold font-[var(--font-display)] uppercase">
+                    🔒 Admin Password & Security Settings
+                  </h2>
+                </div>
+                {admin?.lastPasswordChange && (
+                  <span className="text-[0.68rem] text-[var(--color-ink-soft)] font-mono">
+                    Last Password Change: {new Date(admin.lastPasswordChange).toLocaleDateString('en-IN')}
+                  </span>
+                )}
+              </div>
+
+              {securityMsg && (
+                <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-semibold rounded-2xl flex items-center gap-2">
+                  <CheckCircle2 size={16} className="shrink-0 text-emerald-700" />
+                  <span>{securityMsg}</span>
+                </div>
+              )}
+
+              {securityErr && (
+                <div className="p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-semibold rounded-2xl flex items-center gap-2">
+                  <XCircle size={16} className="shrink-0 text-rose-700" />
+                  <span>{securityErr}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleChangePassword} className="space-y-4 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block font-bold uppercase tracking-wider mb-1">Current Password *</label>
+                    <input
+                      type="password"
+                      required
+                      value={currentPass}
+                      onChange={(e) => setCurrentPass(e.target.value)}
+                      placeholder="••••••••••••"
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-mono rounded-xl bg-[var(--color-bg)] focus:outline-none focus:border-[var(--color-primary)]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold uppercase tracking-wider mb-1">New Password * (Min 12 Chars)</label>
+                    <input
+                      type="password"
+                      required
+                      minLength={12}
+                      value={newPass}
+                      onChange={(e) => setNewPass(e.target.value)}
+                      placeholder="New strong password"
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-mono rounded-xl bg-[var(--color-bg)] focus:outline-none focus:border-[var(--color-primary)]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold uppercase tracking-wider mb-1">Confirm New Password *</label>
+                    <input
+                      type="password"
+                      required
+                      minLength={12}
+                      value={confirmPass}
+                      onChange={(e) => setConfirmPass(e.target.value)}
+                      placeholder="Repeat new password"
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-mono rounded-xl bg-[var(--color-bg)] focus:outline-none focus:border-[var(--color-primary)]"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2 border-t border-[var(--color-line)]">
+                  <button
+                    type="submit"
+                    disabled={changingPass}
+                    className="btn-primary py-2.5 px-6 text-xs uppercase font-bold tracking-wider rounded-full shadow-sm disabled:opacity-50"
+                  >
+                    {changingPass ? 'Updating Password...' : 'Update Admin Password'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (confirm('Are you sure you want to log out all active admin sessions across all devices?')) {
+                        await logoutAllSessions()
+                      }
+                    }}
+                    className="px-4 py-2 border border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100 font-bold uppercase text-[0.68rem] tracking-wider rounded-full transition-colors"
+                  >
+                    🚫 Terminate & Logout All Sessions
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: COUPONS */}
+        {activeTab === 'coupons' && (
+          <div className="space-y-6">
             {/* MULTI-SEGMENT COUPON MANAGER */}
-            <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 space-y-6 shadow-sm">
+            <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 space-y-6 shadow-sm rounded-3xl">
               <div className="border-b border-[var(--color-line)] pb-4 space-y-1">
                 <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
                   🎯 Segment Coupons (Minimum Spend, Discount Capping & Segment Targeting)
@@ -1682,7 +1804,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Coupon Creation Form */}
-              <form onSubmit={handleCreateCoupon} className="bg-[var(--color-bg)] p-5 border border-[var(--color-line)] space-y-4">
+              <form onSubmit={handleCreateCoupon} className="bg-[var(--color-bg)] p-5 border border-[var(--color-line)] space-y-4 rounded-2xl">
                 <h3 className="font-bold text-sm uppercase tracking-wider text-[var(--color-primary)]">➕ Create New Segment Coupon</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1694,7 +1816,7 @@ export default function AdminDashboard() {
                       placeholder="e.g. VELVET30"
                       value={newCoupon.code}
                       onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase().trim() })}
-                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-mono font-bold uppercase bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-mono font-bold uppercase rounded-xl bg-white focus:outline-none focus:border-[var(--color-primary)]"
                     />
                   </div>
 
@@ -1703,7 +1825,7 @@ export default function AdminDashboard() {
                     <select
                       value={newCoupon.discountType}
                       onChange={(e) => setNewCoupon({ ...newCoupon, discountType: e.target.value })}
-                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold rounded-xl bg-white focus:outline-none focus:border-[var(--color-primary)]"
                     >
                       <option value="percentage">Percentage OFF (%)</option>
                       <option value="flat">Flat Amount OFF (₹)</option>
@@ -1719,7 +1841,7 @@ export default function AdminDashboard() {
                       placeholder="e.g. 20 for 20% or 500 for ₹500"
                       value={newCoupon.discountValue}
                       onChange={(e) => setNewCoupon({ ...newCoupon, discountValue: Number(e.target.value) })}
-                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold rounded-xl bg-white focus:outline-none focus:border-[var(--color-primary)]"
                     />
                   </div>
                 </div>
@@ -1733,7 +1855,7 @@ export default function AdminDashboard() {
                       placeholder="0 = No Minimum Spend"
                       value={newCoupon.minOrderAmount}
                       onChange={(e) => setNewCoupon({ ...newCoupon, minOrderAmount: Number(e.target.value) })}
-                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold rounded-xl bg-white focus:outline-none focus:border-[var(--color-primary)]"
                     />
                     <p className="text-[0.62rem] text-[var(--color-ink-soft)] mt-0.5">Order subtotal must be at least this amount.</p>
                   </div>
@@ -1746,7 +1868,7 @@ export default function AdminDashboard() {
                       placeholder="0 = No Cap (Uncapped)"
                       value={newCoupon.maxDiscountCap}
                       onChange={(e) => setNewCoupon({ ...newCoupon, maxDiscountCap: Number(e.target.value) })}
-                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold rounded-xl bg-white focus:outline-none focus:border-[var(--color-primary)]"
                     />
                     <p className="text-[0.62rem] text-[var(--color-ink-soft)] mt-0.5">Max discount limit (e.g. 500 = Max ₹500 OFF).</p>
                   </div>
@@ -1756,7 +1878,7 @@ export default function AdminDashboard() {
                     <select
                       value={newCoupon.targetSegment}
                       onChange={(e) => setNewCoupon({ ...newCoupon, targetSegment: e.target.value })}
-                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold rounded-xl bg-white focus:outline-none focus:border-[var(--color-primary)]"
                     >
                       <option value="All Products">All Storefront Products</option>
                       <option value="Pressed Flower Frames">Pressed Flower Frames</option>
@@ -1774,7 +1896,7 @@ export default function AdminDashboard() {
                     placeholder="e.g. 20% OFF Velvet Sculptures above ₹1,000 (Max ₹500 Cap)"
                     value={newCoupon.title}
                     onChange={(e) => setNewCoupon({ ...newCoupon, title: e.target.value })}
-                    className="w-full border border-[var(--color-line)] p-2.5 text-xs bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                    className="w-full border border-[var(--color-line)] p-2.5 text-xs rounded-xl bg-white focus:outline-none focus:border-[var(--color-primary)]"
                   />
                 </div>
 
@@ -1789,7 +1911,7 @@ export default function AdminDashboard() {
                     Set Active Immediately
                   </label>
 
-                  <button type="submit" className="btn-primary py-2.5 px-6 text-xs font-bold uppercase tracking-wider">
+                  <button type="submit" className="btn-primary py-2.5 px-6 text-xs font-bold uppercase tracking-wider rounded-full shadow-sm">
                     Add Segment Coupon
                   </button>
                 </div>
@@ -1799,11 +1921,11 @@ export default function AdminDashboard() {
               <div className="space-y-3">
                 <h3 className="font-bold text-sm uppercase tracking-wider">Active Segment Coupons List ({coupons.length})</h3>
                 {coupons.length === 0 ? (
-                  <div className="border border-dashed border-[var(--color-line)] p-8 text-center text-xs text-[var(--color-ink-soft)] font-mono">
+                  <div className="border border-dashed border-[var(--color-line)] p-8 text-center text-xs text-[var(--color-ink-soft)] font-mono rounded-2xl">
                     No custom segment coupons created yet. Fill out the form above to add your first segment offer!
                   </div>
                 ) : (
-                  <div className="overflow-x-auto border border-[var(--color-line)]">
+                  <div className="overflow-x-auto border border-[var(--color-line)] rounded-2xl">
                     <table className="w-full text-left text-xs">
                       <thead className="bg-[var(--color-bg)] uppercase text-[0.65rem] tracking-wider border-b border-[var(--color-line)] text-[var(--color-ink-soft)] font-bold">
                         <tr>
@@ -1831,7 +1953,7 @@ export default function AdminDashboard() {
                             </td>
                             <td className="p-3 font-semibold text-[var(--color-ink-soft)]">{c.targetSegment}</td>
                             <td className="p-3">
-                              <span className={`px-2 py-0.5 text-[0.6rem] font-bold uppercase rounded border ${
+                              <span className={`px-2.5 py-0.5 text-[0.6rem] font-bold uppercase rounded-full border ${
                                 c.isActive !== false ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300'
                               }`}>
                                 {c.isActive !== false ? 'Active' : 'Paused'}
@@ -1840,15 +1962,15 @@ export default function AdminDashboard() {
                             <td className="p-3 text-right space-x-2">
                               <button
                                 onClick={() => handleToggleCoupon(c)}
-                                className={`text-[0.65rem] font-bold uppercase px-2 py-1 border ${
+                                className={`text-[0.65rem] font-bold uppercase px-2.5 py-1 rounded-full border transition-colors ${
                                   c.isActive ? 'border-amber-400 text-amber-900 bg-amber-50' : 'border-emerald-400 text-emerald-900 bg-emerald-50'
                                 }`}
                               >
                                 {c.isActive ? 'Pause' : 'Activate'}
                               </button>
                               <button
-                                onClick={() => handleDeleteCoupon(c._id, c.code)}
-                                className="text-rose-600 hover:text-rose-900 text-[0.65rem] font-bold uppercase"
+                                onClick={() => handleDeleteCoupon(c)}
+                                className="text-rose-600 hover:text-rose-900 text-[0.65rem] font-bold uppercase hover:underline"
                               >
                                 Delete
                               </button>
@@ -2396,17 +2518,75 @@ export default function AdminDashboard() {
 
                       <button
                         type="button"
-                        onClick={() => {
-                          if (confirm(`Are you sure you want to permanently delete this review from ${r.name}?`)) {
-                            deleteReview(r._id)
-                          }
-                        }}
+                        onClick={() => deleteReview(r._id)}
                         className="px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider border border-rose-300 text-rose-700 hover:bg-rose-50 flex items-center gap-1 transition-colors"
                         title="Delete review"
                       >
                         <Trash2 size={13} />
                       </button>
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {/* TAB: AUDIT LOGS */}
+        {activeTab === 'audit-logs' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[var(--color-line)] pb-4">
+              <div>
+                <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
+                  <ShieldCheck size={20} className="text-[var(--color-primary)]" /> Security & Administrative Audit Trail
+                </h2>
+                <p className="text-xs text-[var(--color-ink-soft)] mt-0.5">
+                  Real-time security log tracking admin logins, product changes, order status updates, refunds, and settings updates.
+                </p>
+              </div>
+              <button
+                onClick={fetchAuditLogs}
+                className="btn-outline text-xs px-4 py-2 font-bold uppercase rounded-full flex items-center gap-1.5 shadow-sm"
+              >
+                <RefreshCw size={13} /> Refresh Audit Trail
+              </button>
+            </div>
+
+            {loadingAuditLogs ? (
+              <div className="p-8 text-center text-xs font-bold animate-pulse text-[var(--color-ink-soft)]">
+                Loading real-time security audit logs...
+              </div>
+            ) : auditLogs.length === 0 ? (
+              <div className="p-8 border border-dashed border-[var(--color-line)] rounded-3xl text-center text-xs text-[var(--color-ink-soft)] space-y-2 bg-[var(--color-card-bg)]/40">
+                <p className="font-bold uppercase text-sm">No Audit Log Entries Found</p>
+                <p>Security events will populate automatically as administrative actions occur.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {auditLogs.map((log) => (
+                  <div key={log._id} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-4 sm:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs shadow-sm hover:shadow-md transition-shadow">
+                    <div className="space-y-1.5 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono font-bold text-[0.68rem] uppercase px-3 py-1 rounded-full bg-[var(--color-primary)] text-white shadow-sm">
+                          {log.action}
+                        </span>
+                        <span className="font-mono text-[0.68rem] text-[var(--color-ink-soft)] bg-[var(--color-bg)] px-2.5 py-0.5 rounded-full border border-[var(--color-line)]">
+                          {new Date(log.createdAt).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <p className="text-xs font-semibold text-[var(--color-ink)] pt-0.5">
+                        Admin: <span className="font-mono text-[var(--color-primary)] font-bold">{log.adminEmail}</span>
+                      </p>
+                      {log.ipAddress && (
+                        <p className="text-[0.65rem] font-mono text-[var(--color-ink-soft)]">
+                          IP Address: {log.ipAddress}
+                        </p>
+                      )}
+                    </div>
+                    {log.details && Object.keys(log.details).length > 0 && (
+                      <pre className="bg-[var(--color-bg)] border border-[var(--color-line)] p-3 rounded-2xl font-mono text-[0.68rem] text-[var(--color-ink)] max-w-full overflow-x-auto shrink-0 leading-relaxed shadow-inner">
+                        {JSON.stringify(log.details, null, 2)}
+                      </pre>
+                    )}
                   </div>
                 ))}
               </div>
@@ -3308,7 +3488,15 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* DOUBLE CONFIRMATION MODAL FOR SAFE BULK DELETION */}
+
+      {/* STEP-UP MFA MODAL FOR HIGH-RISK OPERATIONS */}
+      <StepUpMfaModal
+        isOpen={stepUpModal.isOpen}
+        onClose={() => setStepUpModal({ isOpen: false, title: '', actionMessage: '', onConfirm: null })}
+        onConfirm={stepUpModal.onConfirm}
+        title={stepUpModal.title}
+        actionMessage={stepUpModal.actionMessage}
+      />
       {doubleConfirmModal.isOpen && (
         <div className="fixed inset-0 bg-black/75 z-[400] flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto">
           <div className="bg-[var(--color-bg)] border-2 border-red-500 p-6 md:p-8 max-w-lg w-full shadow-2xl space-y-5 text-[var(--color-ink)] my-auto animate-in fade-in zoom-in-95 duration-200">

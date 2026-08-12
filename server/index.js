@@ -2,9 +2,11 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
+import cookieParser from 'cookie-parser'
 import rateLimit from 'express-rate-limit'
 import { connectDB } from './config/db.js'
 import authRoutes from './routes/authRoutes.js'
+import adminRoutes from './routes/adminRoutes.js'
 import productRoutes from './routes/productRoutes.js'
 import orderRoutes from './routes/orderRoutes.js'
 import paymentRoutes from './routes/paymentRoutes.js'
@@ -33,6 +35,9 @@ app.use(
   })
 )
 
+// Cookie Parser Middleware for HttpOnly Admin Session Cookies
+app.use(cookieParser())
+
 // Allowed Origins for CORS
 const allowedOrigins = [
   process.env.CLIENT_URL,
@@ -47,7 +52,6 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server, Postman)
       if (!origin) return callback(null, true)
       if (
         allowedOrigins.includes(origin) ||
@@ -61,7 +65,7 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Admin-MFA-Code', 'X-Admin-Session-Id'],
   })
 )
 
@@ -83,7 +87,7 @@ app.use('/api/health', healthRouter)
 // Global API Rate Limiter
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 1000 : 10000, // Generous limit for production and dev
+  max: process.env.NODE_ENV === 'production' ? 1000 : 10000,
   message: { success: false, message: 'Too many requests from this IP, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -94,6 +98,8 @@ app.use('/api/', apiLimiter)
 app.post('/api/create-order', createRazorpayOrder)
 app.post('/api/verify-payment', verifyPayment)
 
+// Primary Routes
+app.use('/api/admin', adminRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/products', productRoutes)
 app.use('/api/orders', orderRoutes)
@@ -106,14 +112,20 @@ app.use('/api/coupons', couponRoutes)
 app.use('/api/reviews', reviewRoutes)
 app.use('/api/contact', contactRoutes)
 
+import http from 'http'
+import { initSocket } from './socket.js'
+
 app.use(notFound)
 app.use(errorHandler)
 
 const PORT = process.env.PORT || 5000
 
+const server = http.createServer(app)
+initSocket(server)
+
 connectDB().then(() => {
   startAutomaticDbCleanup()
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Bloom Atelier API running on port ${PORT}`)
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Bloom Atelier API & Real-Time WebSockets running on port ${PORT}`)
   })
 })

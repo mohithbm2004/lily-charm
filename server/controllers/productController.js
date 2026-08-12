@@ -1,6 +1,7 @@
 import Product from '../models/Product.js'
 import mongoose from 'mongoose'
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryHelper.js'
+import { emitProductCreated, emitProductUpdated, emitProductDeleted } from '../socket.js'
 
 // GET /api/products — List all products with optional filters
 export async function listProducts(req, res, next) {
@@ -91,6 +92,7 @@ export async function createProduct(req, res, next) {
     }
 
     const product = await Product.create(body)
+    emitProductCreated(product)
     res.status(201).json(product)
   } catch (err) {
     next(err)
@@ -121,6 +123,7 @@ export async function updateProduct(req, res, next) {
       runValidators: false,
     })
 
+    emitProductUpdated(updatedProduct)
     res.json(updatedProduct)
   } catch (err) {
     next(err)
@@ -144,6 +147,7 @@ export async function deleteProduct(req, res, next) {
       if (imgUrl) await deleteFromCloudinary(imgUrl)
     }
 
+    emitProductDeleted(product._id || id)
     res.json({ message: 'Product deleted successfully', deleted: product })
   } catch (err) {
     next(err)
@@ -161,6 +165,7 @@ export async function deleteAllProducts(req, res, next) {
       }
     }
     await Product.deleteMany({})
+    emitProductDeleted('ALL')
     res.json({ message: 'All products deleted successfully from database' })
   } catch (err) {
     next(err)

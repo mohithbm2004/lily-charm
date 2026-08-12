@@ -1,0 +1,438 @@
+import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
+import AdminUser from '../models/AdminUser.js'
+import AdminSession from '../models/AdminSession.js'
+import { logAdminAction } from '../utils/auditLogger.js'
+import { getAdminEmail, getOrCreateAdminUser, validatePasswordStrength } from '../utils/adminUserHelper.js'
+import { generate6DigitOtp, hashToken, sendOtpEmail } from '../services/otp.service.js'
+
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: process.env.NODE_ENV === 'production',
+  maxAge: 12 * 60 * 60 * 1000, // 12 hours max
+}
+
+/**
+ * Check if Admin account is initialized
+ */
+export async function getSetupStatus(req, res) {
+  try {
+    const admin = await getOrCreateAdminUser()
+    return res.status(200).json({
+      success: true,
+      isInitialized: admin ? admin.isInitialized : false,
+      email: admin ? admin.email : getAdminEmail(),
+    })
+  } catch (err) {
+    console.error('getSetupStatus Error:', err)
+    return res.status(500).json({ success: false, message: 'Server error checking setup status.' })
+  }
+}
+
+/**
+ * Initial Admin Password Setup (Disabled once initialized)
+ */
+export async function adminSetup(req, res) {
+  try {
+    const { email, password, confirmPassword, setupKey } = req.body
+    const expectedEmail = getAdminEmail()
+
+    const admin = await getOrCreateAdminUser()
+
+    // Rule 15: Never allow setup to reset password after already initialized unless authorized
+    if (admin.isInitialized) {
+      return res.status(400).json({
+        success: false,
+        message: 'Admin setup has already been completed. Use Forgot Password to reset credentials.',
+      })
+    }
+
+    // Optional setupKey check if configured in env
+    if (process.env.SETUP_SECRET && setupKey !== process.env.SETUP_SECRET) {
+      await logAdminAction('ADMIN_SETUP_FAILED', email || expectedEmail, { reason: 'Invalid setup secret' }, req)
+      return res.status(403).json({ success: false, message: 'Unauthorized setup request.' })
+    }
+
+    if (!email || !password || !confirmPassword) {
+      return res.status(400).json({ success: false, message: 'Email, password, and confirm password are required.' })
+    }
+
+    if (String(email).toLowerCase().trim() !== expectedEmail) {
+      return res.status(400).json({ success: false, message: `Setup is restricted to designated admin email (${expectedEmail}).` })
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ success: false, message: 'Passwords do not match.' })
+    }
+
+    const validation = validatePasswordStrength(password)
+    if (!validation.valid) {
+      return res.status(400).json({ success: false, message: validation.message })
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12)
+
+    admin.passwordHash = passwordHash
+    admin.isInitialized = true
+    admin.lastPasswordChange = new Date()
+    await admin.save()
+
+    await logAdminAction('ADMIN_SETUP_COMPLETED', expectedEmail, { message: 'Initial admin account setup successfully' }, req)
+
+    return res.status(200).json({
+      success: true,
+      message: 'Admin account password setup completed successfully. Please sign in.',
+    })
+  } catch (err) {
+    console.error('adminSetup Error:', err)
+    return res.status(500).json({ success: false, message: 'Server error during admin setup.' })
+  }
+}
+
+/**
+ * Single Admin Login with Email & Password
+ */
+export async function adminLogin(req, res) {
+  try {
+    const { email, password } = req.body
+    const expectedEmail = getAdminEmail()
+    const admin = await getOrCreateAdminUser()
+
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required.' })
+    }
+
+    const trimmedEmail = String(email).toLowerCase().trim()
+
+    if (trimmedEmail !== expectedEmail) {
+      await logAdminAction('ADMIN_LOGIN_FAILED_EMAIL', trimmedEmail, { reason: 'Email mismatch' }, req)
+      return res.status(401).json({ success: false, message: 'Invalid admin credentials.' })
+    }
+
+    const isMatch = await bcrypt.compare(password, admin.passwordHash)
+    if (!isMatch) {
+      await logAdminAction('ADMIN_LOGIN_FAILED_PASSWORD', trimmedEmail, { reason: 'Password mismatch' }, req)
+      return res.status(401).json({ success: false, message: 'Invalid admin credentials.' })
+    }
+
+    // Create Full Admin Session
+    const sessionId = crypto.randomBytes(32).toString('hex')
+    const ipAddress = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim()
+    const userAgent = req.headers['user-agent'] || ''
+
+    await AdminSession.create({
+      sessionId,
+      adminEmail: expectedEmail,
+      createdAt: new Date(),
+      lastActiveAt: new Date(),
+      expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000), // 12 hours
+      ipAddress,
+      userAgent,
+      isPreMfa: false,
+    })
+
+    res.cookie('lily_admin_session', sessionId, COOKIE_OPTIONS)
+
+    await logAdminAction('ADMIN_LOGIN_SUCCESS', expectedEmail, { message: 'Authenticated with password' }, req)
+
+    return res.status(200).json({
+      success: true,
+      message: 'Admin authenticated successfully.',
+      admin: { email: expectedEmail, lastPasswordChange: admin.lastPasswordChange },
+    })
+  } catch (err) {
+    console.error('adminLogin Error:', err)
+    return res.status(500).json({ success: false, message: 'Server error during login.' })
+  }
+}
+
+/**
+ * Forgot Password - Send ZeptoMail OTP
+ */
+export async function adminForgotPassword(req, res) {
+  try {
+    const { email } = req.body
+    const expectedEmail = getAdminEmail()
+    const genericResponse = {
+      success: true,
+      message: 'If the account is eligible, a 6-digit verification code has been sent to your email.',
+    }
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email address is required.' })
+    }
+
+    const inputEmail = String(email).toLowerCase().trim()
+    const admin = await getOrCreateAdminUser()
+
+    // Generic response if email mismatch (prevents email enumeration)
+    if (inputEmail !== expectedEmail) {
+      return res.status(200).json(genericResponse)
+    }
+
+    // Cooldown check (60 seconds)
+    if (admin.lastOtpSentAt) {
+      const secondsSince = (Date.now() - new Date(admin.lastOtpSentAt).getTime()) / 1000
+      if (secondsSince < 60) {
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${Math.ceil(60 - secondsSince)} seconds before requesting another code.`,
+        })
+      }
+    }
+
+    const otp = generate6DigitOtp()
+    const otpHash = hashToken(otp)
+
+    admin.resetOtpHash = otpHash
+    admin.resetOtpExpires = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+    admin.resetOtpAttempts = 0
+    admin.lastOtpSentAt = new Date()
+    await admin.save()
+
+    // Send OTP via ZeptoMail infrastructure
+    await sendOtpEmail(expectedEmail, 'Studio Admin', otp, true)
+
+    await logAdminAction('PASSWORD_RESET_REQUESTED', expectedEmail, { message: 'OTP sent via ZeptoMail' }, req)
+
+    return res.status(200).json(genericResponse)
+  } catch (err) {
+    console.error('adminForgotPassword Error:', err)
+    return res.status(500).json({ success: false, message: 'Server error requesting password reset.' })
+  }
+}
+
+/**
+ * Verify Forgot Password 6-Digit OTP
+ */
+export async function adminVerifyOtp(req, res) {
+  try {
+    const { email, otp } = req.body
+    const expectedEmail = getAdminEmail()
+
+    if (!otp || String(otp).trim().length !== 6) {
+      return res.status(400).json({ success: false, message: '6-digit OTP code is required.' })
+    }
+
+    const admin = await getOrCreateAdminUser()
+
+    if (!admin.resetOtpHash || !admin.resetOtpExpires) {
+      return res.status(400).json({ success: false, message: 'No active password reset request. Please request a new OTP.' })
+    }
+
+    // Expiration check
+    if (new Date() > new Date(admin.resetOtpExpires)) {
+      admin.resetOtpHash = null
+      admin.resetOtpExpires = null
+      await admin.save()
+      return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new code.' })
+    }
+
+    // Max attempts check (5 attempts)
+    if (admin.resetOtpAttempts >= 5) {
+      admin.resetOtpHash = null
+      admin.resetOtpExpires = null
+      await admin.save()
+      await logAdminAction('FAILED_PASSWORD_RESET_ATTEMPT', expectedEmail, { reason: 'Max OTP attempts exceeded' }, req)
+      return res.status(400).json({ success: false, message: 'Maximum OTP verification attempts exceeded. Please request a new code.' })
+    }
+
+    const inputHash = hashToken(String(otp).trim())
+    if (inputHash !== admin.resetOtpHash) {
+      admin.resetOtpAttempts += 1
+      await admin.save()
+      await logAdminAction('FAILED_PASSWORD_RESET_ATTEMPT', expectedEmail, { reason: 'Incorrect OTP code', attempt: admin.resetOtpAttempts }, req)
+      return res.status(400).json({ success: false, message: 'Invalid OTP code. Please try again.' })
+    }
+
+    // OTP Verified! Clear OTP fields and issue short-lived Reset Token (15 mins)
+    admin.resetOtpHash = null
+    admin.resetOtpExpires = null
+    admin.resetOtpAttempts = 0
+
+    const resetToken = crypto.randomBytes(32).toString('hex')
+    admin.resetTokenHash = hashToken(resetToken)
+    admin.resetTokenExpires = new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
+    await admin.save()
+
+    return res.status(200).json({
+      success: true,
+      message: 'OTP code verified successfully.',
+      resetToken,
+    })
+  } catch (err) {
+    console.error('adminVerifyOtp Error:', err)
+    return res.status(500).json({ success: false, message: 'Server error verifying OTP code.' })
+  }
+}
+
+/**
+ * Reset Password with Verified Reset Token
+ */
+export async function adminResetPassword(req, res) {
+  try {
+    const { resetToken, newPassword, confirmPassword } = req.body
+    const expectedEmail = getAdminEmail()
+
+    if (!resetToken) {
+      return res.status(400).json({ success: false, message: 'Password reset token is required.' })
+    }
+
+    if (!newPassword || !confirmPassword) {
+      return res.status(400).json({ success: false, message: 'New password and confirm password are required.' })
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ success: false, message: 'Passwords do not match.' })
+    }
+
+    const admin = await getOrCreateAdminUser()
+    const tokenHash = hashToken(resetToken)
+
+    if (
+      !admin.resetTokenHash ||
+      !admin.resetTokenExpires ||
+      admin.resetTokenHash !== tokenHash ||
+      new Date() > new Date(admin.resetTokenExpires)
+    ) {
+      await logAdminAction('FAILED_PASSWORD_RESET_ATTEMPT', expectedEmail, { reason: 'Invalid or expired reset token' }, req)
+      return res.status(400).json({ success: false, message: 'Invalid or expired password reset session. Please start over.' })
+    }
+
+    const validation = validatePasswordStrength(newPassword)
+    if (!validation.valid) {
+      return res.status(400).json({ success: false, message: validation.message })
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12)
+
+    admin.passwordHash = passwordHash
+    admin.lastPasswordChange = new Date()
+    admin.resetTokenHash = null
+    admin.resetTokenExpires = null
+    await admin.save()
+
+    // Invalidate ALL existing admin sessions upon password reset
+    await AdminSession.deleteMany({ adminEmail: expectedEmail })
+    res.clearCookie('lily_admin_session', COOKIE_OPTIONS)
+
+    await logAdminAction('PASSWORD_RESET_COMPLETED', expectedEmail, { message: 'Password reset completed and all sessions invalidated' }, req)
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password reset successfully! All existing sessions have been terminated. Please sign in with your new password.',
+    })
+  } catch (err) {
+    console.error('adminResetPassword Error:', err)
+    return res.status(500).json({ success: false, message: 'Server error resetting password.' })
+  }
+}
+
+/**
+ * Change Password (From Admin Security Settings)
+ */
+export async function adminChangePassword(req, res) {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body
+    const expectedEmail = req.admin.email || getAdminEmail()
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ success: false, message: 'Current password, new password, and confirm password are required.' })
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ success: false, message: 'New passwords do not match.' })
+    }
+
+    const admin = await getOrCreateAdminUser()
+
+    const isMatch = await bcrypt.compare(currentPassword, admin.passwordHash)
+    if (!isMatch) {
+      await logAdminAction('FAILED_PASSWORD_CHANGE_ATTEMPT', expectedEmail, { reason: 'Incorrect current password' }, req)
+      return res.status(401).json({ success: false, message: 'Incorrect current password.' })
+    }
+
+    const validation = validatePasswordStrength(newPassword)
+    if (!validation.valid) {
+      return res.status(400).json({ success: false, message: validation.message })
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12)
+    admin.passwordHash = passwordHash
+    admin.lastPasswordChange = new Date()
+    await admin.save()
+
+    // Terminate all sessions except current one (or all sessions)
+    await AdminSession.deleteMany({ adminEmail: expectedEmail })
+    res.clearCookie('lily_admin_session', COOKIE_OPTIONS)
+
+    await logAdminAction('PASSWORD_CHANGED', expectedEmail, { message: 'Admin password changed from security settings' }, req)
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password changed successfully. Please log in with your new password.',
+    })
+  } catch (err) {
+    console.error('adminChangePassword Error:', err)
+    return res.status(500).json({ success: false, message: 'Server error changing password.' })
+  }
+}
+
+/**
+ * Terminate All Admin Sessions
+ */
+export async function adminLogoutAll(req, res) {
+  try {
+    const expectedEmail = req.admin.email || getAdminEmail()
+    await AdminSession.deleteMany({ adminEmail: expectedEmail })
+    res.clearCookie('lily_admin_session', COOKIE_OPTIONS)
+
+    await logAdminAction('ADMIN_LOGOUT_ALL_SESSIONS', expectedEmail, { message: 'All admin sessions terminated' }, req)
+
+    return res.status(200).json({ success: true, message: 'All active admin sessions have been logged out.' })
+  } catch (err) {
+    console.error('adminLogoutAll Error:', err)
+    return res.status(500).json({ success: false, message: 'Server error logging out sessions.' })
+  }
+}
+
+/**
+ * Get Active Admin Profile
+ */
+export async function getAdminMe(req, res) {
+  try {
+    const admin = await getOrCreateAdminUser()
+    return res.status(200).json({
+      success: true,
+      authenticated: true,
+      admin: {
+        email: admin.email,
+        lastPasswordChange: admin.lastPasswordChange,
+      },
+    })
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server error fetching admin data.' })
+  }
+}
+
+/**
+ * Admin Logout
+ */
+export async function adminLogout(req, res) {
+  try {
+    const sessionId = req.cookies?.lily_admin_session || req.admin?.sessionId
+    if (sessionId) {
+      await AdminSession.deleteOne({ sessionId })
+    }
+
+    res.clearCookie('lily_admin_session', COOKIE_OPTIONS)
+
+    await logAdminAction('ADMIN_LOGOUT', req.admin?.email || getAdminEmail(), { message: 'Admin logged out' }, req)
+
+    return res.status(200).json({ success: true, message: 'Logged out successfully.' })
+  } catch (err) {
+    console.error('adminLogout Error:', err)
+    return res.status(500).json({ success: false, message: 'Server error during logout.' })
+  }
+}

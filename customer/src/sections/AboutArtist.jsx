@@ -24,7 +24,7 @@ export default function AboutArtist() {
               Every everlasting flower and handcrafted gift is thoughtfully designed to celebrate life's most precious moments, creating timeless memories made to be treasured forever.
             </p>
             <div className="pt-3 sm:pt-4">
-              <Link to="/about" className="btn-primary inline-flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-transform text-center w-full sm:w-auto text-xs py-3">
+              <Link to="/about" className="btn-primary inline-flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-transform text-center w-full sm:w-auto text-xs py-3 rounded-full">
                 READ OUR FULL STORY <ArrowRight size={15} />
               </Link>
             </div>
@@ -35,12 +35,12 @@ export default function AboutArtist() {
         <div className="md:col-span-6 flex justify-center md:justify-end">
           <Reveal delay={0.15}>
             <TiltCard3D intensity={14} className="max-w-md w-full">
-              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-2.5 sm:p-3 shadow-xl">
-                <div className="relative overflow-hidden aspect-[4/5] arch-frame border border-[var(--color-line)] bg-[var(--color-bg)]">
+              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-2.5 sm:p-3 shadow-xl overflow-hidden">
+                <div className="relative overflow-hidden aspect-[4/5] arch-frame rounded-b-2xl border border-[var(--color-line)] bg-[var(--color-bg)]">
                   <img
                     src="/images/products/flower-crimson-velvet-bouquet.png"
                     alt="Lily Charm handcrafted crimson red velvet flower bouquet"
-                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-105 rounded-b-2xl"
                   />
                 </div>
               </div>

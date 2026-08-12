@@ -1,6 +1,7 @@
 import CustomRequest from '../models/CustomRequest.js'
 import Order from '../models/Order.js'
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryHelper.js'
+import { emitCustomRequestCreated, emitCustomRequestUpdated, emitCustomRequestDeleted, emitOrderCreated } from '../socket.js'
 
 async function processCustomImages(req, folder = 'lily-charm/custom-requests') {
   const rawList = []
@@ -67,6 +68,7 @@ export async function createCustomRequest(req, res, next) {
 
     body.status = 'Quote Pending'
     const customRequest = await CustomRequest.create(body)
+    emitCustomRequestCreated(customRequest)
     res.status(201).json(customRequest)
   } catch (err) {
     next(err)
@@ -92,6 +94,7 @@ export async function quotePrice(req, res, next) {
     )
 
     if (!customRequest) return res.status(404).json({ message: 'Custom request not found' })
+    emitCustomRequestUpdated(customRequest)
     res.json(customRequest)
   } catch (err) {
     next(err)
@@ -152,6 +155,9 @@ export async function acceptQuoteAndCreateOrder(req, res, next) {
     customRequest.convertedOrderId = newOrder._id.toString()
     await customRequest.save()
 
+    emitOrderCreated(newOrder)
+    emitCustomRequestUpdated(customRequest)
+
     res.json({
       success: true,
       message: 'Quote accepted and payment received! Custom design converted into official order.',
@@ -172,6 +178,7 @@ export async function declineQuote(req, res, next) {
       { new: true }
     )
     if (!customRequest) return res.status(404).json({ message: 'Custom request not found' })
+    emitCustomRequestUpdated(customRequest)
     res.json(customRequest)
   } catch (err) {
     next(err)
@@ -188,6 +195,7 @@ export async function updateCustomRequestStatus(req, res, next) {
       { new: true }
     )
     if (!customRequest) return res.status(404).json({ message: 'Custom design request not found' })
+    emitCustomRequestUpdated(customRequest)
     res.json(customRequest)
   } catch (err) {
     next(err)
@@ -208,6 +216,7 @@ export async function deleteCustomRequest(req, res, next) {
       if (imgUrl) await deleteFromCloudinary(imgUrl)
     }
 
+    emitCustomRequestDeleted(customRequest._id || req.params.id)
     res.json({ message: 'Custom design request deleted successfully', deleted: customRequest })
   } catch (err) {
     next(err)
