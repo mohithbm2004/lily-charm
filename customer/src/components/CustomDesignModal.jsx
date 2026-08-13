@@ -5,12 +5,23 @@ import { Link } from 'react-router-dom'
 import { formatPrice } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
 import { useAlert } from '../context/AlertContext'
+import { useStudio } from '../context/StudioContext'
 import { API_URL } from '../config/api'
 
 export default function CustomDesignModal({ isOpen, onClose }) {
   const { user } = useAuth()
   const { showAlert, showConfirm } = useAlert()
+  const { shippingSettings } = useStudio()
   const [activeTab, setActiveTab] = useState('submit') // 'submit' | 'check-quotes'
+
+  const isShippingEnabled = shippingSettings?.shippingFeeEnabled ?? true
+  const standardShippingFee = shippingSettings?.standardShippingFee ?? 100
+  const freeThreshold = shippingSettings?.freeShippingThreshold ?? 2500
+
+  const getCustomOrderShipping = (price) => {
+    if (!isShippingEnabled) return 0
+    return (price || 0) >= freeThreshold ? 0 : standardShippingFee
+  }
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -166,7 +177,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
         return
       }
 
-      const shipping = (reqDoc.quotedPrice || 0) > 8000 ? 0 : 250
+      const shipping = getCustomOrderShipping(reqDoc.quotedPrice)
       const totalAmount = (reqDoc.quotedPrice || 0) + shipping
 
       // 1. Fetch Razorpay Order ID (amount in paise)
@@ -724,33 +735,42 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                       {req.notes && <p className="text-xs text-[var(--color-ink-soft)] italic">"{req.notes}"</p>}
 
                       {/* Quoted Price Display & Acceptance Actions */}
-                      {req.status === 'Quoted' && req.quotedPrice > 0 && (
-                        <div className="p-3 bg-amber-50/80 border border-amber-200 space-y-3">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <span className="text-[0.65rem] uppercase font-bold text-amber-900">Admin Quoted Price:</span>
-                              <p className="text-lg font-bold text-emerald-800">{formatPrice(req.quotedPrice)}</p>
-                              {req.adminNotes && <p className="text-[0.68rem] text-amber-900 italic">{req.adminNotes}</p>}
+                      {req.status === 'Quoted' && req.quotedPrice > 0 && (() => {
+                        const quoteShipping = getCustomOrderShipping(req.quotedPrice)
+                        const quoteTotal = (req.quotedPrice || 0) + quoteShipping
+                        return (
+                          <div className="p-3 bg-amber-50/80 border border-amber-200 space-y-3">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <span className="text-[0.65rem] uppercase font-bold text-amber-900">Admin Quoted Price:</span>
+                                <p className="text-lg font-bold text-emerald-800">{formatPrice(req.quotedPrice)}</p>
+                                {quoteShipping > 0 ? (
+                                  <p className="text-[0.68rem] text-amber-900 font-mono">+ {formatPrice(quoteShipping)} Standard Shipping (Total: <strong>{formatPrice(quoteTotal)}</strong>)</p>
+                                ) : (
+                                  <p className="text-[0.68rem] text-emerald-700 font-mono font-bold">✨ FREE Shipping (Total: {formatPrice(quoteTotal)})</p>
+                                )}
+                                {req.adminNotes && <p className="text-[0.68rem] text-amber-900 italic mt-0.5">{req.adminNotes}</p>}
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2 pt-1">
+                              <button
+                                onClick={() => handleAcceptQuote(req)}
+                                disabled={acceptingId === req._id}
+                                className="btn-primary flex-1 py-2 text-[0.68rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 disabled:opacity-50"
+                              >
+                                <Check size={14} /> {acceptingId === req._id ? 'Placing Order...' : `Accept Quote & Pay (${formatPrice(quoteTotal)})`}
+                              </button>
+                              <button
+                                onClick={() => handleDeclineQuote(req)}
+                                className="border border-rose-300 text-rose-700 px-3 py-2 text-[0.68rem] font-bold uppercase tracking-wider hover:bg-rose-50 flex items-center gap-1 rounded-full"
+                              >
+                                <Ban size={13} /> Decline Quote
+                              </button>
                             </div>
                           </div>
-
-                          <div className="flex gap-2 pt-1">
-                            <button
-                              onClick={() => handleAcceptQuote(req)}
-                              disabled={acceptingId === req._id}
-                              className="btn-primary flex-1 py-2 text-[0.68rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 disabled:opacity-50"
-                            >
-                              <Check size={14} /> {acceptingId === req._id ? 'Placing Order...' : 'Accept Quote & Place Order'}
-                            </button>
-                            <button
-                              onClick={() => handleDeclineQuote(req)}
-                              className="border border-rose-300 text-rose-700 px-3 py-2 text-[0.68rem] font-bold uppercase tracking-wider hover:bg-rose-50 flex items-center gap-1"
-                            >
-                              <Ban size={13} /> Decline Quote
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                        )
+                      })()}
 
                       {req.status === 'Accepted & Order Created' && (
                         <div className="p-3 bg-emerald-50 text-emerald-900 border border-emerald-300 text-xs font-bold space-y-2">

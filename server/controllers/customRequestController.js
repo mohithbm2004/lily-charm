@@ -1,5 +1,6 @@
 import CustomRequest from '../models/CustomRequest.js'
 import Order from '../models/Order.js'
+import Setting from '../models/Setting.js'
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryHelper.js'
 import { emitCustomRequestCreated, emitCustomRequestUpdated, emitCustomRequestDeleted, emitOrderCreated } from '../socket.js'
 
@@ -115,7 +116,24 @@ export async function acceptQuoteAndCreateOrder(req, res, next) {
 
     const itemTitle = `Custom Artwork: ${customRequest.stylePreference || 'Bespoke Floral Frame'}`
     const price = customRequest.quotedPrice
-    const shipping = price > 8000 ? 0 : 250
+
+    // Dynamic Shipping Fee Calculation matching normal orders
+    let shipping = 0
+    try {
+      const studioSettings = await Setting.findOne({ key: 'main_studio_settings' })
+      const isShippingEnabled = studioSettings?.shippingFeeEnabled ?? true
+      const standardFee = studioSettings?.standardShippingFee ?? 100
+      const threshold = studioSettings?.freeShippingThreshold ?? 2500
+
+      if (isShippingEnabled) {
+        shipping = price >= threshold ? 0 : standardFee
+      } else {
+        shipping = 0
+      }
+    } catch {
+      shipping = 0
+    }
+
     const total = price + shipping
 
     const newOrder = await Order.create({

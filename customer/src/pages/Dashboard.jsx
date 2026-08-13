@@ -5,6 +5,7 @@ import Reveal from '../components/Reveal'
 import { User, Package, MapPin, Sparkles, Upload, CheckCircle2, Search, Edit3, LogOut, Download, Eye, Truck, RefreshCw, XCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useAlert } from '../context/AlertContext'
+import { useStudio } from '../context/StudioContext'
 import OrderDetailsModal from '../components/OrderDetailsModal'
 import OrderTimeline from '../components/OrderTimeline'
 import { API_URL } from '../config/api'
@@ -15,10 +16,20 @@ const tabs = ['My Orders', 'Profile Details', 'Custom Price Quotes', 'Saved Addr
 export default function Dashboard() {
   const { user, logout, updateUserProfile } = useAuth()
   const { showAlert, showConfirm } = useAlert()
+  const { shippingSettings } = useStudio()
   const navigate = useNavigate()
   const [tab, setTab] = useState('Profile Details')
   const [params] = useSearchParams()
   const justOrdered = params.get('order') === 'confirmed'
+
+  const isShippingEnabled = shippingSettings?.shippingFeeEnabled ?? true
+  const standardShippingFee = shippingSettings?.standardShippingFee ?? 100
+  const freeThreshold = shippingSettings?.freeShippingThreshold ?? 2500
+
+  const getCustomOrderShipping = (price) => {
+    if (!isShippingEnabled) return 0
+    return (price || 0) >= freeThreshold ? 0 : standardShippingFee
+  }
 
   const defaultProfile = {
     name: 'Valued Customer',
@@ -273,7 +284,7 @@ export default function Dashboard() {
         return
       }
 
-      const shipping = req.quotedPrice > 8000 ? 0 : 250
+      const shipping = getCustomOrderShipping(req.quotedPrice)
       const totalAmount = (req.quotedPrice || 0) + shipping
 
       // 1. Fetch Razorpay Order ID from backend (amount in paise)
@@ -977,50 +988,59 @@ export default function Dashboard() {
                         </p>
                       )}
 
-                      {req.quotedPrice > 0 && (
-                        <div className="p-4 bg-amber-50 border border-amber-200 space-y-2">
-                          <span className="eyebrow text-[0.65rem] font-bold text-amber-900 uppercase">Studio Quoted Price</span>
-                          <p className="text-xl font-bold font-mono text-emerald-800">{formatPrice(req.quotedPrice)}</p>
-                          {req.adminNotes && <p className="text-xs italic text-amber-900 font-medium">Studio Note: {req.adminNotes}</p>}
+                      {req.quotedPrice > 0 && (() => {
+                        const customShipping = getCustomOrderShipping(req.quotedPrice)
+                        const totalCustomAmount = (req.quotedPrice || 0) + customShipping
+                        return (
+                          <div className="p-4 bg-amber-50 border border-amber-200 space-y-2">
+                            <span className="eyebrow text-[0.65rem] font-bold text-amber-900 uppercase">Studio Quoted Price</span>
+                            <p className="text-xl font-bold font-mono text-emerald-800">{formatPrice(req.quotedPrice)}</p>
+                            {customShipping > 0 ? (
+                              <p className="text-[0.68rem] text-amber-900 font-mono">+ {formatPrice(customShipping)} Standard Shipping (Total: <strong>{formatPrice(totalCustomAmount)}</strong>)</p>
+                            ) : (
+                              <p className="text-[0.68rem] text-emerald-800 font-mono font-bold">✨ FREE Shipping (Total: {formatPrice(totalCustomAmount)})</p>
+                            )}
+                            {req.adminNotes && <p className="text-xs italic text-amber-900 font-medium">Studio Note: {req.adminNotes}</p>}
 
-                          {/* Accept / Decline Action Bar if status is Quoted */}
-                          {req.status === 'Quoted' && (
-                            <div className="pt-2 flex flex-wrap gap-2 items-center">
-                              <button
-                                onClick={() => handleAcceptQuoteAndPay(req)}
-                                className="btn-primary py-2.5 px-5 text-[0.68rem] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm"
-                              >
-                                💳 Accept Quote & Pay Now ({formatPrice((req.quotedPrice || 0) + ((req.quotedPrice || 0) > 8000 ? 0 : 250))})
-                              </button>
+                            {/* Accept / Decline Action Bar if status is Quoted */}
+                            {req.status === 'Quoted' && (
+                              <div className="pt-2 flex flex-wrap gap-2 items-center">
+                                <button
+                                  onClick={() => handleAcceptQuoteAndPay(req)}
+                                  className="btn-primary py-2.5 px-5 text-[0.68rem] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm"
+                                >
+                                  💳 Accept Quote & Pay Now ({formatPrice(totalCustomAmount)})
+                                </button>
 
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    await fetch(`${API_URL}/custom-requests/${req._id}/decline`, { method: 'PATCH' })
-                                    fetchUserOrdersAndRequests(userProfile.email)
-                                  } catch (e) {
-                                    console.error('Error declining quote:', e)
-                                  }
-                                }}
-                                className="px-4 py-2 border border-rose-300 text-rose-700 hover:bg-rose-50 text-[0.65rem] font-bold uppercase"
-                              >
-                                Decline Quote
-                              </button>
-                            </div>
-                          )}
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await fetch(`${API_URL}/custom-requests/${req._id}/decline`, { method: 'PATCH' })
+                                      fetchUserOrdersAndRequests(userProfile.email)
+                                    } catch (e) {
+                                      console.error('Error declining quote:', e)
+                                    }
+                                  }}
+                                  className="px-4 py-2 border border-rose-300 text-rose-700 hover:bg-rose-50 text-[0.65rem] font-bold uppercase rounded-full"
+                                >
+                                  Decline Quote
+                                </button>
+                              </div>
+                            )}
 
-                          {req.status?.includes('Accepted') && (
-                            <div className="pt-2">
-                              <button
-                                onClick={() => setTab('My Orders')}
-                                className="btn-primary py-2 px-4 text-[0.65rem] font-bold uppercase tracking-wider flex items-center gap-1.5"
-                              >
-                                <Package size={13} /> View Order in My Orders Tab ➔
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                            {req.status?.includes('Accepted') && (
+                              <div className="pt-2">
+                                <button
+                                  onClick={() => setTab('My Orders')}
+                                  className="btn-primary py-2 px-4 text-[0.65rem] font-bold uppercase tracking-wider flex items-center gap-1.5"
+                                >
+                                  <Package size={13} /> View Order in My Orders Tab ➔
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })()}
                     </div>
                   ))}
                 </div>
