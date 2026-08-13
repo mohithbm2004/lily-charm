@@ -378,14 +378,26 @@ export default function Dashboard() {
     }
   }
 
+  const [profileErrors, setProfileErrors] = useState({})
+
   const handleSaveProfile = async (e) => {
     e.preventDefault()
-    if (userProfile.pincode && !/^\d{6}$/.test(userProfile.pincode)) {
-      alert('Please enter a valid 6-digit numeric PIN code.')
+    setSaveSuccessMsg('')
+
+    const errs = {}
+    if (!userProfile?.name?.trim()) errs.name = 'Full name is required.'
+    if (!userProfile?.email?.trim()) errs.email = 'Email address is required.'
+    if (userProfile?.pincode && !/^\d{6}$/.test(userProfile.pincode)) {
+      errs.pincode = 'Please enter a valid 6-digit numeric PIN code.'
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setProfileErrors(errs)
       return
     }
+
+    setProfileErrors({})
     setIsSavingProfile(true)
-    setSaveSuccessMsg('')
 
     try {
       const payload = {
@@ -599,27 +611,57 @@ export default function Dashboard() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold uppercase mb-1">Full Name *</label>
+                  <label className="block font-bold uppercase mb-1">
+                    Full Name <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </label>
                   <input
                     type="text"
                     required
+                    aria-required="true"
                     value={userProfile?.name || ''}
-                    onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })}
-                    className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] p-3 font-bold"
+                    onChange={(e) => {
+                      setUserProfile({ ...userProfile, name: e.target.value })
+                      if (profileErrors.name) setProfileErrors((prev) => ({ ...prev, name: '' }))
+                    }}
+                    className={`w-full border p-3 font-bold transition-colors ${
+                      profileErrors.name
+                        ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                        : 'border-[var(--color-line)] bg-[var(--color-bg)]'
+                    }`}
                     placeholder="e.g. Eleanor Vance"
                   />
+                  {profileErrors.name && (
+                    <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                      ⚠️ {profileErrors.name}
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block font-bold uppercase mb-1">Email Address *</label>
+                  <label className="block font-bold uppercase mb-1">
+                    Email Address <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </label>
                   <input
                     type="email"
                     required
+                    aria-required="true"
                     value={userProfile?.email || ''}
-                    onChange={(e) => setUserProfile({ ...userProfile, email: e.target.value })}
-                    className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] p-3 font-semibold"
+                    onChange={(e) => {
+                      setUserProfile({ ...userProfile, email: e.target.value })
+                      if (profileErrors.email) setProfileErrors((prev) => ({ ...prev, email: '' }))
+                    }}
+                    className={`w-full border p-3 font-semibold transition-colors ${
+                      profileErrors.email
+                        ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                        : 'border-[var(--color-line)] bg-[var(--color-bg)]'
+                    }`}
                     placeholder="e.g. customer@example.com"
                   />
+                  {profileErrors.email && (
+                    <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                      ⚠️ {profileErrors.email}
+                    </p>
+                  )}
                 </div>
               </div>
 

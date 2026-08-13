@@ -14,14 +14,20 @@ export default function AdminLogin() {
   const [email, setEmail] = useState('keerthanabm@lilycharm.in')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState({})
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!email || !password) {
-      setError('Please enter admin email and password.')
+    const errs = {}
+    if (!email?.trim()) errs.email = 'Admin email is required.'
+    if (!password) errs.password = 'Admin password is required.'
+
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs)
       return
     }
 
+    setFieldErrors({})
     setSubmitting(true)
     try {
       await login(email, password)
@@ -72,23 +78,40 @@ export default function AdminLogin() {
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
-            <label className="block font-bold uppercase tracking-wider mb-1">Admin Email Address *</label>
+            <label className="block font-bold uppercase tracking-wider mb-1">
+              Admin Email Address <span className="text-red-500 font-bold ml-0.5">*</span>
+            </label>
             <div className="relative">
               <Mail size={16} className="absolute left-3.5 top-3.5 text-[var(--color-ink-soft,#666)]" />
               <input
                 type="email"
                 required
+                aria-required="true"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: '' }))
+                }}
                 placeholder="keerthanabm@lilycharm.in"
-                className="w-full border border-[var(--color-line,#E5DFD5)] bg-[var(--color-bg,#FAF7F2)] rounded-xl pl-10 pr-4 py-3 font-semibold focus:outline-none focus:border-[var(--color-primary,#2D402B)]"
+                className={`w-full border rounded-xl pl-10 pr-4 py-3 font-semibold focus:outline-none transition-colors ${
+                  fieldErrors.email
+                    ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                    : 'border-[var(--color-line,#E5DFD5)] bg-[var(--color-bg,#FAF7F2)] focus:border-[var(--color-primary,#2D402B)]'
+                }`}
               />
             </div>
+            {fieldErrors.email && (
+              <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                ⚠️ {fieldErrors.email}
+              </p>
+            )}
           </div>
 
           <div>
             <div className="flex justify-between items-center mb-1">
-              <label className="block font-bold uppercase tracking-wider">Admin Password *</label>
+              <label className="block font-bold uppercase tracking-wider">
+                Admin Password <span className="text-red-500 font-bold ml-0.5">*</span>
+              </label>
               <Link
                 to="/admin/forgot-password"
                 className="text-[0.68rem] text-[var(--color-primary,#2D402B)] font-bold hover:underline"
@@ -101,12 +124,25 @@ export default function AdminLogin() {
               <input
                 type="password"
                 required
+                aria-required="true"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: '' }))
+                }}
                 placeholder="••••••••••••••••"
-                className="w-full border border-[var(--color-line,#E5DFD5)] bg-[var(--color-bg,#FAF7F2)] rounded-xl pl-10 pr-4 py-3 font-mono text-xs focus:outline-none focus:border-[var(--color-primary,#2D402B)]"
+                className={`w-full border rounded-xl pl-10 pr-4 py-3 font-mono text-xs focus:outline-none transition-colors ${
+                  fieldErrors.password
+                    ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                    : 'border-[var(--color-line,#E5DFD5)] bg-[var(--color-bg,#FAF7F2)] focus:border-[var(--color-primary,#2D402B)]'
+                }`}
               />
             </div>
+            {fieldErrors.password && (
+              <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                ⚠️ {fieldErrors.password}
+              </p>
+            )}
           </div>
 
           <button

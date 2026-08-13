@@ -88,12 +88,15 @@ export default function AdminResetPassword() {
         {/* Reset Password Form */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
-            <label className="block font-bold uppercase tracking-wider mb-1">New Admin Password * (Min 12 Chars)</label>
+            <label className="block font-bold uppercase tracking-wider mb-1">
+              New Admin Password <span className="text-red-500 font-bold ml-0.5">*</span> (Min 12 Chars)
+            </label>
             <div className="relative">
               <Lock size={16} className="absolute left-3.5 top-3.5 text-[var(--color-ink-soft,#666)]" />
               <input
                 type="password"
                 required
+                aria-required="true"
                 minLength={12}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -104,12 +107,15 @@ export default function AdminResetPassword() {
           </div>
 
           <div>
-            <label className="block font-bold uppercase tracking-wider mb-1">Confirm New Password *</label>
+            <label className="block font-bold uppercase tracking-wider mb-1">
+              Confirm New Password <span className="text-red-500 font-bold ml-0.5">*</span>
+            </label>
             <div className="relative">
               <Lock size={16} className="absolute left-3.5 top-3.5 text-[var(--color-ink-soft,#666)]" />
               <input
                 type="password"
                 required
+                aria-required="true"
                 minLength={12}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

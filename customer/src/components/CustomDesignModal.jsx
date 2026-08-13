@@ -382,9 +382,13 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                 <form onSubmit={handleSubmit} className="space-y-4 text-xs">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block font-bold uppercase mb-1">Your Full Name *</label>
+                      <label className="block font-bold uppercase mb-1">
+                        Your Full Name <span className="text-red-500 font-bold ml-0.5">*</span>
+                      </label>
                       <input
                         type="text"
+                        required
+                        aria-required="true"
                         placeholder="e.g. Eleanor Vance"
                         value={formData.name}
                         onChange={(e) => {
@@ -392,16 +396,20 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                           if (e.target.value.trim()) setErrors((prev) => ({ ...prev, name: null }))
                         }}
                         className={`w-full border p-3 bg-[var(--color-card-bg)] transition-colors ${
-                          errors.name ? 'border-rose-500 bg-rose-50/20 text-rose-900' : 'border-[var(--color-line)]'
+                          errors.name ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-[var(--color-line)]'
                         }`}
                       />
-                      {errors.name && <p className="text-[0.68rem] text-rose-600 font-bold mt-1">⚠️ {errors.name}</p>}
+                      {errors.name && <p className="text-[0.68rem] text-red-600 font-bold mt-1">⚠️ {errors.name}</p>}
                     </div>
 
                     <div>
-                      <label className="block font-bold uppercase mb-1">Email Address *</label>
+                      <label className="block font-bold uppercase mb-1">
+                        Email Address <span className="text-red-500 font-bold ml-0.5">*</span>
+                      </label>
                       <input
                         type="email"
+                        required
+                        aria-required="true"
                         placeholder="e.g. customer@example.com"
                         value={formData.email}
                         onChange={(e) => {
@@ -409,16 +417,16 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                           if (e.target.value.trim()) setErrors((prev) => ({ ...prev, email: null }))
                         }}
                         className={`w-full border p-3 bg-[var(--color-card-bg)] transition-colors ${
-                          errors.email ? 'border-rose-500 bg-rose-50/20 text-rose-900' : 'border-[var(--color-line)]'
+                          errors.email ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-[var(--color-line)]'
                         }`}
                       />
-                      {errors.email && <p className="text-[0.68rem] text-rose-600 font-bold mt-1">⚠️ {errors.email}</p>}
+                      {errors.email && <p className="text-[0.68rem] text-red-600 font-bold mt-1">⚠️ {errors.email}</p>}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block font-bold uppercase mb-1">Phone Number</label>
+                      <label className="block font-bold uppercase mb-1">Phone Number (Optional)</label>
                       <input
                         type="tel"
                         placeholder="e.g. +91 98765 43210"
@@ -446,7 +454,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
 
                   {/* Delivery Shipping Address Fields */}
                   <div>
-                    <label className="block font-bold uppercase mb-1">Delivery Street Address</label>
+                    <label className="block font-bold uppercase mb-1">Delivery Street Address (Optional)</label>
                     <input
                       type="text"
                       placeholder="e.g. Flat 402, Lotus Bloom Residences, 12th Main Rd"
@@ -458,7 +466,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block font-bold uppercase mb-1">City / District</label>
+                      <label className="block font-bold uppercase mb-1">City / District (Optional)</label>
                       <input
                         type="text"
                         placeholder="e.g. Bengaluru"
@@ -469,7 +477,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                     </div>
 
                     <div>
-                      <label className="block font-bold uppercase mb-1">PIN Code (6 digits)</label>
+                      <label className="block font-bold uppercase mb-1">PIN Code (Optional)</label>
                       <input
                         type="text"
                         maxLength={6}
@@ -483,7 +491,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                   </div>
 
                   <div>
-                    <label className="block font-bold uppercase mb-1">Custom Design Instructions & Color Requirements</label>
+                    <label className="block font-bold uppercase mb-1">Custom Design Instructions (Optional)</label>
                     <textarea
                       rows={3}
                       placeholder="Describe specific colors, sizes, frame preferences, or special requests..."
@@ -495,10 +503,10 @@ export default function CustomDesignModal({ isOpen, onClose }) {
 
                   <div>
                     <label className="block font-bold uppercase mb-1">
-                      Upload Reference Image / Design Photo (From File Explorer) *
+                      Upload Reference Image / Design Photo <span className="text-red-500 font-bold ml-0.5">*</span>
                     </label>
                     <div className={`border-2 border-dashed p-4 text-center cursor-pointer transition-colors bg-[var(--color-card-bg)] relative ${
-                      errors.image ? 'border-rose-500 bg-rose-50/20' : 'border-[var(--color-line)] hover:border-[var(--color-primary)]'
+                      errors.image ? 'border-red-500 bg-red-50/20' : 'border-[var(--color-line)] hover:border-[var(--color-primary)]'
                     }`}>
                       <input
                         type="file"

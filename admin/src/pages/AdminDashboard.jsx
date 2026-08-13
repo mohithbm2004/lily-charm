@@ -36,7 +36,7 @@ import StepUpMfaModal from '../components/StepUpMfaModal'
 import { formatPrice, formatDateTime, formatDateOnly } from '../lib/format'
 import { exportOrdersToCSV, exportUsersToCSV, exportCustomRequestsToCSV, exportReviewsToCSV } from '../lib/exportCSV'
 import ImageFocusPicker from '../components/ImageFocusPicker'
-import { API_URL } from '../config/api'
+import { API_URL, STOREFRONT_URL } from '../config/api'
 
 export default function AdminDashboard({ activeTabName = 'Products' }) {
   const { admin, logout, changePassword, logoutAllSessions } = useAdminAuth()
@@ -906,7 +906,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               <span>{admin?.email || 'keerthanabm@lilycharm.in'}</span>
             </div>
             <a
-              href="http://localhost:5173"
+              href={STOREFRONT_URL || 'https://lilycharm.in'}
               target="_blank"
               rel="noreferrer"
               className="text-xs tracking-wider uppercase font-medium bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-full border border-white/20 transition-colors inline-flex items-center gap-1.5"
@@ -1725,10 +1725,13 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               <form onSubmit={handleChangePassword} className="space-y-4 text-xs">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block font-bold uppercase tracking-wider mb-1">Current Password *</label>
+                    <label className="block font-bold uppercase tracking-wider mb-1">
+                      Current Password <span className="text-red-500 font-bold ml-0.5">*</span>
+                    </label>
                     <input
                       type="password"
                       required
+                      aria-required="true"
                       value={currentPass}
                       onChange={(e) => setCurrentPass(e.target.value)}
                       placeholder="••••••••••••"
@@ -1737,10 +1740,13 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                   </div>
 
                   <div>
-                    <label className="block font-bold uppercase tracking-wider mb-1">New Password * (Min 12 Chars)</label>
+                    <label className="block font-bold uppercase tracking-wider mb-1">
+                      New Password <span className="text-red-500 font-bold ml-0.5">*</span> (Min 12 Chars)
+                    </label>
                     <input
                       type="password"
                       required
+                      aria-required="true"
                       minLength={12}
                       value={newPass}
                       onChange={(e) => setNewPass(e.target.value)}
@@ -1750,10 +1756,13 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                   </div>
 
                   <div>
-                    <label className="block font-bold uppercase tracking-wider mb-1">Confirm New Password *</label>
+                    <label className="block font-bold uppercase tracking-wider mb-1">
+                      Confirm New Password <span className="text-red-500 font-bold ml-0.5">*</span>
+                    </label>
                     <input
                       type="password"
                       required
+                      aria-required="true"
                       minLength={12}
                       value={confirmPass}
                       onChange={(e) => setConfirmPass(e.target.value)}
@@ -1809,10 +1818,13 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-[0.7rem] font-bold uppercase mb-1">Coupon Promo Code *</label>
+                    <label className="block text-[0.7rem] font-bold uppercase mb-1">
+                      Coupon Promo Code <span className="text-red-500 font-bold ml-0.5">*</span>
+                    </label>
                     <input
                       type="text"
                       required
+                      aria-required="true"
                       placeholder="e.g. VELVET30"
                       value={newCoupon.code}
                       onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase().trim() })}
@@ -1821,7 +1833,9 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                   </div>
 
                   <div>
-                    <label className="block text-[0.7rem] font-bold uppercase mb-1">Discount Type *</label>
+                    <label className="block text-[0.7rem] font-bold uppercase mb-1">
+                      Discount Type <span className="text-red-500 font-bold ml-0.5">*</span>
+                    </label>
                     <select
                       value={newCoupon.discountType}
                       onChange={(e) => setNewCoupon({ ...newCoupon, discountType: e.target.value })}
@@ -1833,10 +1847,13 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                   </div>
 
                   <div>
-                    <label className="block text-[0.7rem] font-bold uppercase mb-1">Discount Amount/Value *</label>
+                    <label className="block text-[0.7rem] font-bold uppercase mb-1">
+                      Discount Amount/Value <span className="text-red-500 font-bold ml-0.5">*</span>
+                    </label>
                     <input
                       type="number"
                       required
+                      aria-required="true"
                       min="1"
                       placeholder="e.g. 20 for 20% or 500 for ₹500"
                       value={newCoupon.discountValue}
@@ -1848,7 +1865,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-[0.7rem] font-bold uppercase mb-1">Minimum Order Spend (₹)</label>
+                    <label className="block text-[0.7rem] font-bold uppercase mb-1">Minimum Order Spend (Optional)</label>
                     <input
                       type="number"
                       min="0"
@@ -1861,7 +1878,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                   </div>
 
                   <div>
-                    <label className="block text-[0.7rem] font-bold uppercase mb-1">Maximum Discount Cap (₹)</label>
+                    <label className="block text-[0.7rem] font-bold uppercase mb-1">Maximum Discount Cap (Optional)</label>
                     <input
                       type="number"
                       min="0"
@@ -1890,7 +1907,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                 </div>
 
                 <div>
-                  <label className="block text-[0.7rem] font-bold uppercase mb-1">Offer Title / Description</label>
+                  <label className="block text-[0.7rem] font-bold uppercase mb-1">Offer Title / Description (Optional)</label>
                   <input
                     type="text"
                     placeholder="e.g. 20% OFF Velvet Sculptures above ₹1,000 (Max ₹500 Cap)"
@@ -2770,9 +2787,13 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               {/* Left Column — Form Fields */}
               <div className="space-y-4">
                 <div>
-                  <label className="block font-bold uppercase mb-1">Creation Title *</label>
+                  <label className="block font-bold uppercase mb-1">
+                    Creation Title <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </label>
                   <input
                     type="text"
+                    required
+                    aria-required="true"
                     placeholder="e.g. Royal Blue Velvet Lily Bouquet"
                     value={newFlower.title}
                     onChange={(e) => {
@@ -2790,9 +2811,13 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                   )}
                 </div>
                 <div>
-                  <label className="block font-bold uppercase mb-1">Specimen Display Code *</label>
+                  <label className="block font-bold uppercase mb-1">
+                    Specimen Display Code <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </label>
                   <input
                     type="text"
+                    required
+                    aria-required="true"
                     value={newFlower.specimen}
                     onChange={(e) => {
                       setNewFlower({ ...newFlower, specimen: e.target.value })
@@ -2809,7 +2834,9 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                   )}
                 </div>
                 <div>
-                  <label className="block font-bold uppercase mb-1">Collection Category *</label>
+                  <label className="block font-bold uppercase mb-1">
+                    Collection Category <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </label>
                   <select
                     value={newFlower.category}
                     onChange={(e) => setNewFlower({ ...newFlower, category: e.target.value })}
@@ -2823,9 +2850,13 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-bold uppercase mb-1">Price (₹ INR) *</label>
+                  <label className="block font-bold uppercase mb-1">
+                    Price (₹ INR) <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </label>
                   <input
                     type="number"
+                    required
+                    aria-required="true"
                     value={newFlower.price}
                     onChange={(e) => {
                       setNewFlower({ ...newFlower, price: Number(e.target.value) })
@@ -2843,7 +2874,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                 </div>
                 <div>
                   <label className="block font-bold uppercase mb-1">
-                    Photo Upload (Select Multiple Files) *
+                    Photo Upload (Select Multiple Files) <span className="text-red-500 font-bold ml-0.5">*</span>
                   </label>
                   <input
                     type="file"
@@ -2974,9 +3005,13 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               {/* Left Column — Form Fields */}
               <div className="space-y-4">
                 <div>
-                  <label className="block font-bold uppercase mb-1">Creation Title *</label>
+                  <label className="block font-bold uppercase mb-1">
+                    Creation Title <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </label>
                   <input
                     type="text"
+                    required
+                    aria-required="true"
                     value={editingProduct.title}
                     onChange={(e) => {
                       setEditingProduct({ ...editingProduct, title: e.target.value })
@@ -2993,9 +3028,13 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                   )}
                 </div>
                 <div>
-                  <label className="block font-bold uppercase mb-1">Price (₹ INR) *</label>
+                  <label className="block font-bold uppercase mb-1">
+                    Price (₹ INR) <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </label>
                   <input
                     type="number"
+                    required
+                    aria-required="true"
                     value={editingProduct.price}
                     onChange={(e) => {
                       setEditingProduct({ ...editingProduct, price: Number(e.target.value) })
@@ -3146,9 +3185,13 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               {/* Left Column — Form Fields */}
               <div className="space-y-4">
                 <div>
-                  <label className="block font-bold uppercase mb-1">Collection Title *</label>
+                  <label className="block font-bold uppercase mb-1">
+                    Collection Title <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </label>
                   <input
                     type="text"
+                    required
+                    aria-required="true"
                     placeholder="e.g. Orchid Whispers"
                     value={newCol.title}
                     onChange={(e) => {
@@ -3166,7 +3209,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                   )}
                 </div>
                 <div>
-                  <label className="block font-bold uppercase mb-1">Category Slug (e.g. orchid-whispers)</label>
+                  <label className="block font-bold uppercase mb-1">Category Slug (Optional)</label>
                   <input
                     type="text"
                     placeholder="e.g. orchid-whispers"
@@ -3176,9 +3219,13 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                   />
                 </div>
                 <div>
-                  <label className="block font-bold uppercase mb-1">Description Blurb *</label>
+                  <label className="block font-bold uppercase mb-1">
+                    Description Blurb <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </label>
                   <textarea
                     rows={3}
+                    required
+                    aria-required="true"
                     placeholder="Short description of this handcrafted floral series..."
                     value={newCol.blurb}
                     onChange={(e) => {
@@ -3197,7 +3244,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                 </div>
                 <div>
                   <label className="block font-bold uppercase mb-1">
-                    Collection Banner Photos (Select Multiple Files) *
+                    Collection Banner Photos (Select Multiple Files) <span className="text-red-500 font-bold ml-0.5">*</span>
                   </label>
                   <input
                     type="file"

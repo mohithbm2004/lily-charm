@@ -4,10 +4,15 @@ import Reveal from '../components/Reveal'
 export default function Newsletter() {
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
+  const [error, setError] = useState('')
 
   const submit = (e) => {
     e.preventDefault()
-    if (!email) return
+    if (!email?.trim()) {
+      setError('Please enter your email address.')
+      return
+    }
+    setError('')
     setSent(true)
   }
 
@@ -19,17 +24,30 @@ export default function Newsletter() {
         {sent ? (
           <p className="text-xs sm:text-sm font-bold text-[var(--color-primary)]">You're on the list — thank you.</p>
         ) : (
-          <form onSubmit={submit} className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 max-w-md mx-auto w-full">
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Your email address"
-              className="flex-1 border border-[var(--color-line)] bg-transparent rounded-full px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm focus:outline-none focus:border-[var(--color-primary)] min-w-0"
-            />
-            <button type="submit" className="btn-primary py-2.5 sm:py-3 text-xs rounded-full">Subscribe</button>
-          </form>
+          <div className="max-w-md mx-auto w-full space-y-2">
+            <form onSubmit={submit} className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full">
+              <input
+                type="email"
+                required
+                aria-required="true"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  if (error) setError('')
+                }}
+                placeholder="Your email address *"
+                className={`flex-1 border bg-transparent rounded-full px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm focus:outline-none min-w-0 transition-colors ${
+                  error
+                    ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                    : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                }`}
+              />
+              <button type="submit" className="btn-primary py-2.5 sm:py-3 text-xs rounded-full">Subscribe</button>
+            </form>
+            {error && (
+              <p className="text-red-600 text-[0.68rem] text-center font-medium">⚠️ {error}</p>
+            )}
+          </div>
         )}
       </Reveal>
     </section>

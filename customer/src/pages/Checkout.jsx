@@ -63,13 +63,23 @@ export default function Checkout() {
   }, [user])
 
   const [pincodeStatus, setPincodeStatus] = useState({ loading: false, success: false, message: '' })
+  const [formErrors, setFormErrors] = useState({})
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setForm({ ...form, [name]: value })
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({ ...prev, [name]: '' }))
+    }
+  }
 
   const handlePincodeChange = async (e) => {
     const rawVal = e.target.value
     const digitsOnly = rawVal.replace(/\D/g, '').slice(0, 6)
     setForm((prev) => ({ ...prev, pincode: digitsOnly }))
+    if (formErrors.pincode) {
+      setFormErrors((prev) => ({ ...prev, pincode: '' }))
+    }
 
     if (digitsOnly.length < 6) {
       setPincodeStatus({
@@ -94,6 +104,9 @@ export default function Checkout() {
           city: city || prev.city,
           state: state || prev.state,
         }))
+        if (formErrors.city) {
+          setFormErrors((prev) => ({ ...prev, city: '' }))
+        }
         setPincodeStatus({
           loading: false,
           success: true,
@@ -127,11 +140,21 @@ export default function Checkout() {
     e.preventDefault()
     if (processing) return
 
-    // Strict 6-digit Pincode Validation
-    if (!/^\d{6}$/.test(form.pincode)) {
-      alert('Please enter a valid 6-digit numeric PIN code (e.g. 562159).')
+    const errs = {}
+    if (!form.name?.trim()) errs.name = 'Full name is required.'
+    if (!form.email?.trim()) errs.email = 'Email address is required.'
+    if (!form.phone?.trim()) errs.phone = 'Phone number is required.'
+    else if (!/^\+?[0-9\s\-]{8,15}$/.test(form.phone.trim())) errs.phone = 'Please enter a valid phone number.'
+    if (!form.address?.trim()) errs.address = 'Street address is required.'
+    if (!form.city?.trim()) errs.city = 'City / District is required.'
+    if (!/^\d{6}$/.test(form.pincode)) errs.pincode = 'Please enter a valid 6-digit PIN code.'
+
+    if (Object.keys(errs).length > 0) {
+      setFormErrors(errs)
       return
     }
+
+    setFormErrors({})
 
     setProcessing(true)
 
@@ -341,17 +364,140 @@ export default function Checkout() {
           <div>
             <p className="eyebrow mb-3 sm:mb-4">Contact Information</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
-              <input name="name" required onChange={handleChange} placeholder="Full name *" className="border border-[var(--color-line)] bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] w-full" />
-              <input name="email" type="email" required onChange={handleChange} placeholder="Email address *" className="border border-[var(--color-line)] bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] w-full" />
-              <input name="phone" required onChange={handleChange} placeholder="Phone number *" className="border border-[var(--color-line)] bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] col-span-1 sm:col-span-2 font-mono w-full" />
+              <div>
+                <label className="block font-bold uppercase mb-1 text-[0.68rem]">
+                  Full Name <span className="text-red-500 font-bold ml-0.5">*</span>
+                </label>
+                <input
+                  name="name"
+                  type="text"
+                  required
+                  aria-required="true"
+                  value={form.name}
+                  onChange={handleChange}
+                  placeholder="e.g. Eleanor Vance"
+                  className={`border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none w-full transition-colors ${
+                    formErrors.name
+                      ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                      : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                  }`}
+                />
+                {formErrors.name && (
+                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                    ⚠️ {formErrors.name}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase mb-1 text-[0.68rem]">
+                  Email Address <span className="text-red-500 font-bold ml-0.5">*</span>
+                </label>
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  aria-required="true"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="e.g. customer@example.com"
+                  className={`border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none w-full transition-colors ${
+                    formErrors.email
+                      ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                      : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                  }`}
+                />
+                {formErrors.email && (
+                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                    ⚠️ {formErrors.email}
+                  </p>
+                )}
+              </div>
+
+              <div className="col-span-1 sm:col-span-2">
+                <label className="block font-bold uppercase mb-1 text-[0.68rem]">
+                  Phone Number <span className="text-red-500 font-bold ml-0.5">*</span>
+                </label>
+                <input
+                  name="phone"
+                  type="tel"
+                  required
+                  aria-required="true"
+                  value={form.phone}
+                  onChange={handleChange}
+                  placeholder="e.g. +91 98765 43210"
+                  className={`border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none font-mono w-full transition-colors ${
+                    formErrors.phone
+                      ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                      : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                  }`}
+                />
+                {formErrors.phone && (
+                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                    ⚠️ {formErrors.phone}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
+
           <div>
             <p className="eyebrow mb-3 sm:mb-4">Shipping Address</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
-              <input name="address" required value={form.address} onChange={handleChange} placeholder="Street address *" className="border border-[var(--color-line)] bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] col-span-1 sm:col-span-2 w-full" />
-              <input name="city" required value={form.city} onChange={handleChange} placeholder="City / District *" className="border border-[var(--color-line)] bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[var(--color-primary)] font-semibold w-full" />
+              <div className="col-span-1 sm:col-span-2">
+                <label className="block font-bold uppercase mb-1 text-[0.68rem]">
+                  Street Address <span className="text-red-500 font-bold ml-0.5">*</span>
+                </label>
+                <input
+                  name="address"
+                  type="text"
+                  required
+                  aria-required="true"
+                  value={form.address}
+                  onChange={handleChange}
+                  placeholder="e.g. Flat 402, Lotus Bloom Residences, 12th Main Rd"
+                  className={`border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none w-full transition-colors ${
+                    formErrors.address
+                      ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                      : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                  }`}
+                />
+                {formErrors.address && (
+                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                    ⚠️ {formErrors.address}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase mb-1 text-[0.68rem]">
+                  City / District <span className="text-red-500 font-bold ml-0.5">*</span>
+                </label>
+                <input
+                  name="city"
+                  type="text"
+                  required
+                  aria-required="true"
+                  value={form.city}
+                  onChange={handleChange}
+                  placeholder="e.g. Bengaluru"
+                  className={`border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none font-semibold w-full transition-colors ${
+                    formErrors.city
+                      ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                      : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                  }`}
+                />
+                {formErrors.city && (
+                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                    ⚠️ {formErrors.city}
+                  </p>
+                )}
+              </div>
+
               <div className="w-full">
+                <label className="block font-bold uppercase mb-1 text-[0.68rem]">
+                  PIN Code (6 digits) <span className="text-red-500 font-bold ml-0.5">*</span>
+                </label>
                 <input
                   name="pincode"
                   type="text"
@@ -359,18 +505,25 @@ export default function Checkout() {
                   pattern="\d*"
                   maxLength={6}
                   required
+                  aria-required="true"
                   value={form.pincode}
                   onChange={handlePincodeChange}
-                  placeholder="PIN code (6 digits) *"
-                  className={`w-full border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none font-mono ${
-                    pincodeStatus.message && !pincodeStatus.success && !pincodeStatus.loading
+                  placeholder="e.g. 560001"
+                  className={`w-full border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none font-mono transition-colors ${
+                    formErrors.pincode
+                      ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                      : pincodeStatus.message && !pincodeStatus.success && !pincodeStatus.loading
                       ? 'border-amber-600 focus:border-amber-600'
                       : pincodeStatus.success
                       ? 'border-emerald-600 focus:border-emerald-600'
                       : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
                   }`}
                 />
-                {pincodeStatus.message && (
+                {formErrors.pincode ? (
+                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                    ⚠️ {formErrors.pincode}
+                  </p>
+                ) : pincodeStatus.message ? (
                   <p className={`text-[0.68rem] mt-1 font-semibold ${
                     pincodeStatus.loading
                       ? 'text-blue-600 animate-pulse'
@@ -380,7 +533,7 @@ export default function Checkout() {
                   }`}>
                     {pincodeStatus.message}
                   </p>
-                )}
+                ) : null}
               </div>
             </div>
           </div>

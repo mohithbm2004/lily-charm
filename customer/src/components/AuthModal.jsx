@@ -38,10 +38,13 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
     useRef(null),
   ]
 
+  const [fieldErrors, setFieldErrors] = useState({})
+
   useEffect(() => {
     if (!isOpen) return
     setErrorMessage('')
     setSuccessMessage('')
+    setFieldErrors({})
     setMode(initialMode)
     setOtpDigits(['', '', '', '', '', ''])
   }, [isOpen, initialMode])
@@ -234,6 +237,26 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
     e.preventDefault()
     setErrorMessage('')
     setSuccessMessage('')
+
+    const errors = {}
+    if (mode === 'login') {
+      if (!formData.email?.trim()) errors.email = 'Email address is required.'
+      if (!formData.password) errors.password = 'Password is required.'
+    } else if (mode === 'register') {
+      if (!formData.name?.trim()) errors.name = 'Full name is required.'
+      if (!formData.email?.trim()) errors.email = 'Email address is required.'
+      if (!formData.password) errors.password = 'Password is required.'
+      else if (formData.password.length < 6) errors.password = 'Password must be at least 6 characters.'
+    } else if (mode === 'forgot') {
+      if (!formData.email?.trim()) errors.email = 'Email address is required.'
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return
+    }
+
+    setFieldErrors({})
     setIsLoading(true)
 
     try {
@@ -262,12 +285,6 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
           setErrorMessage(data.message || 'Invalid email or password.')
         }
       } else if (mode === 'register') {
-        if (!formData.name.trim()) {
-          setErrorMessage('Full name is required!')
-          setIsLoading(false)
-          return
-        }
-
         const res = await fetch(`${API_URL}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -294,12 +311,6 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
           setErrorMessage(data.message || 'Registration failed.')
         }
       } else if (mode === 'forgot') {
-        if (!formData.email.trim()) {
-          setErrorMessage('Email address is required!')
-          setIsLoading(false)
-          return
-        }
-
         const res = await fetch(`${API_URL}/auth/forgot-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -513,34 +524,64 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
               <form onSubmit={handleSubmit} className="space-y-4 text-xs">
                 {mode === 'register' && (
                   <div>
-                    <label className="block font-bold uppercase mb-1">Full Name *</label>
+                    <label className="block font-bold uppercase mb-1">
+                      Full Name <span className="text-red-500 font-bold ml-0.5">*</span>
+                    </label>
                     <div className="relative">
                       <User size={16} className="absolute left-3 top-3.5 text-[var(--color-ink-soft)]" />
                       <input
                         type="text"
                         required
+                        aria-required="true"
                         placeholder="e.g. Eleanor Vance"
                         value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] pl-10 pr-3 py-3 font-semibold"
+                        onChange={(e) => {
+                          setFormData({ ...formData, name: e.target.value })
+                          if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: '' }))
+                        }}
+                        className={`w-full border bg-[var(--color-card-bg)] pl-10 pr-3 py-3 font-semibold transition-colors ${
+                          fieldErrors.name
+                            ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                            : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                        }`}
                       />
                     </div>
+                    {fieldErrors.name && (
+                      <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                        ⚠️ {fieldErrors.name}
+                      </p>
+                    )}
                   </div>
                 )}
 
                 <div>
-                  <label className="block font-bold uppercase mb-1">Email Address *</label>
+                  <label className="block font-bold uppercase mb-1">
+                    Email Address <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </label>
                   <div className="relative">
                     <Mail size={16} className="absolute left-3 top-3.5 text-[var(--color-ink-soft)]" />
                     <input
                       type="email"
                       required
+                      aria-required="true"
                       placeholder="e.g. customer@example.com"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] pl-10 pr-3 py-3 font-semibold"
+                      onChange={(e) => {
+                        setFormData({ ...formData, email: e.target.value })
+                        if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: '' }))
+                      }}
+                      className={`w-full border bg-[var(--color-card-bg)] pl-10 pr-3 py-3 font-semibold transition-colors ${
+                        fieldErrors.email
+                          ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                          : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                      }`}
                     />
                   </div>
+                  {fieldErrors.email && (
+                    <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                      ⚠️ {fieldErrors.email}
+                    </p>
+                  )}
                 </div>
 
                 {mode === 'register' && (
@@ -553,7 +594,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                         placeholder="e.g. +91 98765 43210"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] pl-10 pr-3 py-3 font-mono"
+                        className="w-full border border-[var(--color-line)] focus:border-[var(--color-primary)] bg-[var(--color-card-bg)] pl-10 pr-3 py-3 font-mono"
                       />
                     </div>
                   </div>
@@ -563,7 +604,9 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                 {mode !== 'forgot' && (
                   <div>
                     <div className="flex justify-between items-center mb-1">
-                      <label className="font-bold uppercase">Password *</label>
+                      <label className="font-bold uppercase">
+                        Password <span className="text-red-500 font-bold ml-0.5">*</span>
+                      </label>
                       {mode === 'login' && (
                         <button
                           type="button"
@@ -579,10 +622,18 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                       <input
                         type={showPassword ? 'text' : 'password'}
                         required
+                        aria-required="true"
                         placeholder="••••••••"
                         value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] pl-10 pr-10 py-3 font-mono"
+                        onChange={(e) => {
+                          setFormData({ ...formData, password: e.target.value })
+                          if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: '' }))
+                        }}
+                        className={`w-full border bg-[var(--color-card-bg)] pl-10 pr-10 py-3 font-mono transition-colors ${
+                          fieldErrors.password
+                            ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                            : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                        }`}
                       />
                       <button
                         type="button"
@@ -593,6 +644,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
+                    {fieldErrors.password && (
+                      <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                        ⚠️ {fieldErrors.password}
+                      </p>
+                    )}
                   </div>
                 )}
 

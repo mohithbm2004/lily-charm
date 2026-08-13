@@ -1,13 +1,19 @@
-import { useState } from 'react'
-import { Instagram, Mail, Send, Sparkles, CheckCircle2, Clock } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Instagram, Mail, Send, Sparkles, CheckCircle2, Clock, Lock, LogIn, UserPlus, ShieldCheck } from 'lucide-react'
 import Reveal from '../components/Reveal'
+import { useAuth } from '../context/AuthContext'
+import AuthModal from '../components/AuthModal'
 import { API_URL } from '../config/api'
 
 export default function Contact() {
+  const { user } = useAuth()
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const [authModalMode, setAuthModalMode] = useState('login') // 'login' | 'register'
+
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
     subject: '',
     message: '',
   })
@@ -15,13 +21,40 @@ export default function Contact() {
   const [sentMessage, setSentMessage] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
 
+  const [fieldErrors, setFieldErrors] = useState({})
+
+  // Sync user profile when user logs in
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        name: user.name || prev.name,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
+      }))
+    }
+  }, [user])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
-      setErrorMessage('Please fill in your name, email, and message.')
+
+    if (!user) {
+      setAuthModalMode('login')
+      setIsAuthModalOpen(true)
       return
     }
 
+    const errs = {}
+    if (!formData.name.trim()) errs.name = 'Your name is required.'
+    if (!formData.email.trim()) errs.email = 'Email address is required.'
+    if (!formData.message.trim()) errs.message = 'Message is required.'
+
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs)
+      return
+    }
+
+    setFieldErrors({})
     setErrorMessage('')
     setIsSubmitting(true)
 
@@ -36,7 +69,7 @@ export default function Contact() {
 
       if (res.ok) {
         setSentMessage(data.message || 'Thank you! Your message has been sent to Keerthana Bapu at Lily Charm.')
-        setFormData({ name: '', email: '', phone: '', subject: '', message: '' })
+        setFormData({ name: user?.name || '', email: user?.email || '', phone: user?.phone || '', subject: '', message: '' })
       } else {
         setErrorMessage(data.message || 'Failed to send message. Please try again.')
       }
@@ -132,15 +165,62 @@ export default function Contact() {
                 </button>
               </div>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-              <div className="border-b border-[var(--color-line)] pb-3 mb-4">
-                <h2 className="text-base sm:text-lg font-bold font-[var(--font-display)] uppercase text-[var(--color-ink)]">
-                  Send a Direct Note to Keerthana Bapu
+          ) : !user ? (
+            /* Logged Out State: Login / Sign Up Required Card */
+            <div className="text-center py-8 sm:py-10 px-4 sm:px-8 bg-[var(--color-card-bg)] border border-[var(--color-line)] rounded-2xl space-y-5 shadow-sm">
+              <div className="w-14 h-14 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center mx-auto shadow-md">
+                <Lock size={24} />
+              </div>
+              <div className="space-y-2 max-w-md mx-auto">
+                <span className="eyebrow inline-flex items-center gap-1.5 text-[var(--color-primary)] font-bold text-xs uppercase tracking-[0.24em]">
+                  <Sparkles size={13} /> Member Authentication Required
+                </span>
+                <h2 className="text-xl sm:text-2xl font-bold font-[var(--font-display)] uppercase text-[var(--color-ink)]">
+                  Sign In to Send a Message
                 </h2>
-                <p className="text-xs text-[var(--color-ink-soft)] mt-0.5">
-                  Messages are sent directly to <strong className="text-[var(--color-primary)] font-mono">keerthanabm@lilycharm.in</strong>.
+                <p className="text-xs sm:text-sm text-[var(--color-ink-soft)] leading-relaxed font-normal">
+                  To ensure genuine communication directly with artisan Keerthana Bapu and protect our studio from spam, please sign in or create an account before submitting your inquiry.
                 </p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthModalMode('login')
+                    setIsAuthModalOpen(true)
+                  }}
+                  className="btn-primary py-3 px-8 text-xs uppercase font-bold tracking-widest rounded-full flex items-center justify-center gap-2 w-full sm:w-auto shadow-md"
+                >
+                  <LogIn size={15} /> Sign In to Your Account
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthModalMode('register')
+                    setIsAuthModalOpen(true)
+                  }}
+                  className="btn-outline py-3 px-8 text-xs uppercase font-bold tracking-widest rounded-full flex items-center justify-center gap-2 w-full sm:w-auto"
+                >
+                  <UserPlus size={15} /> Create an Account
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Logged In State: Pre-filled Contact Form */
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+              <div className="border-b border-[var(--color-line)] pb-3 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold font-[var(--font-display)] uppercase text-[var(--color-ink)]">
+                    Send a Direct Note to Keerthana Bapu
+                  </h2>
+                  <p className="text-xs text-[var(--color-ink-soft)] mt-0.5">
+                    Messages are sent directly to <strong className="text-[var(--color-primary)] font-mono">keerthanabm@lilycharm.in</strong>.
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-300 text-emerald-800 text-[0.68rem] font-bold rounded-full self-start sm:self-auto">
+                  <ShieldCheck size={13} className="text-emerald-700" />
+                  <span>Verified: {user.name || user.email}</span>
+                </div>
               </div>
 
               {errorMessage && (
@@ -151,26 +231,56 @@ export default function Contact() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase mb-1">Your Name *</label>
+                  <label className="block text-xs font-bold uppercase mb-1">
+                    Your Name <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </label>
                   <input
                     required
+                    aria-required="true"
                     type="text"
                     placeholder="e.g. Maya Krishnan"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs font-medium focus:outline-none focus:border-[var(--color-primary)]"
+                    onChange={(e) => {
+                      setFormData({ ...formData, name: e.target.value })
+                      if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: '' }))
+                    }}
+                    className={`w-full border bg-[var(--color-card-bg)] rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs font-medium focus:outline-none transition-colors ${
+                      fieldErrors.name
+                        ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                        : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                    }`}
                   />
+                  {fieldErrors.name && (
+                    <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                      ⚠️ {fieldErrors.name}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase mb-1">Email Address *</label>
+                  <label className="block text-xs font-bold uppercase mb-1">
+                    Email Address <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </label>
                   <input
                     required
+                    aria-required="true"
                     type="email"
                     placeholder="e.g. customer@example.com"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs font-medium focus:outline-none focus:border-[var(--color-primary)]"
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value })
+                      if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: '' }))
+                    }}
+                    className={`w-full border bg-[var(--color-card-bg)] rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs font-medium focus:outline-none transition-colors ${
+                      fieldErrors.email
+                        ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                        : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                    }`}
                   />
+                  {fieldErrors.email && (
+                    <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                      ⚠️ {fieldErrors.email}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -182,11 +292,11 @@ export default function Contact() {
                     placeholder="e.g. +91 98765 43210"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs font-medium focus:outline-none focus:border-[var(--color-primary)]"
+                    className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs font-medium focus:outline-none focus:border-[var(--color-primary)] font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase mb-1">Subject / Inquiry Type</label>
+                  <label className="block text-xs font-bold uppercase mb-1">Subject / Inquiry Type (Optional)</label>
                   <input
                     type="text"
                     placeholder="e.g. Custom Bridal Velvet Bouquet, Bulk Gifts"
@@ -198,15 +308,30 @@ export default function Contact() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase mb-1">Your Message / Idea *</label>
+                <label className="block text-xs font-bold uppercase mb-1">
+                  Your Message / Idea <span className="text-red-500 font-bold ml-0.5">*</span>
+                </label>
                 <textarea
                   required
+                  aria-required="true"
                   rows={4}
                   placeholder="Share details about your desired flower types, color palette, occasion date, or questions..."
                   value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  className="w-full border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs leading-relaxed font-medium focus:outline-none focus:border-[var(--color-primary)]"
+                  onChange={(e) => {
+                    setFormData({ ...formData, message: e.target.value })
+                    if (fieldErrors.message) setFieldErrors((prev) => ({ ...prev, message: '' }))
+                  }}
+                  className={`w-full border bg-[var(--color-card-bg)] rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs leading-relaxed font-medium focus:outline-none transition-colors ${
+                    fieldErrors.message
+                      ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                      : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                  }`}
                 />
+                {fieldErrors.message && (
+                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                    ⚠️ {fieldErrors.message}
+                  </p>
+                )}
               </div>
 
               <div className="pt-2">
@@ -222,6 +347,13 @@ export default function Contact() {
           )}
         </div>
       </Reveal>
+
+      {/* Embedded Authentication Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authModalMode}
+      />
     </div>
   )
 }

@@ -30,19 +30,22 @@ export default function ReviewModal({ isOpen, onClose, defaultProductTitle = '',
     }
   }, [defaultProductTitle])
 
+  const [fieldErrors, setFieldErrors] = useState({})
+
   if (!isOpen) return null
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!name.trim()) {
-      setErrorMsg('Please enter your name.')
-      return
-    }
-    if (!comment.trim()) {
-      setErrorMsg('Please share your thoughts and review comments.')
+    const errs = {}
+    if (!name.trim()) errs.name = 'Please enter your name.'
+    if (!comment.trim()) errs.comment = 'Please share your thoughts and review comments.'
+
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs)
       return
     }
 
+    setFieldErrors({})
     setErrorMsg('')
     setIsSubmitting(true)
 
@@ -145,7 +148,7 @@ export default function ReviewModal({ isOpen, onClose, defaultProductTitle = '',
               {/* Star Rating Selector */}
               <div>
                 <label className="block font-bold uppercase mb-1.5 text-[var(--color-ink)]">
-                  Overall Rating *
+                  Overall Rating <span className="text-red-500 font-bold ml-0.5">*</span>
                 </label>
                 <div className="flex items-center gap-2">
                   <div className="flex gap-1.5">
@@ -177,18 +180,33 @@ export default function ReviewModal({ isOpen, onClose, defaultProductTitle = '',
               {/* Name & Email */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold uppercase mb-1">Your Name *</label>
+                  <label className="block font-bold uppercase mb-1">
+                    Your Name <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </label>
                   <input
                     type="text"
                     required
+                    aria-required="true"
                     placeholder="e.g. Eleanor Vance"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full border border-[var(--color-line)] p-2.5 bg-[var(--color-card-bg)] text-xs font-medium focus:outline-none focus:border-[var(--color-primary)]"
+                    onChange={(e) => {
+                      setName(e.target.value)
+                      if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: '' }))
+                    }}
+                    className={`w-full border p-2.5 bg-[var(--color-card-bg)] text-xs font-medium focus:outline-none transition-colors ${
+                      fieldErrors.name
+                        ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                        : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                    }`}
                   />
+                  {fieldErrors.name && (
+                    <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                      ⚠️ {fieldErrors.name}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <label className="block font-bold uppercase mb-1">Email Address</label>
+                  <label className="block font-bold uppercase mb-1">Email Address (Optional)</label>
                   <input
                     type="email"
                     placeholder="e.g. customer@example.com"
@@ -201,7 +219,7 @@ export default function ReviewModal({ isOpen, onClose, defaultProductTitle = '',
 
               {/* Product Purchased / Creation Name */}
               <div>
-                <label className="block font-bold uppercase mb-1">Creation Purchased / Custom Piece</label>
+                <label className="block font-bold uppercase mb-1">Creation Purchased / Custom Piece (Optional)</label>
                 <input
                   type="text"
                   placeholder="e.g. Velvet Lilies & Wildflowers, Golden Sunflowers, Custom Frame"
@@ -213,7 +231,7 @@ export default function ReviewModal({ isOpen, onClose, defaultProductTitle = '',
 
               {/* Headline / Title */}
               <div>
-                <label className="block font-bold uppercase mb-1">Review Headline</label>
+                <label className="block font-bold uppercase mb-1">Review Headline (Optional)</label>
                 <input
                   type="text"
                   placeholder="e.g. Truly breathtaking craftsmanship and lasting beauty!"
@@ -225,15 +243,30 @@ export default function ReviewModal({ isOpen, onClose, defaultProductTitle = '',
 
               {/* Detailed Review Comment */}
               <div>
-                <label className="block font-bold uppercase mb-1">Your Feedback & Story *</label>
+                <label className="block font-bold uppercase mb-1">
+                  Your Feedback & Story <span className="text-red-500 font-bold ml-0.5">*</span>
+                </label>
                 <textarea
                   rows={4}
                   required
+                  aria-required="true"
                   placeholder="Share details about the quality, floral details, packaging, and unboxing experience..."
                   value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  className="w-full border border-[var(--color-line)] p-3 bg-[var(--color-card-bg)] text-xs leading-relaxed focus:outline-none focus:border-[var(--color-primary)]"
+                  onChange={(e) => {
+                    setComment(e.target.value)
+                    if (fieldErrors.comment) setFieldErrors((prev) => ({ ...prev, comment: '' }))
+                  }}
+                  className={`w-full border p-3 bg-[var(--color-card-bg)] text-xs leading-relaxed focus:outline-none transition-colors ${
+                    fieldErrors.comment
+                      ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                      : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                  }`}
                 />
+                {fieldErrors.comment && (
+                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                    ⚠️ {fieldErrors.comment}
+                  </p>
+                )}
               </div>
 
               {/* Actions */}

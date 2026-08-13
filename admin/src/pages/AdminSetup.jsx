@@ -33,26 +33,33 @@ export default function AdminSetup() {
     checkStatus()
   }, [])
 
+  const [fieldErrors, setFieldErrors] = useState({})
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setSuccessMsg('')
 
-    if (!email || !password || !confirmPassword) {
-      setError('Please fill in all required fields.')
+    const errs = {}
+    if (!email?.trim()) errs.email = 'Admin email is required.'
+    if (!password) {
+      errs.password = 'New password is required.'
+    } else if (password.length < 12) {
+      errs.password = 'Password must be at least 12 characters long.'
+    }
+
+    if (!confirmPassword) {
+      errs.confirmPassword = 'Please confirm your new password.'
+    } else if (password && password !== confirmPassword) {
+      errs.confirmPassword = 'Passwords do not match.'
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs)
       return
     }
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.')
-      return
-    }
-
-    if (password.length < 12) {
-      setError('Password must be at least 12 characters long.')
-      return
-    }
-
+    setFieldErrors({})
     setSubmitting(true)
     try {
       const res = await fetch(`${API_URL}/admin/auth/setup`, {
@@ -144,50 +151,95 @@ export default function AdminSetup() {
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold uppercase tracking-wider mb-1">Admin Email Address *</label>
+                <label className="block font-bold uppercase tracking-wider mb-1">
+                  Admin Email Address <span className="text-red-500 font-bold ml-0.5">*</span>
+                </label>
                 <div className="relative">
                   <Mail size={16} className="absolute left-3.5 top-3.5 text-[var(--color-ink-soft,#666)]" />
                   <input
                     type="email"
                     required
+                    aria-required="true"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value)
+                      if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: '' }))
+                    }}
                     placeholder="keerthanabm@lilycharm.in"
-                    className="w-full border border-[var(--color-line,#E5DFD5)] bg-[var(--color-bg,#FAF7F2)] rounded-xl pl-10 pr-4 py-3 font-semibold focus:outline-none focus:border-[var(--color-primary,#2D402B)]"
+                    className={`w-full border rounded-xl pl-10 pr-4 py-3 font-semibold focus:outline-none transition-colors ${
+                      fieldErrors.email
+                        ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                        : 'border-[var(--color-line,#E5DFD5)] bg-[var(--color-bg,#FAF7F2)] focus:border-[var(--color-primary,#2D402B)]'
+                    }`}
                   />
                 </div>
+                {fieldErrors.email && (
+                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                    ⚠️ {fieldErrors.email}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block font-bold uppercase tracking-wider mb-1">New Admin Password * (Min 12 Chars)</label>
+                <label className="block font-bold uppercase tracking-wider mb-1">
+                  New Admin Password <span className="text-red-500 font-bold ml-0.5">*</span> (Min 12 Chars)
+                </label>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3.5 top-3.5 text-[var(--color-ink-soft,#666)]" />
                   <input
                     type="password"
                     required
+                    aria-required="true"
                     minLength={12}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value)
+                      if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: '' }))
+                    }}
                     placeholder="At least 12 chars (Upper, Lower, Number, Special)"
-                    className="w-full border border-[var(--color-line,#E5DFD5)] bg-[var(--color-bg,#FAF7F2)] rounded-xl pl-10 pr-4 py-3 font-mono text-xs focus:outline-none focus:border-[var(--color-primary,#2D402B)]"
+                    className={`w-full border rounded-xl pl-10 pr-4 py-3 font-mono text-xs focus:outline-none transition-colors ${
+                      fieldErrors.password
+                        ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                        : 'border-[var(--color-line,#E5DFD5)] bg-[var(--color-bg,#FAF7F2)] focus:border-[var(--color-primary,#2D402B)]'
+                    }`}
                   />
                 </div>
+                {fieldErrors.password && (
+                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                    ⚠️ {fieldErrors.password}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block font-bold uppercase tracking-wider mb-1">Confirm New Password *</label>
+                <label className="block font-bold uppercase tracking-wider mb-1">
+                  Confirm New Password <span className="text-red-500 font-bold ml-0.5">*</span>
+                </label>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3.5 top-3.5 text-[var(--color-ink-soft,#666)]" />
                   <input
                     type="password"
                     required
+                    aria-required="true"
                     minLength={12}
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value)
+                      if (fieldErrors.confirmPassword) setFieldErrors((prev) => ({ ...prev, confirmPassword: '' }))
+                    }}
                     placeholder="Repeat new admin password"
-                    className="w-full border border-[var(--color-line,#E5DFD5)] bg-[var(--color-bg,#FAF7F2)] rounded-xl pl-10 pr-4 py-3 font-mono text-xs focus:outline-none focus:border-[var(--color-primary,#2D402B)]"
+                    className={`w-full border rounded-xl pl-10 pr-4 py-3 font-mono text-xs focus:outline-none transition-colors ${
+                      fieldErrors.confirmPassword
+                        ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                        : 'border-[var(--color-line,#E5DFD5)] bg-[var(--color-bg,#FAF7F2)] focus:border-[var(--color-primary,#2D402B)]'
+                    }`}
                   />
                 </div>
+                {fieldErrors.confirmPassword && (
+                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                    ⚠️ {fieldErrors.confirmPassword}
+                  </p>
+                )}
               </div>
 
               <div>

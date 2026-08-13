@@ -16,6 +16,8 @@ export default function ResetPassword() {
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
+  const [fieldErrors, setFieldErrors] = useState({})
+
   useEffect(() => {
     if (!token) {
       setErrorMessage('Invalid password reset link. Token missing.')
@@ -27,16 +29,25 @@ export default function ResetPassword() {
     setErrorMessage('')
     setSuccessMessage('')
 
-    if (newPassword !== confirmPassword) {
-      setErrorMessage('Passwords do not match!')
+    const errs = {}
+    if (!newPassword) {
+      errs.newPassword = 'New password is required.'
+    } else if (newPassword.length < 6) {
+      errs.newPassword = 'Password must be at least 6 characters long.'
+    }
+
+    if (!confirmPassword) {
+      errs.confirmPassword = 'Please confirm your new password.'
+    } else if (newPassword && newPassword !== confirmPassword) {
+      errs.confirmPassword = 'Passwords do not match!'
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs)
       return
     }
 
-    if (newPassword.length < 6) {
-      setErrorMessage('Password must be at least 6 characters long.')
-      return
-    }
-
+    setFieldErrors({})
     setIsSubmitting(true)
 
     try {
@@ -91,16 +102,26 @@ export default function ResetPassword() {
 
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             <div>
-              <label className="block font-bold uppercase mb-1">New Password *</label>
+              <label className="block font-bold uppercase mb-1">
+                New Password <span className="text-red-500 font-bold ml-0.5">*</span>
+              </label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3 top-3.5 text-[var(--color-ink-soft)]" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
+                  aria-required="true"
                   placeholder="At least 6 characters..."
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] rounded-xl pl-10 pr-10 py-3 font-mono text-xs"
+                  onChange={(e) => {
+                    setNewPassword(e.target.value)
+                    if (fieldErrors.newPassword) setFieldErrors((prev) => ({ ...prev, newPassword: '' }))
+                  }}
+                  className={`w-full border rounded-xl pl-10 pr-10 py-3 font-mono text-xs transition-colors ${
+                    fieldErrors.newPassword
+                      ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                      : 'border-[var(--color-line)] bg-[var(--color-bg)] focus:border-[var(--color-primary)]'
+                  }`}
                 />
                 <button
                   type="button"
@@ -110,21 +131,41 @@ export default function ResetPassword() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              {fieldErrors.newPassword && (
+                <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                  ⚠️ {fieldErrors.newPassword}
+                </p>
+              )}
             </div>
 
             <div>
-              <label className="block font-bold uppercase mb-1">Confirm New Password *</label>
+              <label className="block font-bold uppercase mb-1">
+                Confirm New Password <span className="text-red-500 font-bold ml-0.5">*</span>
+              </label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3 top-3.5 text-[var(--color-ink-soft)]" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
+                  aria-required="true"
                   placeholder="Re-enter new password..."
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] rounded-xl pl-10 pr-10 py-3 font-mono text-xs"
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value)
+                    if (fieldErrors.confirmPassword) setFieldErrors((prev) => ({ ...prev, confirmPassword: '' }))
+                  }}
+                  className={`w-full border rounded-xl pl-10 pr-10 py-3 font-mono text-xs transition-colors ${
+                    fieldErrors.confirmPassword
+                      ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                      : 'border-[var(--color-line)] bg-[var(--color-bg)] focus:border-[var(--color-primary)]'
+                  }`}
                 />
               </div>
+              {fieldErrors.confirmPassword && (
+                <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
+                  ⚠️ {fieldErrors.confirmPassword}
+                </p>
+              )}
             </div>
 
             <button

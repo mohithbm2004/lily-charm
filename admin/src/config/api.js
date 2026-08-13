@@ -11,4 +11,6 @@ export const API_URL =
 
 export const SOCKET_URL = API_URL.replace(/\/api\/?$/, '')
 
+export const STOREFRONT_URL = import.meta.env.VITE_STOREFRONT_URL || 'https://lilycharm.in'
+
 export default API_URL

@@ -127,12 +127,15 @@ export default function AdminForgotPassword() {
         {step === 1 ? (
           <form onSubmit={handleStep1Submit} className="space-y-4 text-xs">
             <div>
-              <label className="block font-bold uppercase tracking-wider mb-1">Admin Email Address *</label>
+              <label className="block font-bold uppercase tracking-wider mb-1">
+                Admin Email Address <span className="text-red-500 font-bold ml-0.5">*</span>
+              </label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3.5 top-3.5 text-[var(--color-ink-soft,#666)]" />
                 <input
                   type="email"
                   required
+                  aria-required="true"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="keerthanabm@lilycharm.in"
@@ -162,12 +165,14 @@ export default function AdminForgotPassword() {
           <form onSubmit={handleStep2Submit} className="space-y-5 text-xs">
             <div>
               <label className="block font-bold uppercase tracking-wider mb-2 text-center text-xs">
-                Enter 6-Digit Verification Code
+                Enter 6-Digit Verification Code <span className="text-red-500 font-bold ml-0.5">*</span>
               </label>
               <div className="relative max-w-xs mx-auto">
                 <KeyRound size={18} className="absolute left-3.5 top-3.5 text-[var(--color-primary,#2D402B)]" />
                 <input
                   type="text"
+                  required
+                  aria-required="true"
                   inputMode="numeric"
                   pattern="\d*"
                   maxLength={6}
