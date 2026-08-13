@@ -54,7 +54,7 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
       })
       const data = await res.json()
       if (res.ok) {
-        setMessage('✨ Refund request submitted to studio admin.')
+        setMessage('✨ Refund request submitted to our studio.')
         if (onRefresh) onRefresh()
       } else {
         setMessage(`⚠️ ${data.message || 'Failed to submit refund request'}`)
@@ -162,7 +162,7 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
               <span className="font-mono">{formatPrice(order.grandTotal || order.total || 0)}</span>
             </div>
             <p className="text-[0.68rem] text-[var(--color-ink-soft)] pt-1">
-              Method: <strong>{order.paymentMethod || 'Razorpay Prepaid'}</strong> ({order.paymentStatus || 'Paid'})
+              Method: <strong>{order.paymentMethod === 'Razorpay Prepaid' ? 'Prepaid (Online)' : (order.paymentMethod || 'Prepaid')}</strong> ({order.paymentStatus || 'Paid'})
             </p>
           </div>
         </div>

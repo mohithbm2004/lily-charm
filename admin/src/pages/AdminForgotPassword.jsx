@@ -98,11 +98,11 @@ export default function AdminForgotPassword() {
             <Sparkles size={13} /> Lily Charm Studio Administration
           </span>
           <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-display,'Outfit')] uppercase tracking-tight">
-            {step === 1 ? 'Forgot Password' : 'Enter 6-Digit OTP'}
+            {step === 1 ? 'Forgot Password' : 'Enter Verification Code'}
           </h1>
           <p className="text-xs text-[var(--color-ink-soft,#666)]">
             {step === 1
-              ? 'Request a ZeptoMail OTP code to reset your admin password.'
+              ? 'Request a verification code to reset your admin password.'
               : `Enter the verification code sent to ${email}.`}
           </p>
         </div>
@@ -151,11 +151,11 @@ export default function AdminForgotPassword() {
             >
               {submitting ? (
                 <>
-                  <Sparkles size={14} className="animate-spin" /> Sending OTP via ZeptoMail...
+                  <Sparkles size={14} className="animate-spin" /> Sending Verification Code...
                 </>
               ) : (
                 <>
-                  Send Verification OTP <ArrowRight size={14} />
+                  Send Verification Code <ArrowRight size={14} />
                 </>
               )}
             </button>
@@ -192,10 +192,10 @@ export default function AdminForgotPassword() {
             >
               {submitting ? (
                 <>
-                  <Sparkles size={14} className="animate-spin" /> Verifying OTP...
+                  <Sparkles size={14} className="animate-spin" /> Verifying Code...
                 </>
               ) : (
-                'Verify OTP & Proceed to Password Reset'
+                'Verify Code & Proceed to Password Reset'
               )}
             </button>
 
@@ -214,7 +214,7 @@ export default function AdminForgotPassword() {
                 disabled={cooldown > 0 || submitting}
                 className="text-[var(--color-primary,#2D402B)] font-bold hover:underline disabled:opacity-50 disabled:no-underline"
               >
-                {cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Resend OTP Code'}
+                {cooldown > 0 ? `Resend Code in ${cooldown}s` : 'Resend Verification Code'}
               </button>
             </div>
           </form>
@@ -229,7 +229,7 @@ export default function AdminForgotPassword() {
 
         {/* Footer Security Badges */}
         <div className="pt-4 border-t border-[var(--color-line,#E5DFD5)] text-center text-[0.65rem] text-[var(--color-ink-soft,#666)] space-y-1">
-          <p className="font-mono">🔒 ZeptoMail OTP Agent • 10-Min OTP Expiration</p>
+          <p className="font-mono">🔒 Secure Verification • 10-Min Code Expiration</p>
           <p>© 2026 Lily Charm Studio. Authorized Single Admin Access Only.</p>
         </div>
       </div>

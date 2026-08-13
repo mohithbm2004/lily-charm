@@ -16,7 +16,7 @@ export default function OrderTimeline({ status = 'Confirmed', history = [], note
     const rawReason = cancelEntry?.note || notes || ''
     const cleanReason = rawReason
       ? rawReason.replace(/^Cancellation Reason:\s*/i, '').replace(/\|\s*Razorpay Refund ID:.*$/i, '').trim()
-      : (status.includes('Refund') ? 'Refund request is being processed by studio admin.' : 'Order was cancelled by customer or studio admin.')
+      : (status.includes('Refund') ? 'Refund request is being processed by our studio.' : 'Order was cancelled.')
 
     return (
       <div className="p-3.5 sm:p-4 bg-rose-50 border border-rose-200 rounded flex items-start gap-3 text-xs text-rose-900 font-medium">
@@ -31,19 +31,19 @@ export default function OrderTimeline({ status = 'Confirmed', history = [], note
           {cancellationFee > 0 && (
             <div className="pt-1.5 border-t border-rose-200 text-[0.65rem] sm:text-[0.68rem] font-mono space-y-0.5">
               <p className="text-rose-900">• Customer Cancellation Fee (3%): <strong>-₹{cancellationFee}</strong></p>
-              <p className="text-emerald-900 font-bold">• Net Refunded via Razorpay (97%): <strong>₹{refundAmount}</strong></p>
+              <p className="text-emerald-900 font-bold">• Net Refund to Payment Method (97%): <strong>₹{refundAmount}</strong></p>
             </div>
           )}
 
           {cancellationFee === 0 && refundAmount > 0 && (
             <div className="pt-1 border-t border-rose-200 text-[0.65rem] sm:text-[0.68rem] text-emerald-900 font-mono font-bold">
-              • Studio Admin Cancellation (100% Full Refund: ₹{refundAmount})
+              • Studio Cancellation (100% Full Refund: ₹{refundAmount})
             </div>
           )}
 
           {refundId && (
             <span className="text-[0.62rem] sm:text-[0.65rem] text-emerald-800 font-mono font-bold block pt-0.5 break-all">
-              ✨ Razorpay Refund Ref: {refundId}
+              ✨ Refund Reference: {refundId}
             </span>
           )}
         </div>

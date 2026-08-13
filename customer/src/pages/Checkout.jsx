@@ -161,7 +161,7 @@ export default function Checkout() {
     try {
       const isLoaded = await loadRazorpayScript()
       if (!isLoaded) {
-        alert('Failed to load Razorpay SDK. Please check your internet connection.')
+        alert('Unable to load secure payment screen. Please check your internet connection and try again.')
         setProcessing(false)
         return
       }
@@ -203,7 +203,7 @@ export default function Checkout() {
       if (!res.ok) {
         const errText = await res.text()
         console.error('Failed to create order:', res.status, errText)
-        alert('Failed to initialize order on server. Please try again.')
+        alert('We could not place your order. Please try again.')
         setProcessing(false)
         return
       }
@@ -234,7 +234,7 @@ export default function Checkout() {
       }
 
       if (!razorpayOrderId) {
-        alert('Could not initialize Razorpay payment. Please try again.')
+        alert('We could not start your payment. Please try again.')
         setProcessing(false)
         return
       }
@@ -274,11 +274,11 @@ export default function Checkout() {
               setOrderConfirmed(verifyData.order || savedOrder)
               clearCart()
             } else {
-              alert(`Payment Verification Failed: ${verifyData.message || 'Signature mismatch'}`)
+              alert(verifyData.message || 'We could not confirm your payment. Please contact studio support if you were charged.')
             }
           } catch (verifyErr) {
             console.error('Verification error:', verifyErr)
-            alert('Connection error while verifying payment.')
+            alert('Connection interrupted while confirming payment. Please check your orders page.')
           } finally {
             setProcessing(false)
           }
@@ -286,7 +286,7 @@ export default function Checkout() {
         modal: {
           ondismiss: function () {
             setProcessing(false)
-            console.log('Razorpay payment modal closed by user.')
+            console.log('Payment modal closed by user.')
           },
         },
       }
@@ -294,14 +294,14 @@ export default function Checkout() {
       const rzp = new window.Razorpay(options)
       rzp.on('payment.failed', function (response) {
         console.error('Razorpay payment failed:', response.error)
-        alert(`Payment Failed: ${response.error.description || response.error.reason || 'Transaction could not be completed.'}`)
+        alert(response.error?.description || response.error?.reason || 'Payment could not be completed. Please try again or use another payment method.')
         setProcessing(false)
       })
 
       rzp.open()
     } catch (err) {
       console.error('Checkout error:', err)
-      alert('Connection error during checkout. Please try again.')
+      alert('Something went wrong during checkout. Please try again.')
       setProcessing(false)
     }
   }
@@ -540,7 +540,7 @@ export default function Checkout() {
           <div>
             <p className="eyebrow mb-3 sm:mb-4">Payment Method</p>
             <div className="border border-[var(--color-line)] rounded-2xl px-3.5 sm:px-4 py-3.5 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[var(--color-beige)]/30">
-              <span className="font-semibold">Razorpay — Cards, UPI, Netbanking</span>
+              <span className="font-semibold">Cards, UPI, Netbanking, Wallets</span>
               <span className="specimen-tag bg-emerald-800 text-white font-mono px-2.5 py-0.5 rounded-full self-start sm:self-auto">100% SECURE</span>
             </div>
           </div>

@@ -44,11 +44,11 @@ export function AuthProvider({ children }) {
         setToken(data.token)
         return { ok: true, user: data.user }
       } else {
-        return { ok: false, error: data.message || 'Login failed' }
+        return { ok: false, error: data.message || 'Sign in failed. Please check your credentials.' }
       }
     } catch (err) {
       console.error('Login error:', err)
-      return { ok: false, error: 'Connection error. Please try again.' }
+      return { ok: false, error: 'Could not connect. Please try again.' }
     }
   }
 
@@ -66,11 +66,11 @@ export function AuthProvider({ children }) {
         setToken(data.token)
         return { ok: true, user: data.user }
       } else {
-        return { ok: false, error: data.message || 'Registration failed' }
+        return { ok: false, error: data.message || 'Could not create account. Please try again.' }
       }
     } catch (err) {
       console.error('Register error:', err)
-      return { ok: false, error: 'Connection error. Please try again.' }
+      return { ok: false, error: 'Could not connect. Please try again.' }
     }
   }
 
@@ -88,11 +88,11 @@ export function AuthProvider({ children }) {
         setToken(data.token)
         return { ok: true, user: data.user, token: data.token }
       } else {
-        return { ok: false, error: data.message || 'Google Authentication failed' }
+        return { ok: false, error: data.message || 'Could not sign in with Google. Please try again.' }
       }
     } catch (err) {
       console.error('Google Auth error:', err)
-      return { ok: false, error: 'Network error during Google Sign-In.' }
+      return { ok: false, error: 'Could not connect. Please try again.' }
     }
   }
 

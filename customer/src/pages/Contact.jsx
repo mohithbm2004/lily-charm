@@ -76,7 +76,7 @@ export default function Contact() {
     } catch (err) {
       console.error('Contact form submission error:', err)
       // Graceful fallback for offline / mock testing
-      setSentMessage('Thank you! Your inquiry has been dispatched to keerthanabm@lilycharm.in.')
+      setSentMessage('Thank you! Your note has been received by our studio.')
     } finally {
       setIsSubmitting(false)
     }

@@ -20,7 +20,7 @@ export default function ResetPassword() {
 
   useEffect(() => {
     if (!token) {
-      setErrorMessage('Invalid password reset link. Token missing.')
+      setErrorMessage('This password reset link is invalid or has expired. Please request a new link.')
     }
   }, [token])
 
@@ -64,11 +64,11 @@ export default function ResetPassword() {
           navigate('/dashboard')
         }, 1500)
       } else {
-        setErrorMessage(data.message || 'Password reset failed.')
+        setErrorMessage(data.message || 'Unable to reset password. Please try again.')
       }
     } catch (err) {
       console.error('Reset password error:', err)
-      setErrorMessage('Connection error. Please try again.')
+      setErrorMessage('Something went wrong. Please try again.')
     } finally {
       setIsSubmitting(false)
     }

@@ -269,7 +269,7 @@ export default function Dashboard() {
     try {
       const isLoaded = await loadRazorpayScript()
       if (!isLoaded) {
-        alert('Failed to load Razorpay SDK. Please check your internet connection.')
+        alert('Unable to load payment screen. Please check your internet connection and try again.')
         return
       }
 
@@ -308,7 +308,7 @@ export default function Dashboard() {
 
       const razorpayOrderId = rzpOrderData?.id || rzpOrderData?.order_id
       if (!razorpayOrderId) {
-        alert('Could not initialize Razorpay payment. Please check backend connection.')
+        alert('We could not start your payment. Please try again.')
         return
       }
 
@@ -361,11 +361,11 @@ export default function Dashboard() {
               setConfirmedCustomOrder(finalOrder)
               fetchUserOrdersAndRequests(userProfile.email)
             } else {
-              alert(data.message || 'Failed to record custom order payment.')
+              alert(data.message || 'Unable to complete order confirmation. Please contact studio support.')
             }
           } catch (err) {
             console.error('Error recording custom quote payment:', err)
-            alert('Connection error recording payment.')
+            alert('Connection interrupted. Please refresh to view your confirmed order.')
           }
         },
       }
@@ -374,7 +374,7 @@ export default function Dashboard() {
       rzp.open()
     } catch (err) {
       console.error('Error starting Razorpay checkout for quote:', err)
-      alert('Network error initializing payment.')
+      alert('Connection error. Please try again.')
     }
   }
 
@@ -420,11 +420,11 @@ export default function Dashboard() {
         setSaveSuccessMsg('✨ Profile updated successfully!')
         setTimeout(() => setSaveSuccessMsg(''), 4000)
       } else {
-        alert('Failed to save profile. Please check details.')
+        alert('Unable to update profile. Please try again.')
       }
     } catch (err) {
       console.error('Failed to save user profile:', err)
-      alert('Connection error. Please try again.')
+      alert('Connection interrupted. Please try again.')
     } finally {
       setIsSavingProfile(false)
     }
@@ -445,7 +445,7 @@ export default function Dashboard() {
         <div className="bg-[var(--color-beige)]/40 p-6 border border-[var(--color-line)] max-w-lg mx-auto text-left text-xs space-y-2">
           <div className="flex justify-between border-b border-[var(--color-line)] pb-2 font-bold uppercase">
             <span>Payment Status</span>
-            <span className="text-emerald-700 font-mono">PAID (RAZORPAY)</span>
+            <span className="text-emerald-700 font-mono">PAID ONLINE</span>
           </div>
           <div className="flex justify-between pt-1">
             <span>Shipping To:</span>
@@ -490,7 +490,7 @@ export default function Dashboard() {
             Account Signed Out
           </h1>
           <p className="text-xs text-[var(--color-ink-soft)] max-w-md mx-auto leading-relaxed">
-            You have been securely signed out of your customer account. Sign in with Google OAuth or your Email OTP to view your orders, saved delivery addresses, and custom design quotes.
+            You have been securely signed out of your account. Sign in to view your orders, saved delivery addresses, and custom design quotes.
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
@@ -856,14 +856,14 @@ export default function Dashboard() {
                                 showConfirm({
                                   title: 'Cancel Order Confirmation',
                                   type: 'warning',
-                                  message: `Are you sure you want to cancel order "${o.orderNumber || o._id}"? Automatic refund will be processed back to your payment method via Razorpay.`,
+                                  message: `Are you sure you want to cancel order "${o.orderNumber || o._id}"? Automatic refund will be processed back to your original payment method.`,
                                   details: [
                                     { label: 'Order Number', value: o.orderNumber || o._id },
                                     { label: 'Original Order Total', value: formatPrice(orderTotal) },
-                                    { label: 'Gateway Processing Fee (3%)', value: `- ${formatPrice(processingFee)}`, color: 'text-rose-700 font-bold' },
+                                    { label: 'Processing Fee (3%)', value: `- ${formatPrice(processingFee)}`, color: 'text-rose-700 font-bold' },
                                     { label: 'Net Refund to Customer (97%)', value: formatPrice(netRefund), color: 'text-emerald-800 font-bold text-sm', isTotal: true },
                                   ],
-                                  disclaimer: 'Customer self-cancellation incurs a 3% payment gateway processing fee. The net 97% refund is automatically credited back to your original payment method via Razorpay within 5–7 banking days. (Note: 100% full refund applies only if cancelled by Studio Admin).',
+                                  disclaimer: 'Customer self-cancellation incurs a 3% payment processing fee. The net 97% refund is automatically credited back to your original payment method within 5–7 banking days. (Note: 100% full refund applies if cancelled by Studio).',
                                   confirmText: `Confirm Cancellation (${formatPrice(netRefund)} Refund)`,
                                   cancelText: 'Keep Order',
                                   onConfirm: async () => {
@@ -878,7 +878,7 @@ export default function Dashboard() {
                                         showAlert({
                                           title: 'Order Cancelled & Refund Initiated',
                                           type: 'success',
-                                          message: `✨ Order ${o.orderNumber || o._id} has been cancelled. Net refund of ${formatPrice(netRefund)} (97%) has been initiated to your original payment method via Razorpay.`,
+                                          message: `✨ Order ${o.orderNumber || o._id} has been cancelled. Net refund of ${formatPrice(netRefund)} (97%) has been sent to your original payment method.`,
                                         })
                                         fetchUserOrdersAndRequests(userProfile.email)
                                       } else {

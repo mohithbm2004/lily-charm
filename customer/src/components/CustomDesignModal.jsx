@@ -105,11 +105,11 @@ export default function CustomDesignModal({ isOpen, onClose }) {
       } else {
         const errText = await res.text()
         console.error('Failed to submit custom request:', res.status, errText)
-        alert('Failed to submit request. Please try again.')
+        alert('We could not send your request. Please try again.')
       }
     } catch (err) {
       console.error('Error submitting custom design request:', err)
-      alert('Connection error. Please try again.')
+      alert('Connection interrupted. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -152,7 +152,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
     try {
       const isLoaded = await loadRazorpayScript()
       if (!isLoaded) {
-        alert('Failed to load Razorpay SDK. Please check your internet connection.')
+        alert('Unable to load payment screen. Please check your internet connection and try again.')
         return
       }
 
@@ -191,7 +191,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
 
       const razorpayOrderId = rzpOrderData?.id || rzpOrderData?.order_id
       if (!razorpayOrderId) {
-        alert('Could not initialize Razorpay payment. Please try again.')
+        alert('We could not start your payment. Please try again.')
         return
       }
 
@@ -233,11 +233,11 @@ export default function CustomDesignModal({ isOpen, onClose }) {
               setAcceptedSuccessDoc(data.order)
               fetchCustomerQuotes(searchEmail || reqDoc.email)
             } else {
-              alert(data.message || 'Failed to record custom order payment.')
+              alert(data.message || 'Unable to complete order confirmation. Please contact support.')
             }
           } catch (err) {
             console.error('Error recording payment:', err)
-            alert('Connection error recording payment.')
+            alert('Connection interrupted. Please refresh to check your confirmed quote.')
           }
         },
       }
@@ -246,7 +246,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
       rzp.open()
     } catch (e) {
       console.error('Error accepting quote with Razorpay:', e)
-      alert('Error initializing payment.')
+      alert('Something went wrong starting payment. Please try again.')
     } finally {
       setAcceptingId(null)
     }
@@ -355,7 +355,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                   </div>
                   <h2 className="text-2xl font-bold font-[var(--font-display)] uppercase">Request Submitted!</h2>
                   <p className="text-sm text-[var(--color-ink-soft)] max-w-md mx-auto leading-relaxed">
-                    Thank you, <strong className="text-[var(--color-ink)]">{formData.name}</strong>! Your reference photo has been uploaded & saved to our studio database.
+                    Thank you, <strong className="text-[var(--color-ink)]">{formData.name}</strong>! Your reference photo and design request have been received by our studio.
                   </p>
                   <p className="text-xs text-[var(--color-primary)] font-semibold font-mono">
                     Our lead artisan will review your design and quote a price shortly! You can check your quote under the "Check Price Quotes" tab.
@@ -652,7 +652,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
               )}
 
               {isSearchingQuotes ? (
-                <p className="text-center py-8 text-[var(--color-ink-soft)] font-mono">Searching studio database for quotes...</p>
+                <p className="text-center py-8 text-[var(--color-ink-soft)] font-mono">Finding your design quotes...</p>
               ) : myRequests.length === 0 ? (
                 <div className="border border-dashed border-[var(--color-line)] p-8 text-center text-[var(--color-ink-soft)] space-y-1">
                   <p className="font-bold">No Custom Requests Found for this Email</p>

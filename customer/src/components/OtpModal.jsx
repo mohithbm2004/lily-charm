@@ -89,7 +89,7 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
   const handleVerify = async (fullOtpCode) => {
     const code = fullOtpCode || otpDigits.join('')
     if (code.length !== 6) {
-      setErrorMessage('Please enter complete 6-digit OTP code.')
+      setErrorMessage('Please enter the complete 6-digit verification code.')
       return
     }
 
@@ -119,7 +119,7 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
       }
     } catch (err) {
       console.error('OTP verify error:', err)
-      setErrorMessage('Connection error. Please try again.')
+      setErrorMessage('Could not connect. Please try again.')
     } finally {
       setIsVerifying(false)
     }
@@ -140,17 +140,17 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
 
       const data = await res.json()
       if (res.ok) {
-        setSuccessMessage('✨ A fresh 6-digit OTP code has been dispatched to your email.')
+        setSuccessMessage('✨ A new 6-digit verification code has been sent to your email.')
         setResendCooldown(60)
         setTimeLeft(300)
         setOtpDigits(['', '', '', '', '', ''])
         inputRefs[0].current?.focus()
       } else {
-        setErrorMessage(data.message || 'Failed to resend OTP.')
+        setErrorMessage(data.message || 'Failed to resend verification code.')
       }
     } catch (err) {
       console.error('Resend OTP error:', err)
-      setErrorMessage('Connection error. Please try again.')
+      setErrorMessage('Could not connect. Please try again.')
     } finally {
       setIsResending(false)
     }
@@ -186,7 +186,7 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
           </div>
 
           <div className="space-y-1">
-            <h2 className="text-xl sm:text-2xl font-bold font-[var(--font-display)] uppercase">Email OTP Verification</h2>
+            <h2 className="text-xl sm:text-2xl font-bold font-[var(--font-display)] uppercase">Email Verification</h2>
             <p className="text-xs text-[var(--color-ink-soft)]">
               We sent a 6-digit security verification code to:
             </p>
@@ -233,7 +233,7 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
               className="text-[var(--color-primary)] font-bold hover:underline disabled:opacity-50 flex items-center gap-1"
             >
               <RefreshCw size={11} className={isResending ? 'animate-spin' : ''} />
-              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
+              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
             </button>
           </div>
 

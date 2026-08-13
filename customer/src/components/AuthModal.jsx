@@ -113,7 +113,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
   const handleOtpVerify = async (codeToVerify) => {
     const code = codeToVerify || otpDigits.join('')
     if (code.length !== 6) {
-      setErrorMessage('Please enter complete 6-digit OTP code.')
+      setErrorMessage('Please enter the complete 6-digit verification code.')
       return
     }
 
@@ -137,11 +137,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
           navigate('/dashboard')
         }, 800)
       } else {
-        setErrorMessage(data.message || 'Verification failed. Invalid OTP.')
+        setErrorMessage(data.message || 'Invalid verification code. Please try again.')
       }
     } catch (err) {
       console.error('OTP Verify error:', err)
-      setErrorMessage('Connection error. Please try again.')
+      setErrorMessage('Could not connect. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -162,17 +162,17 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
 
       const data = await res.json()
       if (res.ok) {
-        setSuccessMessage('✉️ A new 6-digit OTP code has been sent!')
+        setSuccessMessage('✉️ A new 6-digit verification code has been sent!')
         setTimeLeft(300)
         setResendCooldown(60)
         setOtpDigits(['', '', '', '', '', ''])
         setTimeout(() => inputRefs[0]?.current?.focus(), 100)
       } else {
-        setErrorMessage(data.message || 'Failed to resend OTP.')
+        setErrorMessage(data.message || 'Failed to resend verification code.')
       }
     } catch (err) {
       console.error('Resend OTP error:', err)
-      setErrorMessage('Connection error. Please try again.')
+      setErrorMessage('Could not connect. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -186,17 +186,17 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
       const result = await loginWithGoogle(tokenOrCredential)
       if (result.ok) {
         updateUserProfile(result.user)
-        setSuccessMessage('🎉 Google OAuth Authentication successful!')
+        setSuccessMessage('🎉 Signed in successfully!')
         setTimeout(() => {
           onClose()
           navigate('/dashboard')
         }, 800)
       } else {
-        setErrorMessage(result.error || 'Google authentication failed.')
+        setErrorMessage(result.error || 'Could not sign in with Google. Please try again.')
       }
     } catch (err) {
       console.error('[GOOGLE CREDENTIAL ERROR]:', err)
-      setErrorMessage('Connection error during Google Sign In.')
+      setErrorMessage('Could not connect. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -211,24 +211,24 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
         const result = await loginWithGoogle(tokenOrCode)
         if (result.ok) {
           updateUserProfile(result.user)
-          setSuccessMessage('🎉 Google OAuth Authentication successful!')
+          setSuccessMessage('🎉 Signed in successfully!')
           setTimeout(() => {
             onClose()
             navigate('/dashboard')
           }, 800)
         } else {
-          setErrorMessage(result.error || 'Google authentication failed.')
+          setErrorMessage(result.error || 'Could not sign in with Google. Please try again.')
         }
       } catch (err) {
         console.error('[GOOGLE SIGNIN ERROR]:', err)
-        setErrorMessage('Connection error during Google Sign In.')
+        setErrorMessage('Could not connect. Please try again.')
       } finally {
         setIsLoading(false)
       }
     },
     onError: (errorResponse) => {
       console.error('[GOOGLE POPUP CLOSED / CANCELLED]:', errorResponse)
-      setErrorMessage('Google popup login was cancelled or closed.')
+      setErrorMessage('Sign in was cancelled.')
       setIsLoading(false)
     },
   })
@@ -326,7 +326,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
       }
     } catch (err) {
       console.error('Auth submit error:', err)
-      setErrorMessage('An unexpected error occurred. Please try again.')
+      setErrorMessage('Something went wrong. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -369,7 +369,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                 ? 'Create Account'
                 : mode === 'forgot'
                 ? 'Forgot Password'
-                : 'Verify Email OTP'}
+                : 'Verify Your Email'}
             </h2>
 
             {mode !== 'otp' && (
@@ -454,7 +454,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                   className="text-[var(--color-primary)] font-bold hover:underline disabled:opacity-50 flex items-center gap-1"
                 >
                   <RefreshCw size={11} className={isLoading ? 'animate-spin' : ''} />
-                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
                 </button>
               </div>
 

@@ -164,7 +164,7 @@ export default function AdminLogin() {
 
         {/* Footer Security Badges */}
         <div className="pt-4 border-t border-[var(--color-line,#E5DFD5)] text-center text-[0.65rem] text-[var(--color-ink-soft,#666)] space-y-1">
-          <p className="font-mono">🔒 HttpOnly Session Cookies • 30-Min Inactivity Timeout</p>
+          <p className="font-mono">🔒 Secure Session • Protected Access</p>
           <p>© 2026 Lily Charm Studio. Authorized Single Admin Access Only.</p>
         </div>
       </div>

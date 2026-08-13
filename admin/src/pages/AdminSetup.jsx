@@ -111,7 +111,7 @@ export default function AdminSetup() {
             Initial Admin Setup
           </h1>
           <p className="text-xs text-[var(--color-ink-soft,#666)]">
-            Configure initial credentials for Lily Charm SUPER_ADMIN.
+            Configure initial credentials for your Lily Charm studio administrator.
           </p>
         </div>
 
@@ -122,7 +122,7 @@ export default function AdminSetup() {
               <AlertTriangle size={24} className="mx-auto text-amber-700" />
               <p className="font-bold text-sm uppercase">Admin Setup Already Completed</p>
               <p className="text-[0.72rem]">
-                The single SUPER_ADMIN account for <strong>{email}</strong> has already been initialized. For security reasons, initial setup cannot be run again.
+                The administrator account for <strong>{email}</strong> has already been initialized. For security reasons, initial setup cannot be run again.
               </p>
             </div>
             <Link
@@ -283,7 +283,7 @@ export default function AdminSetup() {
 
         {/* Footer Security Badges */}
         <div className="pt-4 border-t border-[var(--color-line,#E5DFD5)] text-center text-[0.65rem] text-[var(--color-ink-soft,#666)] space-y-1">
-          <p className="font-mono">🔒 Bcrypt 12 Rounds • Single SUPER_ADMIN Access</p>
+          <p className="font-mono">🔒 Protected Studio Security • Admin Access</p>
           <p>© 2026 Lily Charm Studio. All Rights Reserved.</p>
         </div>
       </div>
