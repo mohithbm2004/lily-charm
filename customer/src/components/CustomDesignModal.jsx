@@ -30,6 +30,9 @@ export default function CustomDesignModal({ isOpen, onClose }) {
         name: prev.name || user.name || '',
         email: prev.email || user.email || '',
         phone: prev.phone || user.phone || '',
+        address: prev.address || user.address || '',
+        city: prev.city || user.city || '',
+        pincode: prev.pincode || user.pincode || '',
       }))
       setSearchEmail(user.email || '')
     }
@@ -74,8 +77,15 @@ export default function CustomDesignModal({ isOpen, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     const errs = {}
-    if (!formData.name.trim()) errs.name = 'Full Name is required!'
-    if (!formData.email.trim()) errs.email = 'Email Address is required!'
+    if (!formData.name?.trim()) errs.name = 'Full Name is required!'
+    if (!formData.email?.trim()) errs.email = 'Email Address is required!'
+    if (!formData.address?.trim()) errs.address = 'Delivery Street Address is required!'
+    if (!formData.city?.trim()) errs.city = 'City / District is required!'
+    if (!formData.pincode?.trim()) {
+      errs.pincode = 'PIN Code is required!'
+    } else if (!/^\d{6}$/.test(formData.pincode.trim())) {
+      errs.pincode = 'Please enter a valid 6-digit PIN code'
+    }
     if (selectedImages.length === 0) errs.image = 'Reference photo is required!'
 
     if (Object.keys(errs).length > 0) {
@@ -372,7 +382,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                     </button>
                     <button
                       onClick={handleResetAndClose}
-                      className="border border-[var(--color-line)] px-6 py-2.5 text-xs uppercase font-bold tracking-wider"
+                      className="btn-outline px-6 py-2.5 text-xs uppercase font-bold tracking-wider rounded-full"
                     >
                       Close
                     </button>
@@ -454,39 +464,70 @@ export default function CustomDesignModal({ isOpen, onClose }) {
 
                   {/* Delivery Shipping Address Fields */}
                   <div>
-                    <label className="block font-bold uppercase mb-1">Delivery Street Address (Optional)</label>
+                    <label className="block font-bold uppercase mb-1">
+                      Delivery Street Address <span className="text-red-500 font-bold ml-0.5">*</span>
+                    </label>
                     <input
                       type="text"
+                      required
+                      aria-required="true"
                       placeholder="e.g. Flat 402, Lotus Bloom Residences, 12th Main Rd"
                       value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      className="w-full border border-[var(--color-line)] p-3 bg-[var(--color-card-bg)]"
+                      onChange={(e) => {
+                        setFormData({ ...formData, address: e.target.value })
+                        if (e.target.value.trim()) setErrors((prev) => ({ ...prev, address: null }))
+                      }}
+                      className={`w-full border p-3 bg-[var(--color-card-bg)] transition-colors ${
+                        errors.address ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-[var(--color-line)]'
+                      }`}
                     />
+                    {errors.address && <p className="text-[0.68rem] text-red-600 font-bold mt-1">⚠️ {errors.address}</p>}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block font-bold uppercase mb-1">City / District (Optional)</label>
+                      <label className="block font-bold uppercase mb-1">
+                        City / District <span className="text-red-500 font-bold ml-0.5">*</span>
+                      </label>
                       <input
                         type="text"
+                        required
+                        aria-required="true"
                         placeholder="e.g. Bengaluru"
                         value={formData.city}
-                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                        className="w-full border border-[var(--color-line)] p-3 bg-[var(--color-card-bg)] font-semibold"
+                        onChange={(e) => {
+                          setFormData({ ...formData, city: e.target.value })
+                          if (e.target.value.trim()) setErrors((prev) => ({ ...prev, city: null }))
+                        }}
+                        className={`w-full border p-3 bg-[var(--color-card-bg)] font-semibold transition-colors ${
+                          errors.city ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-[var(--color-line)]'
+                        }`}
                       />
+                      {errors.city && <p className="text-[0.68rem] text-red-600 font-bold mt-1">⚠️ {errors.city}</p>}
                     </div>
 
                     <div>
-                      <label className="block font-bold uppercase mb-1">PIN Code (Optional)</label>
+                      <label className="block font-bold uppercase mb-1">
+                        PIN Code <span className="text-red-500 font-bold ml-0.5">*</span>
+                      </label>
                       <input
                         type="text"
+                        required
+                        aria-required="true"
                         maxLength={6}
                         inputMode="numeric"
                         placeholder="e.g. 560001"
                         value={formData.pincode}
-                        onChange={(e) => setFormData({ ...formData, pincode: e.target.value.replace(/\D/g, '') })}
-                        className="w-full border border-[var(--color-line)] p-3 bg-[var(--color-card-bg)] font-mono"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '')
+                          setFormData({ ...formData, pincode: val })
+                          if (val.length === 6) setErrors((prev) => ({ ...prev, pincode: null }))
+                        }}
+                        className={`w-full border p-3 bg-[var(--color-card-bg)] font-mono transition-colors ${
+                          errors.pincode ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-[var(--color-line)]'
+                        }`}
                       />
+                      {errors.pincode && <p className="text-[0.68rem] text-red-600 font-bold mt-1">⚠️ {errors.pincode}</p>}
                     </div>
                   </div>
 
@@ -545,7 +586,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                       type="button"
                       onClick={handleResetAndClose}
                       disabled={isSubmitting}
-                      className="px-5 py-2.5 border border-[var(--color-line)] hover:bg-[var(--color-card-bg)] font-bold uppercase tracking-wider text-[0.7rem]"
+                      className="btn-outline px-6 py-2.5 font-bold uppercase tracking-wider text-[0.7rem] rounded-full"
                     >
                       Cancel
                     </button>

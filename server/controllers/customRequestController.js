@@ -56,8 +56,8 @@ export async function createCustomRequest(req, res, next) {
   try {
     const body = { ...req.body }
 
-    if (!body.name || !body.email) {
-      return res.status(400).json({ message: 'Customer name and email are required!' })
+    if (!body.name?.trim() || !body.email?.trim() || !body.address?.trim() || !body.city?.trim() || !body.pincode?.trim()) {
+      return res.status(400).json({ message: 'Customer name, email, and full delivery address (address, city, pincode) are required!' })
     }
 
     const uploadedUrls = await processCustomImages(req, 'lily-charm/custom-requests')
