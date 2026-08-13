@@ -2702,9 +2702,9 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
       {/* USER PROFILE & ORDER HISTORY MODAL */}
       {selectedUserModal && (
         <div className="fixed inset-0 bg-black/80 z-[150] flex items-center justify-center p-4 overflow-y-auto">
-          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl">
-            {/* Modal Header */}
-            <div className="flex justify-between items-start border-b border-[var(--color-line)] pb-4">
+          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl relative">
+            {/* Modal Header (Fixed/Sticky at top of modal scroll) */}
+            <div className="sticky -top-6 -mx-6 -mt-6 p-6 bg-[var(--color-card-bg)] border-b border-[var(--color-line)] z-20 flex justify-between items-start backdrop-blur-md shadow-xs">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-full border-2 border-[var(--color-primary)] overflow-hidden bg-[var(--color-bg)] flex items-center justify-center shrink-0">
                   {selectedUserModal.user.profileImage ? (
@@ -2722,7 +2722,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
 
               <button
                 onClick={() => setSelectedUserModal(null)}
-                className="p-2 hover:bg-black/10 text-[var(--color-ink-soft)] font-bold uppercase text-xs"
+                className="p-2 hover:bg-black/10 text-[var(--color-ink-soft)] font-bold uppercase text-xs cursor-pointer"
               >
                 ✕ Close
               </button>
@@ -2906,11 +2906,11 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
             className="border-2 border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 md:p-8 max-w-3xl w-full space-y-6 max-h-[92vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in-95 duration-200 relative"
           >
             
-            {/* Draggable Modal Header */}
+            {/* Draggable & Sticky/Fixed Modal Header */}
             <div 
               onMouseDown={handleStartDragOrderModal}
               title="Click and drag to reposition window"
-              className="flex flex-wrap justify-between items-start border-b border-[var(--color-line)] pb-4 gap-3 cursor-grab active:cursor-grabbing select-none bg-stone-100/70 -mx-6 md:-mx-8 -mt-6 md:-mt-8 p-6 md:p-8 rounded-t border-b border-[var(--color-line)]"
+              className="sticky -top-6 md:-top-8 -mx-6 md:-mx-8 -mt-6 md:-mt-8 p-6 md:p-8 z-30 flex flex-wrap justify-between items-start border-b border-[var(--color-line)] gap-3 cursor-grab active:cursor-grabbing select-none bg-[var(--color-card-bg)] rounded-t shadow-xs"
             >
               <div className="flex items-center gap-3">
                 <div className="text-[var(--color-ink-soft)] hover:text-black shrink-0" title="Drag Handle">
