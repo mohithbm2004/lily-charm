@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Package,
@@ -34,6 +34,7 @@ import {
   Calendar,
   Clock,
   Receipt,
+  GripVertical,
 } from 'lucide-react'
 import { useStudio } from '../context/StudioContext'
 import { useAdminAuth } from '../context/AdminAuthContext'
@@ -293,6 +294,54 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
   const [selectedUserModal, setSelectedUserModal] = useState(null)
   const [selectedUserOrderDetail, setSelectedUserOrderDetail] = useState(null)
   const [copiedOrderId, setCopiedOrderId] = useState(false)
+  const [orderModalPos, setOrderModalPos] = useState({ x: 0, y: 0 })
+  const [isDraggingOrderModal, setIsDraggingOrderModal] = useState(false)
+  const dragStartRef = useRef({ startX: 0, startY: 0, posX: 0, posY: 0 })
+
+  // Reset drag position when opening a new order detail modal
+  useEffect(() => {
+    if (selectedUserOrderDetail) {
+      setOrderModalPos({ x: 0, y: 0 })
+    }
+  }, [selectedUserOrderDetail])
+
+  // Window drag movement listeners
+  useEffect(() => {
+    if (!isDraggingOrderModal) return
+
+    const handleMouseMove = (e) => {
+      const dx = e.clientX - dragStartRef.current.startX
+      const dy = e.clientY - dragStartRef.current.startY
+      setOrderModalPos({
+        x: dragStartRef.current.posX + dx,
+        y: dragStartRef.current.posY + dy,
+      })
+    }
+
+    const handleMouseUp = () => {
+      setIsDraggingOrderModal(false)
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDraggingOrderModal])
+
+  const handleStartDragOrderModal = (e) => {
+    if (e.button !== 0) return
+    if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) return
+    setIsDraggingOrderModal(true)
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      posX: orderModalPos.x,
+      posY: orderModalPos.y,
+    }
+  }
+
   const [requestFilter, setRequestFilter] = useState('all') // 'all' | 'accepted' | 'rejected' | 'pending'
 
   // Categorize Custom Requests into Accepted, Rejected, and Pending columns
@@ -2841,12 +2890,32 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
 
       {/* FULL CUSTOMER ORDER DETAILS DEEP-DIVE MODAL (IN USERS TAB) */}
       {selectedUserOrderDetail && (
-        <div className="fixed inset-0 bg-black/80 z-[130] flex items-center justify-center p-4 md:p-6 overflow-y-auto backdrop-blur-xs">
-          <div className="border-2 border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 md:p-8 max-w-3xl w-full space-y-6 max-h-[92vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+        <div 
+          className="fixed inset-0 bg-black/80 z-[300] flex items-center justify-center p-4 md:p-6 overflow-y-auto backdrop-blur-xs"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDraggingOrderModal) {
+              setSelectedUserOrderDetail(null)
+            }
+          }}
+        >
+          <div 
+            style={{
+              transform: `translate(${orderModalPos.x}px, ${orderModalPos.y}px)`,
+              transition: isDraggingOrderModal ? 'none' : 'transform 0.05s ease-out',
+            }}
+            className="border-2 border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 md:p-8 max-w-3xl w-full space-y-6 max-h-[92vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in-95 duration-200 relative"
+          >
             
-            {/* Modal Header */}
-            <div className="flex flex-wrap justify-between items-start border-b border-[var(--color-line)] pb-4 gap-3">
+            {/* Draggable Modal Header */}
+            <div 
+              onMouseDown={handleStartDragOrderModal}
+              title="Click and drag to reposition window"
+              className="flex flex-wrap justify-between items-start border-b border-[var(--color-line)] pb-4 gap-3 cursor-grab active:cursor-grabbing select-none bg-stone-100/70 -mx-6 md:-mx-8 -mt-6 md:-mt-8 p-6 md:p-8 rounded-t border-b border-[var(--color-line)]"
+            >
               <div className="flex items-center gap-3">
+                <div className="text-[var(--color-ink-soft)] hover:text-black shrink-0" title="Drag Handle">
+                  <GripVertical size={20} />
+                </div>
                 <div className="w-12 h-12 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center shrink-0 shadow-md">
                   <Package size={22} />
                 </div>
@@ -2857,16 +2926,20 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                     </h2>
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation()
                         navigator.clipboard.writeText(selectedUserOrderDetail.orderNumber || selectedUserOrderDetail._id)
                         setCopiedOrderId(true)
                         setTimeout(() => setCopiedOrderId(false), 2000)
                       }}
-                      className="text-[0.65rem] font-bold uppercase tracking-wider px-2 py-0.5 border border-[var(--color-line)] hover:bg-[var(--color-bg)] flex items-center gap-1 text-[var(--color-ink-soft)]"
+                      className="text-[0.65rem] font-bold uppercase tracking-wider px-2 py-0.5 border border-[var(--color-line)] bg-white hover:bg-stone-50 flex items-center gap-1 text-[var(--color-ink-soft)] cursor-pointer"
                       title="Copy Order Reference"
                     >
                       <Copy size={11} /> {copiedOrderId ? 'Copied!' : 'Copy'}
                     </button>
+                    <span className="text-[0.62rem] text-stone-500 font-mono italic">
+                      (⋮⋮ Drag to move)
+                    </span>
                   </div>
                   <p className="text-xs text-[var(--color-ink-soft)] mt-0.5 flex items-center gap-1.5 font-mono">
                     <Calendar size={12} /> Placed on: <strong>{formatDateTime(selectedUserOrderDetail.createdAt || Date.now())}</strong>
@@ -2874,7 +2947,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" onMouseDown={(e) => e.stopPropagation()}>
                 <span className="font-mono font-bold uppercase px-3 py-1 text-xs rounded bg-[#212B1C] text-[#F5E8D0] border border-black shadow-sm">
                   {selectedUserOrderDetail.status || selectedUserOrderDetail.orderStatus || 'Confirmed'}
                 </span>
@@ -2884,7 +2957,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                 <button
                   type="button"
                   onClick={() => setSelectedUserOrderDetail(null)}
-                  className="p-1.5 hover:bg-black/10 text-[var(--color-ink-soft)] font-bold text-sm ml-2"
+                  className="p-1.5 hover:bg-black/10 text-[var(--color-ink-soft)] font-bold text-sm ml-2 cursor-pointer"
                   title="Close and return to customer profile"
                 >
                   ✕ Close
