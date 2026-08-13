@@ -3,65 +3,306 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Order Confirmation - Lily Charm</title>
+  <title>Order Confirmation — Lily Charm</title>
   <style>
-    body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FAF7F2; color: #2B2625; }
-    .container { max-width: 600px; margin: 20px auto; background-color: #FFFFFF; border: 1px solid #E6DDD0; border-radius: 8px; overflow: hidden; }
-    .header { background-color: #212B1C; color: #FFFFFF; text-align: center; padding: 30px 20px; }
-    .header h1 { margin: 0; font-size: 26px; letter-spacing: 3px; font-weight: 300; text-transform: uppercase; color: #FAF7F2; }
-    .header p { margin: 6px 0 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #E8DCC4; }
-    .content { padding: 32px 24px; }
-    .status-badge { display: inline-block; background-color: #E8F5E9; color: #2E7D32; font-size: 11px; font-weight: bold; padding: 6px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
-    .table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-    .table th { background-color: #FAF7F2; border-bottom: 2px solid #E6DDD0; text-align: left; padding: 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #736B65; }
-    .table td { padding: 12px 10px; border-bottom: 1px solid #E6DDD0; font-size: 13px; color: #2B2625; }
-    .summary-box { background-color: #FAF7F2; padding: 16px; border-radius: 6px; margin-top: 20px; font-size: 13px; }
-    .summary-row { flex justify-content: space-between; display: flex; margin-bottom: 6px; }
-    .total-row { font-size: 16px; font-weight: bold; color: #212B1C; border-top: 1px solid #E6DDD0; pt: 10px; margin-top: 10px; display: flex; justify-content: space-between; }
-    .footer { border-top: 1px solid #E6DDD0; background-color: #FAF7F2; padding: 20px; text-align: center; font-size: 11px; color: #8C847D; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background-color: #FAF7F2;
+      color: #2B2625;
+      -webkit-font-smoothing: antialiased;
+    }
+    .email-wrapper {
+      width: 100%;
+      background-color: #FAF7F2;
+      padding: 24px 12px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #FFFFFF;
+      border: 1px solid #EAE3D5;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(43, 57, 37, 0.06);
+    }
+    .header {
+      background-color: #FAF7F2;
+      border-bottom: 1px solid #EAE3D5;
+      text-align: center;
+      padding: 34px 20px 26px;
+      position: relative;
+    }
+    .logo-emblem {
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+    .brand-title {
+      margin: 0;
+      font-family: 'Playfair Display', 'Cinzel', Georgia, serif;
+      font-size: 26px;
+      letter-spacing: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #2D3926;
+    }
+    .brand-subtitle {
+      margin: 6px 0 0;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #7A6652;
+      font-weight: 500;
+    }
+    .content {
+      padding: 32px 28px 24px;
+      background-color: #FFFFFF;
+    }
+    .status-badge-wrap {
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .status-badge-circle {
+      display: inline-block;
+      width: 44px;
+      height: 44px;
+      line-height: 44px;
+      background-color: #4A6B43;
+      color: #FFFFFF;
+      border-radius: 50%;
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(74, 107, 67, 0.25);
+    }
+    .hero-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 24px;
+      color: #2D3926;
+      text-align: center;
+      margin: 0 0 10px;
+      font-weight: 600;
+    }
+    .hero-greeting {
+      font-size: 14px;
+      color: #524B46;
+      line-height: 1.6;
+      text-align: center;
+      margin: 0 0 20px;
+    }
+    .order-ref-box {
+      background-color: #F3F7F1;
+      border: 1px solid #D5E2D0;
+      border-radius: 8px;
+      padding: 10px 18px;
+      margin: 0 auto 26px;
+      text-align: center;
+      font-size: 14px;
+      color: #2D3926;
+    }
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 20px;
+      border: 1px solid #EAE3D5;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .items-table-header {
+      background-color: #3E4F36;
+      color: #FFFFFF;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+    .items-table-header th {
+      padding: 12px 14px;
+      text-align: left;
+    }
+    .summary-card {
+      background-color: #FAF8F5;
+      border: 1px solid #EAE3D5;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-top: 16px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 13.5px;
+      color: #4A443E;
+    }
+    .summary-row-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #D5CDC2;
+      font-size: 15px;
+      font-weight: bold;
+      color: #2D3926;
+    }
+    .address-card {
+      background-color: #F3F7F1;
+      border: 1px solid #D5E2D0;
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-top: 24px;
+    }
+    .help-section {
+      text-align: center;
+      padding: 24px 20px 10px;
+    }
+    .help-icon {
+      display: inline-block;
+      width: 36px;
+      height: 36px;
+      line-height: 36px;
+      background-color: #FDEEE9;
+      color: #D9534F;
+      border-radius: 50%;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+    .heart-divider {
+      text-align: center;
+      margin: 20px 0 0;
+      color: #D5CDC2;
+      font-size: 12px;
+    }
+    .footer {
+      background-color: #2D3A27;
+      color: #E8EFE5;
+      text-align: center;
+      padding: 24px 20px;
+      font-size: 11.5px;
+      line-height: 1.6;
+    }
+    .footer a {
+      color: #FFFFFF;
+      text-decoration: none;
+      margin: 0 8px;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>LILY CHARM</h1>
-      <p>Handcrafted Botanical Art & Velvet Sculptures</p>
-    </div>
-    <div class="content">
-      <span class="status-badge">✓ Order Placed & Confirmed</span>
-      <h2 style="font-size: 20px; color: #212B1C; margin: 0 0 10px;">Thank You for Your Order!</h2>
-      <p style="font-size: 14px; color: #524B46; line-height: 1.6;">Hi <strong>{{customerName}}</strong>, we have received your payment and our master florists are preparing your order with delicate care.</p>
+  <div class="email-wrapper">
+    <div class="container">
       
-      <p style="font-size: 13px; font-weight: bold; color: #212B1C; margin-top: 20px;">Order Reference: <span style="font-family: monospace;">{{orderNumber}}</span></p>
-
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Item Details</th>
-            <th style="text-align: center;">Qty</th>
-            <th style="text-align: right;">Price</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{itemsHtml}}
-        </tbody>
-      </table>
-
-      <div class="summary-box">
-        <div class="summary-row"><span>Subtotal:</span> <span>₹{{subtotal}}</span></div>
-        <div class="summary-row"><span>Discount:</span> <span>-₹{{discount}}</span></div>
-        <div class="summary-row"><span>Shipping:</span> <span>₹{{shipping}}</span></div>
-        <div class="total-row"><span>Grand Total Paid:</span> <span>₹{{grandTotal}}</span></div>
+      <!-- Top Brand Header -->
+      <div class="header">
+        <div class="logo-emblem">
+          <img src="https://res.cloudinary.com/dzv7vsmf7/image/upload/v1740000000/logo.png" onerror="this.style.display='none'" width="46" height="46" alt="Lily Charm Logo" style="display:inline-block; margin-bottom: 4px;" />
+          <div style="font-size: 24px;">🌸</div>
+        </div>
+        <h1 class="brand-title">LILY CHARM</h1>
+        <p class="brand-subtitle">Handcrafted Botanical Art &amp; Velvet Sculptures</p>
       </div>
 
-      <div style="margin-top: 24px; font-size: 13px; background-color: #FAF7F2; p: 16px; padding: 14px; border-left: 4px solid #212B1C;">
-        <strong>Shipping Address:</strong><br/>
-        {{shippingAddress}}
+      <!-- Main Body Content -->
+      <div class="content">
+        <div class="status-badge-wrap">
+          <div class="status-badge-circle">✓</div>
+        </div>
+
+        <h2 class="hero-title">✨ Thank You for Your Order! ✨</h2>
+        
+        <p class="hero-greeting">
+          Hi <strong>{{customerName}}</strong>,<br/>
+          We have received your payment and our master florists are preparing your order with delicate care.
+        </p>
+
+        <!-- Order Reference Pill -->
+        <div class="order-ref-box">
+          📑 <strong>Order Reference:</strong> <span style="font-family: monospace, sans-serif; font-size: 15px; font-weight: bold; letter-spacing: 0.5px;">{{orderNumber}}</span>
+        </div>
+
+        <!-- Items Table -->
+        <table class="items-table" width="100%" cellpadding="0" cellspacing="0">
+          <thead>
+            <tr class="items-table-header">
+              <th colspan="2" style="padding-left: 14px;">Item Details</th>
+              <th style="text-align: center; width: 60px;">Qty</th>
+              <th style="text-align: right; width: 80px; padding-right: 14px;">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{itemsHtml}}
+          </tbody>
+        </table>
+
+        <!-- Pricing Summary Card -->
+        <div class="summary-card">
+          <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 13.5px; color: #4A443E;">
+            <tr>
+              <td style="padding: 4px 0;">🏷️ &nbsp;Subtotal</td>
+              <td style="text-align: right; font-weight: 600; color: #2D3926;">₹{{subtotal}}</td>
+            </tr>
+            <tr>
+              <td style="padding: 4px 0;">🎯 &nbsp;Discount</td>
+              <td style="text-align: right; font-weight: 600; color: #2E7D32;">-₹{{discount}}</td>
+            </tr>
+            <tr>
+              <td style="padding: 4px 0;">🚚 &nbsp;Shipping</td>
+              <td style="text-align: right; font-weight: 600; color: #2D3926;">{{shipping}}</td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding-top: 8px;"><div style="border-top: 1px dashed #D5CDC2; height: 1px;"></div></td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0 0; font-size: 15px; font-weight: bold; color: #2D3926;">👛 &nbsp;Grand Total Paid</td>
+              <td style="padding: 8px 0 0; text-align: right; font-size: 19px; font-weight: 800; color: #C8433C;">₹{{grandTotal}}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Shipping Address Card with Truck Graphic -->
+        <div class="address-card">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td width="36" valign="top">
+                <div style="width: 28px; height: 28px; line-height: 28px; background-color: #2D3926; color: #FFFFFF; border-radius: 50%; text-align: center; font-size: 13px;">📍</div>
+              </td>
+              <td valign="top" style="padding-left: 10px;">
+                <div style="font-size: 14px; font-weight: bold; color: #2D3926; margin-bottom: 4px;">Shipping Address</div>
+                <div style="font-size: 13px; color: #4A443E; line-height: 1.5;">{{shippingAddress}}</div>
+                <div style="font-size: 12px; color: #7A6652; margin-top: 3px;"><strong>Phone:</strong> {{shippingPhone}}</div>
+              </td>
+              <td width="80" align="right" valign="middle">
+                <div style="font-size: 32px; line-height: 1;">🚚🌿</div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Help Section -->
+        <div class="help-section">
+          <div class="help-icon">🎧</div>
+          <div style="font-size: 13.5px; font-weight: 600; color: #2D3926;">Questions? We're here to help!</div>
+          <div style="font-size: 13px; color: #524B46; margin-top: 2px;">
+            Contact us at <a href="mailto:{{supportEmail}}" style="color: #C8433C; font-weight: bold; text-decoration: none;">{{supportEmail}}</a>
+          </div>
+          <div class="heart-divider">──────── &nbsp;💖&nbsp; ────────</div>
+        </div>
+
       </div>
-    </div>
-    <div class="footer">
-      <p>Questions? Contact us at support@lilycharm.com</p>
-      <p>© 2026 Lily Charm Studio. All rights reserved.</p>
+
+      <!-- Dark Forest Green Footer -->
+      <div class="footer">
+        <div style="margin-bottom: 10px;">
+          <a href="https://instagram.com" target="_blank" style="display:inline-block; width: 28px; height: 28px; line-height: 28px; background: rgba(255,255,255,0.15); border-radius: 50%; text-align: center; color: #FFFFFF; text-decoration: none; margin: 0 4px;">📸</a>
+          <a href="https://facebook.com" target="_blank" style="display:inline-block; width: 28px; height: 28px; line-height: 28px; background: rgba(255,255,255,0.15); border-radius: 50%; text-align: center; color: #FFFFFF; text-decoration: none; margin: 0 4px;">👥</a>
+          <a href="https://pinterest.com" target="_blank" style="display:inline-block; width: 28px; height: 28px; line-height: 28px; background: rgba(255,255,255,0.15); border-radius: 50%; text-align: center; color: #FFFFFF; text-decoration: none; margin: 0 4px;">📌</a>
+        </div>
+        <div>Made with 💖 by <strong>Lily Charm Studio</strong></div>
+        <div style="margin-top: 4px; opacity: 0.8;">© 2026 Lily Charm Studio. All rights reserved.</div>
+      </div>
+
     </div>
   </div>
 </body>

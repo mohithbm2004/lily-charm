@@ -29,6 +29,11 @@ import {
   CreditCard,
   RotateCcw,
   FileText,
+  Copy,
+  MapPin,
+  Calendar,
+  Clock,
+  Receipt,
 } from 'lucide-react'
 import { useStudio } from '../context/StudioContext'
 import { useAdminAuth } from '../context/AdminAuthContext'
@@ -286,6 +291,8 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
   const [previewImageModal, setPreviewImageModal] = useState(null)
   const [userSearchQuery, setUserSearchQuery] = useState('')
   const [selectedUserModal, setSelectedUserModal] = useState(null)
+  const [selectedUserOrderDetail, setSelectedUserOrderDetail] = useState(null)
+  const [copiedOrderId, setCopiedOrderId] = useState(false)
   const [requestFilter, setRequestFilter] = useState('all') // 'all' | 'accepted' | 'rejected' | 'pending'
 
   // Categorize Custom Requests into Accepted, Rejected, and Pending columns
@@ -2714,28 +2721,58 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               ) : (
                 <div className="space-y-4">
                   {selectedUserModal.userOrdersList.map((o) => (
-                    <div key={o._id || o.id} className="border border-[var(--color-line)] bg-white p-4 space-y-3 shadow-sm">
-                      <div className="flex flex-wrap justify-between items-start border-b border-[var(--color-line)] pb-2 gap-2 text-xs">
+                    <div key={o._id || o.id} className="border border-[var(--color-line)] bg-white p-4 space-y-3 shadow-sm hover:border-[var(--color-primary)] transition-all">
+                      <div className="flex flex-wrap justify-between items-start border-b border-[var(--color-line)] pb-2.5 gap-2 text-xs">
                         <div>
-                          <p className="font-mono font-bold text-sm text-[var(--color-primary)]">{o.id || o.orderNumber || o._id}</p>
-                          <p className="text-[0.68rem] text-[var(--color-ink-soft)]">Placed on: {new Date(o.createdAt || Date.now()).toLocaleDateString('en-IN')}</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-mono font-bold text-sm text-[var(--color-primary)]">{o.orderNumber || o.id || o._id}</p>
+                            <span className="text-[0.62rem] font-bold uppercase tracking-wider px-2 py-0.5 bg-stone-100 text-stone-700 border border-stone-300 rounded font-mono">
+                              {o.paymentMethod || 'Razorpay Prepaid'}
+                            </span>
+                          </div>
+                          <p className="text-[0.68rem] text-[var(--color-ink-soft)] font-mono mt-0.5 flex items-center gap-1">
+                            <Calendar size={11} /> {formatDateTime(o.createdAt || Date.now())}
+                          </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold uppercase px-2.5 py-1 text-[0.62rem] rounded bg-[#212B1C] text-[#F5E8D0] border border-black">
+                          <span className="font-mono font-bold uppercase px-2.5 py-1 text-[0.62rem] rounded bg-[#212B1C] text-[#F5E8D0] border border-black shadow-xs">
                             {o.status || o.orderStatus || 'Confirmed'}
                           </span>
-                          <span className="font-mono font-bold uppercase px-2.5 py-1 text-[0.62rem] rounded bg-emerald-800 text-white border border-emerald-950">
+                          <span className="font-mono font-bold uppercase px-2.5 py-1 text-[0.62rem] rounded bg-emerald-800 text-white border border-emerald-950 shadow-xs">
                             {o.paymentStatus || 'Paid'}
                           </span>
                         </div>
                       </div>
 
-                      {/* Items */}
-                      <div className="space-y-2">
+                      {/* Financial Preview Chips: Shipping Fee & Coupon Used */}
+                      <div className="flex flex-wrap gap-2 text-[0.65rem] font-mono">
+                        <span className="px-2 py-0.5 bg-stone-100 text-stone-800 border border-stone-200 rounded">
+                          🚚 Shipping: <strong>{Number(o.shippingCharge || 0) > 0 ? formatPrice(o.shippingCharge) : '₹0 (Free)'}</strong>
+                        </span>
+                        {o.couponCode ? (
+                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-900 border border-emerald-300 rounded font-bold">
+                            🏷️ Coupon: {o.couponCode} (-{formatPrice(o.discountAmount || 0)})
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-stone-50 text-stone-500 border border-stone-200 rounded italic">
+                            🏷️ No Coupon
+                          </span>
+                        )}
+                        {o.shippingAddress?.city && (
+                          <span className="px-2 py-0.5 bg-sky-50 text-sky-900 border border-sky-200 rounded">
+                            📍 {o.shippingAddress.city} {o.shippingAddress?.pincode ? `(${o.shippingAddress.pincode})` : ''}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Items Preview */}
+                      <div className="space-y-2 pt-1">
                         {o.items?.map((item, idx) => (
                           <div key={idx} className="flex items-center gap-3 text-xs border-b border-dashed border-stone-200 pb-2">
-                            {item.image && (
-                              <img src={item.image} alt={item.title} className="w-10 h-10 object-cover border border-[var(--color-line)] shrink-0" />
+                            {item.image ? (
+                              <img src={item.image} alt={item.title} className="w-10 h-10 object-cover border border-[var(--color-line)] rounded shrink-0 bg-stone-50" />
+                            ) : (
+                              <div className="w-10 h-10 rounded border border-[var(--color-line)] bg-stone-100 flex items-center justify-center text-sm shrink-0">🌸</div>
                             )}
                             <div className="flex-1 min-w-0">
                               <p className="font-bold truncate">{item.title}</p>
@@ -2746,14 +2783,27 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                         ))}
                       </div>
 
-                      <div className="flex justify-between items-center pt-1 text-xs">
-                        <span className="font-bold text-sm font-mono text-emerald-800">Total: {formatPrice(o.grandTotal || o.total || 0)}</span>
-                        <button
-                          onClick={() => window.open(`${API_URL}/orders/${o.mongoId || o._id}/invoice`, '_blank')}
-                          className="btn-outline py-1.5 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center gap-1"
-                        >
-                          <Download size={12} /> Download PDF Invoice
-                        </button>
+                      <div className="flex flex-wrap justify-between items-center pt-2 gap-2 text-xs border-t border-[var(--color-line)]">
+                        <span className="font-bold text-sm font-mono text-emerald-900">Grand Total: {formatPrice(o.grandTotal || o.total || 0)}</span>
+                        
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedUserOrderDetail(o)}
+                            className="btn-primary py-1.5 px-3 text-[0.68rem] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm"
+                            title="Inspect complete order details, shipping fee, coupon, and tracking"
+                          >
+                            <Eye size={12} /> Inspect Full Order Details ➔
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => window.open(`${API_URL}/orders/${o.mongoId || o._id}/invoice`, '_blank')}
+                            className="btn-outline py-1.5 px-2.5 text-[0.65rem] font-bold uppercase tracking-wider flex items-center gap-1 text-[var(--color-ink-soft)]"
+                            title="Download Tax Invoice PDF"
+                          >
+                            <Download size={12} /> Invoice
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -2785,6 +2835,251 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* FULL CUSTOMER ORDER DETAILS DEEP-DIVE MODAL (IN USERS TAB) */}
+      {selectedUserOrderDetail && (
+        <div className="fixed inset-0 bg-black/80 z-[130] flex items-center justify-center p-4 md:p-6 overflow-y-auto backdrop-blur-xs">
+          <div className="border-2 border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 md:p-8 max-w-3xl w-full space-y-6 max-h-[92vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="flex flex-wrap justify-between items-start border-b border-[var(--color-line)] pb-4 gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center shrink-0 shadow-md">
+                  <Package size={22} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-xl font-bold font-mono text-[var(--color-primary)]">
+                      {selectedUserOrderDetail.orderNumber || selectedUserOrderDetail.id || selectedUserOrderDetail._id}
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(selectedUserOrderDetail.orderNumber || selectedUserOrderDetail._id)
+                        setCopiedOrderId(true)
+                        setTimeout(() => setCopiedOrderId(false), 2000)
+                      }}
+                      className="text-[0.65rem] font-bold uppercase tracking-wider px-2 py-0.5 border border-[var(--color-line)] hover:bg-[var(--color-bg)] flex items-center gap-1 text-[var(--color-ink-soft)]"
+                      title="Copy Order Reference"
+                    >
+                      <Copy size={11} /> {copiedOrderId ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
+                  <p className="text-xs text-[var(--color-ink-soft)] mt-0.5 flex items-center gap-1.5 font-mono">
+                    <Calendar size={12} /> Placed on: <strong>{formatDateTime(selectedUserOrderDetail.createdAt || Date.now())}</strong>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-bold uppercase px-3 py-1 text-xs rounded bg-[#212B1C] text-[#F5E8D0] border border-black shadow-sm">
+                  {selectedUserOrderDetail.status || selectedUserOrderDetail.orderStatus || 'Confirmed'}
+                </span>
+                <span className="font-mono font-bold uppercase px-3 py-1 text-xs rounded bg-emerald-800 text-white border border-emerald-950 shadow-sm">
+                  {selectedUserOrderDetail.paymentStatus || 'Paid'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedUserOrderDetail(null)}
+                  className="p-1.5 hover:bg-black/10 text-[var(--color-ink-soft)] font-bold text-sm ml-2"
+                  title="Close and return to customer profile"
+                >
+                  ✕ Close
+                </button>
+              </div>
+            </div>
+
+            {/* Financial & Payment Breakdown Card */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="bg-[var(--color-bg)] p-4 border border-[var(--color-line)] space-y-2.5 rounded">
+                <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-primary)] uppercase flex items-center gap-1">
+                  <Receipt size={13} /> Complete Financial Breakdown
+                </span>
+                <div className="space-y-1.5 font-mono text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-[var(--color-ink-soft)]">Items Subtotal:</span>
+                    <span className="font-bold">{formatPrice(selectedUserOrderDetail.subtotal || selectedUserOrderDetail.total || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[var(--color-ink-soft)]">Coupon Used:</span>
+                    <span className="font-bold">
+                      {selectedUserOrderDetail.couponCode ? (
+                        <span className="bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded font-mono font-bold border border-emerald-300">
+                          {selectedUserOrderDetail.couponCode}
+                        </span>
+                      ) : (
+                        <span className="text-stone-400 italic">No coupon applied</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[var(--color-ink-soft)]">Discount Deducted:</span>
+                    <span className="font-bold text-emerald-800">
+                      {selectedUserOrderDetail.discountAmount > 0 ? `-${formatPrice(selectedUserOrderDetail.discountAmount)}` : '₹0'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[var(--color-ink-soft)]">Shipping Fee:</span>
+                    <span className="font-bold text-[var(--color-primary)]">
+                      {Number(selectedUserOrderDetail.shippingCharge || 0) > 0 ? (
+                        formatPrice(selectedUserOrderDetail.shippingCharge)
+                      ) : (
+                        <span className="text-emerald-800 font-bold">₹0 (Free Shipping)</span>
+                      )}
+                    </span>
+                  </div>
+                  {selectedUserOrderDetail.tax > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-[var(--color-ink-soft)]">Taxes &amp; GST:</span>
+                      <span className="font-bold">{formatPrice(selectedUserOrderDetail.tax)}</span>
+                    </div>
+                  )}
+                  <div className="border-t border-[var(--color-line)] pt-2 mt-2 flex justify-between items-center text-sm">
+                    <span className="font-bold uppercase text-[var(--color-ink)]">Grand Total Paid:</span>
+                    <span className="font-bold text-base text-emerald-900">{formatPrice(selectedUserOrderDetail.grandTotal || selectedUserOrderDetail.total || 0)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Gateway & Transaction Metadata */}
+              <div className="bg-[var(--color-bg)] p-4 border border-[var(--color-line)] space-y-2.5 rounded">
+                <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-primary)] uppercase flex items-center gap-1">
+                  <CreditCard size={13} /> Payment &amp; Gateway Metadata
+                </span>
+                <div className="space-y-1.5 font-mono text-[0.7rem] text-[var(--color-ink-soft)]">
+                  <div>
+                    <span className="block text-[0.62rem] uppercase font-bold text-[var(--color-ink)]">Payment Method:</span>
+                    <span className="font-bold text-[var(--color-primary)]">{selectedUserOrderDetail.paymentMethod || 'Razorpay Prepaid'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[0.62rem] uppercase font-bold text-[var(--color-ink)]">Razorpay Payment ID:</span>
+                    <span className="font-mono select-all text-stone-800 font-bold">{selectedUserOrderDetail.razorpayPaymentId || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[0.62rem] uppercase font-bold text-[var(--color-ink)]">Razorpay Order ID:</span>
+                    <span className="font-mono select-all text-stone-800 font-bold">{selectedUserOrderDetail.razorpayOrderId || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[0.62rem] uppercase font-bold text-[var(--color-ink)]">MongoDB Document ID:</span>
+                    <span className="font-mono text-[0.65rem] text-stone-500">{selectedUserOrderDetail._id}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Shipping Address Box */}
+            <div className="bg-emerald-50/60 border border-emerald-200 p-4 rounded text-xs space-y-1.5">
+              <span className="eyebrow text-[0.65rem] font-bold text-emerald-900 uppercase flex items-center gap-1">
+                <MapPin size={13} /> Delivery &amp; Shipping Address
+              </span>
+              <p className="font-bold text-sm text-emerald-950">
+                {selectedUserOrderDetail.shippingAddress?.name || selectedUserModal?.user?.name}
+              </p>
+              <p className="text-[var(--color-ink)]">
+                {selectedUserOrderDetail.shippingAddress?.line1 || selectedUserOrderDetail.shippingAddress?.address || 'Bespoke Studio Address'}
+                {selectedUserOrderDetail.shippingAddress?.city ? `, ${selectedUserOrderDetail.shippingAddress.city}` : ''}
+                {selectedUserOrderDetail.shippingAddress?.state ? `, ${selectedUserOrderDetail.shippingAddress.state}` : ''}
+                {selectedUserOrderDetail.shippingAddress?.pincode ? ` - ${selectedUserOrderDetail.shippingAddress.pincode}` : ''}
+              </p>
+              <div className="flex flex-wrap gap-4 pt-1 text-[0.7rem] text-[var(--color-ink-soft)] font-mono">
+                <span>📞 <strong>Phone:</strong> {selectedUserOrderDetail.shippingAddress?.phone || selectedUserModal?.user?.phone || 'N/A'}</span>
+                <span>✉️ <strong>Email:</strong> {selectedUserOrderDetail.shippingAddress?.email || selectedUserOrderDetail.email || selectedUserModal?.user?.email}</span>
+              </div>
+            </div>
+
+            {/* Ordered Artwork Items */}
+            <div className="space-y-3">
+              <h3 className="font-bold text-sm font-[var(--font-display)] uppercase border-b border-[var(--color-line)] pb-2 flex items-center justify-between">
+                <span>Ordered Artworks ({selectedUserOrderDetail.items?.length || 0})</span>
+              </h3>
+              <div className="border border-[var(--color-line)] bg-white overflow-hidden rounded">
+                <table className="w-full text-xs">
+                  <thead className="bg-[#3E4F36] text-white uppercase text-[0.68rem] tracking-wider">
+                    <tr>
+                      <th className="p-3 text-left">Artwork Creation</th>
+                      <th className="p-3 text-center">Unit Price</th>
+                      <th className="p-3 text-center">Qty</th>
+                      <th className="p-3 text-right">Line Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100 font-mono">
+                    {selectedUserOrderDetail.items?.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-stone-50/80 transition-colors">
+                        <td className="p-3 flex items-center gap-3">
+                          {item.image ? (
+                            <img src={item.image} alt={item.title} className="w-12 h-12 object-cover border border-[var(--color-line)] rounded shrink-0 bg-stone-50" />
+                          ) : (
+                            <div className="w-12 h-12 rounded border border-[var(--color-line)] bg-stone-100 flex items-center justify-center text-lg shrink-0">🌸</div>
+                          )}
+                          <div>
+                            <p className="font-bold font-sans text-xs text-[var(--color-ink)]">{item.title}</p>
+                            {item.specimen && <p className="text-[0.65rem] text-[var(--color-ink-soft)] font-mono">{item.specimen}</p>}
+                          </div>
+                        </td>
+                        <td className="p-3 text-center">{formatPrice(item.price)}</td>
+                        <td className="p-3 text-center font-bold">{item.qty}</td>
+                        <td className="p-3 text-right font-bold text-emerald-900">{formatPrice((item.price || 0) * (item.qty || 1))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Courier Dispatch / Tracking Logistics (if available) */}
+            {(selectedUserOrderDetail.carrier || selectedUserOrderDetail.trackingNumber || selectedUserOrderDetail.statusHistory?.length > 0) && (
+              <div className="bg-[var(--color-bg)] border border-[var(--color-line)] p-4 rounded text-xs space-y-2">
+                <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-primary)] uppercase flex items-center gap-1">
+                  <Truck size={13} /> Dispatch Logistics &amp; Fulfillment History
+                </span>
+                {selectedUserOrderDetail.carrier && (
+                  <div className="flex flex-wrap gap-4 text-xs">
+                    <span><strong>Carrier:</strong> {selectedUserOrderDetail.carrier}</span>
+                    <span><strong>AWB / Tracking #:</strong> <code className="font-bold text-rose-800">{selectedUserOrderDetail.trackingNumber}</code></span>
+                    {selectedUserOrderDetail.trackingUrl && (
+                      <a href={selectedUserOrderDetail.trackingUrl} target="_blank" rel="noreferrer" className="text-[var(--color-primary)] font-bold underline flex items-center gap-1">
+                        <ExternalLink size={12} /> Live Tracking URL
+                      </a>
+                    )}
+                  </div>
+                )}
+                {selectedUserOrderDetail.statusHistory?.length > 0 && (
+                  <div className="pt-2 border-t border-[var(--color-line)] space-y-1">
+                    <p className="text-[0.65rem] font-bold uppercase text-[var(--color-ink-soft)]">Status Progression Log:</p>
+                    {selectedUserOrderDetail.statusHistory.map((h, i) => (
+                      <div key={i} className="text-[0.68rem] text-[var(--color-ink-soft)] flex items-center gap-2">
+                        <span className="font-bold text-[var(--color-ink)]">• {h.status}:</span>
+                        <span>{h.note || 'No notes'}</span>
+                        {h.timestamp && <span className="font-mono text-stone-400">({formatDateTime(h.timestamp)})</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Modal Action Footer */}
+            <div className="flex flex-wrap justify-between items-center pt-4 border-t border-[var(--color-line)] gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedUserOrderDetail(null)}
+                className="btn-outline px-5 py-2.5 text-xs font-bold uppercase tracking-wider"
+              >
+                ← Back to Customer Profile
+              </button>
+
+              <button
+                type="button"
+                onClick={() => window.open(`${API_URL}/orders/${selectedUserOrderDetail.mongoId || selectedUserOrderDetail._id}/invoice`, '_blank')}
+                className="btn-primary px-5 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm"
+              >
+                <Download size={13} /> Download Official PDF Invoice
+              </button>
+            </div>
+
           </div>
         </div>
       )}

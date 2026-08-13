@@ -6,16 +6,44 @@ function formatPrice(val) {
 }
 
 function buildItemsHtml(items = []) {
+  const clientUrl = process.env.CLIENT_URL || 'https://lilycharm.in'
   return items
-    .map(
-      (item) => `
-    <tr>
-      <td style="padding: 10px; border-bottom: 1px solid #E6DDD0;">${item.title || item.name || 'Botanical Creation'}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #E6DDD0; text-align: center;">${item.qty || 1}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #E6DDD0; text-align: right; font-weight: bold;">₹${formatPrice((item.price || 0) * (item.qty || 1))}</td>
-    </tr>
-  `
-    )
+    .map((item) => {
+      let imgSrc = item.image || (Array.isArray(item.images) ? item.images[0] : '') || ''
+      if (imgSrc && imgSrc.startsWith('/')) {
+        imgSrc = `${clientUrl}${imgSrc}`
+      }
+      const title = item.title || item.name || 'Handcrafted Botanical Artwork'
+      const qty = item.qty || 1
+      const price = formatPrice((item.price || 0) * qty)
+      const specimen = item.specimen && item.specimen !== 'Specimen' && item.specimen !== 'CUSTOM-DESIGN'
+        ? `<div style="font-size: 11px; color: #7A6652; margin-top: 2px;">${item.specimen}</div>`
+        : ''
+
+      const imageTd = imgSrc
+        ? `<td style="padding: 12px 10px 12px 14px; border-bottom: 1px solid #EFEAE1; width: 62px; vertical-align: middle;">
+             <img src="${imgSrc}" alt="${title}" width="52" height="52" style="width: 52px; height: 52px; border-radius: 8px; object-fit: cover; border: 1px solid #EAE3D5; background: #FAF7F2; display: block;" />
+           </td>`
+        : `<td style="padding: 12px 10px 12px 14px; border-bottom: 1px solid #EFEAE1; width: 62px; vertical-align: middle;">
+             <div style="width: 52px; height: 52px; border-radius: 8px; background-color: #F6F2EA; border: 1px solid #EAE3D5; text-align: center; line-height: 52px; font-size: 22px;">🌸</div>
+           </td>`
+
+      return `
+        <tr>
+          ${imageTd}
+          <td style="padding: 12px 10px; border-bottom: 1px solid #EFEAE1; vertical-align: middle;">
+            <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 14px; font-weight: 600; color: #2D3926; line-height: 1.35;">${title}</div>
+            ${specimen}
+          </td>
+          <td style="padding: 12px 10px; border-bottom: 1px solid #EFEAE1; text-align: center; font-size: 14px; color: #2D3926; font-weight: 600; vertical-align: middle;">
+            ${qty}
+          </td>
+          <td style="padding: 12px 16px 12px 10px; border-bottom: 1px solid #EFEAE1; text-align: right; font-weight: bold; font-size: 14px; color: #2D3926; vertical-align: middle;">
+            ₹${price}
+          </td>
+        </tr>
+      `
+    })
     .join('')
 }
 
@@ -26,18 +54,30 @@ export async function sendOrderConfirmation(order) {
   const recipientEmail = order.shippingAddress?.email || order.email
   if (!recipientEmail) return null
 
+  const clientUrl = process.env.CLIENT_URL || 'https://lilycharm.in'
   const itemsHtml = buildItemsHtml(order.items)
-  const shippingAddressStr = `${order.shippingAddress?.line1 || order.shippingAddress?.address || ''}, ${order.shippingAddress?.city || ''} - ${order.shippingAddress?.pincode || ''} (Phone: ${order.shippingAddress?.phone || 'N/A'})`
+  const shipAddr = order.shippingAddress || {}
+  const line1 = shipAddr.line1 || shipAddr.address || 'Studio Address'
+  const city = shipAddr.city || ''
+  const pincode = shipAddr.pincode || ''
+  const phone = shipAddr.phone || 'N/A'
+  const addressFormatted = `${line1}${city ? `, ${city}` : ''}${pincode ? ` - ${pincode}` : ''}`
+
+  const shippingChargeVal = Number(order.shippingCharge || 0)
+  const shippingFormatted = shippingChargeVal === 0 ? '₹0' : `₹${formatPrice(shippingChargeVal)}`
 
   const html = compileTemplate('orderConfirmation.html', {
-    customerName: order.shippingAddress?.name || 'Valued Customer',
+    clientUrl,
+    customerName: shipAddr.name || 'Valued Collector',
     orderNumber: order.orderNumber,
     itemsHtml,
     subtotal: formatPrice(order.subtotal || order.total),
     discount: formatPrice(order.discountAmount || 0),
-    shipping: formatPrice(order.shippingCharge || 0),
+    shipping: shippingFormatted,
     grandTotal: formatPrice(order.grandTotal || order.total),
-    shippingAddress: shippingAddressStr,
+    shippingAddress: addressFormatted,
+    shippingPhone: phone,
+    supportEmail: 'support@lilycharm.in',
   })
 
   return await sendEmail({

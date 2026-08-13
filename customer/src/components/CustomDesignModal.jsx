@@ -52,6 +52,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submittedSuccess, setSubmittedSuccess] = useState(false)
   const [errors, setErrors] = useState({})
+  const [pincodeStatus, setPincodeStatus] = useState({ loading: false, success: false, message: '' })
 
   // Quote Checking state
   const [searchEmail, setSearchEmail] = useState('')
@@ -59,6 +60,57 @@ export default function CustomDesignModal({ isOpen, onClose }) {
   const [isSearchingQuotes, setIsSearchingQuotes] = useState(false)
   const [acceptingId, setAcceptingId] = useState(null)
   const [acceptedSuccessDoc, setAcceptedSuccessDoc] = useState(null)
+
+  const handlePincodeChange = async (e) => {
+    const rawVal = e.target.value || ''
+    const digitsOnly = rawVal.replace(/\D/g, '').slice(0, 6)
+    setFormData((prev) => ({ ...prev, pincode: digitsOnly }))
+
+    if (errors.pincode) {
+      setErrors((prev) => ({ ...prev, pincode: null }))
+    }
+
+    if (digitsOnly.length !== 6) {
+      setPincodeStatus({
+        loading: false,
+        success: false,
+        message: digitsOnly.length > 0 ? `PIN code must be 6 digits (${digitsOnly.length}/6)` : '',
+      })
+      return
+    }
+
+    // Auto-fetch location when exactly 6 digits are entered
+    setPincodeStatus({ loading: true, success: false, message: '🔍 Fetching city & location...' })
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${digitsOnly}`)
+      const data = await res.json()
+      if (data && data[0] && data[0].Status === 'Success' && data[0].PostOffice?.length > 0) {
+        const postOffice = data[0].PostOffice[0]
+        const city = postOffice.District || postOffice.Block || postOffice.Name || ''
+        setFormData((prev) => ({
+          ...prev,
+          city: city || prev.city,
+        }))
+        if (errors.city) {
+          setErrors((prev) => ({ ...prev, city: null }))
+        }
+        setPincodeStatus({
+          loading: false,
+          success: true,
+          message: `📍 Auto-filled City: ${city}`,
+        })
+      } else {
+        setPincodeStatus({
+          loading: false,
+          success: false,
+          message: '⚠️ Invalid PIN code or postal data not found',
+        })
+      }
+    } catch (err) {
+      console.error('Pincode auto-fetch error in custom modal:', err)
+      setPincodeStatus({ loading: false, success: false, message: '' })
+    }
+  }
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files || [])
@@ -536,16 +588,25 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                         inputMode="numeric"
                         placeholder="e.g. 560001"
                         value={formData.pincode}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '')
-                          setFormData({ ...formData, pincode: val })
-                          if (val.length === 6) setErrors((prev) => ({ ...prev, pincode: null }))
-                        }}
+                        onChange={handlePincodeChange}
                         className={`w-full border p-3 bg-[var(--color-card-bg)] font-mono transition-colors ${
                           errors.pincode ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-[var(--color-line)]'
                         }`}
                       />
                       {errors.pincode && <p className="text-[0.68rem] text-red-600 font-bold mt-1">⚠️ {errors.pincode}</p>}
+                      {pincodeStatus.message && (
+                        <p
+                          className={`text-[0.68rem] mt-1 font-mono flex items-center gap-1 ${
+                            pincodeStatus.loading
+                              ? 'text-[var(--color-primary)] font-semibold'
+                              : pincodeStatus.success
+                              ? 'text-emerald-700 font-bold'
+                              : 'text-amber-800'
+                          }`}
+                        >
+                          {pincodeStatus.message}
+                        </p>
+                      )}
                     </div>
                   </div>
 

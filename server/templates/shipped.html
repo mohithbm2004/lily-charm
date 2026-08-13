@@ -3,40 +3,117 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Order Shipped - Lily Charm</title>
+  <title>Order Dispatched — Lily Charm</title>
   <style>
-    body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FAF7F2; color: #2B2625; }
-    .container { max-width: 600px; margin: 20px auto; background-color: #FFFFFF; border: 1px solid #E6DDD0; border-radius: 8px; overflow: hidden; }
-    .header { background-color: #212B1C; color: #FFFFFF; text-align: center; padding: 30px 20px; }
-    .header h1 { margin: 0; font-size: 26px; letter-spacing: 3px; font-weight: 300; text-transform: uppercase; color: #FAF7F2; }
-    .content { padding: 32px 24px; text-align: center; }
-    .badge { display: inline-block; background-color: #E3F2FD; color: #1565C0; font-size: 11px; font-weight: bold; padding: 6px 16px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
-    .tracking-box { background-color: #FAF7F2; border: 1px solid #E6DDD0; padding: 20px; border-radius: 6px; margin: 24px 0; text-align: left; font-size: 13px; }
-    .btn { display: inline-block; background-color: #212B1C; color: #FFFFFF; text-decoration: none; padding: 12px 28px; font-size: 12px; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase; border-radius: 4px; margin-top: 10px; }
-    .footer { border-top: 1px solid #E6DDD0; background-color: #FAF7F2; padding: 20px; text-align: center; font-size: 11px; color: #8C847D; }
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background-color: #FAF7F2; color: #2B2625;
+      -webkit-font-smoothing: antialiased;
+    }
+    .email-wrapper { width: 100%; background-color: #FAF7F2; padding: 24px 12px; }
+    .container {
+      max-width: 600px; margin: 0 auto; background-color: #FFFFFF;
+      border: 1px solid #EAE3D5; border-radius: 16px; overflow: hidden;
+      box-shadow: 0 4px 24px rgba(43, 57, 37, 0.06);
+    }
+    .header {
+      background-color: #FAF7F2; border-bottom: 1px solid #EAE3D5;
+      text-align: center; padding: 34px 20px 26px;
+    }
+    .brand-title {
+      margin: 0; font-family: 'Playfair Display', 'Cinzel', Georgia, serif;
+      font-size: 26px; letter-spacing: 4px; font-weight: 600; text-transform: uppercase; color: #2D3926;
+    }
+    .brand-subtitle {
+      margin: 6px 0 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #7A6652; font-weight: 500;
+    }
+    .content { padding: 32px 28px 24px; background-color: #FFFFFF; text-align: center; }
+    .badge-icon {
+      display: inline-block; width: 44px; height: 44px; line-height: 44px;
+      background-color: #2D3926; color: #FFFFFF; border-radius: 50%;
+      font-size: 20px; margin-bottom: 14px;
+    }
+    .hero-title {
+      font-family: 'Playfair Display', Georgia, serif; font-size: 24px;
+      color: #2D3926; margin: 0 0 10px; font-weight: 600;
+    }
+    .hero-greeting { font-size: 14px; color: #524B46; line-height: 1.6; margin: 0 0 20px; }
+    .tracking-card {
+      background-color: #F3F7F1; border: 1px solid #D5E2D0; border-radius: 10px;
+      padding: 18px 20px; margin: 20px 0; text-align: left;
+    }
+    .btn {
+      display: inline-block; background-color: #2D3926; color: #FFFFFF !important;
+      text-decoration: none; padding: 13px 30px; border-radius: 25px;
+      font-weight: bold; font-size: 12.5px; letter-spacing: 1.5px; text-transform: uppercase;
+      box-shadow: 0 4px 12px rgba(45, 57, 38, 0.2); margin-top: 10px;
+    }
+    .footer {
+      background-color: #2D3A27; color: #E8EFE5; text-align: center;
+      padding: 24px 20px; font-size: 11.5px; line-height: 1.6;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>LILY CHARM</h1>
-      <p style="margin: 4px 0 0; font-size: 11px; letter-spacing: 2px; color: #E8DCC4;">Botanical Art Dispatch Service</p>
-    </div>
-    <div class="content">
-      <span class="badge">🚚 {{statusTitle}}</span>
-      <h2 style="font-size: 20px; color: #212B1C; margin: 0 0 12px;">Your Order is On Its Way!</h2>
-      <p style="font-size: 14px; color: #524B46; line-height: 1.6; text-align: left;">Hi <strong>{{customerName}}</strong>, your order <strong>{{orderNumber}}</strong> has been dispatched from our studio and is currently in transit.</p>
+  <div class="email-wrapper">
+    <div class="container">
       
-      <div class="tracking-box">
-        <p style="margin: 0 0 8px;"><strong>Courier Partner:</strong> {{carrier}}</p>
-        <p style="margin: 0 0 8px;"><strong>Tracking Number:</strong> <span style="font-family: monospace; font-weight: bold; color: #8C2D38;">{{trackingNumber}}</span></p>
-        <p style="margin: 0; color: #736B65; font-style: italic;">{{note}}</p>
+      <!-- Top Brand Header -->
+      <div class="header">
+        <div style="font-size: 24px; margin-bottom: 4px;">🌸</div>
+        <h1 class="brand-title">LILY CHARM</h1>
+        <p class="brand-subtitle">Handcrafted Botanical Art &amp; Velvet Sculptures</p>
       </div>
 
-      <a href="{{trackingUrl}}" class="btn" target="_blank">Track Shipment Live</a>
-    </div>
-    <div class="footer">
-      <p>© 2026 Lily Charm Studio. Handcrafted Botanical Creations.</p>
+      <!-- Content -->
+      <div class="content">
+        <div class="badge-icon">🚚</div>
+        <h2 class="hero-title">✨ Your Order is On Its Way! ✨</h2>
+        
+        <p class="hero-greeting">
+          Hi <strong>{{customerName}}</strong>,<br/>
+          Your bespoke artwork for order <strong>#{{orderNumber}}</strong> has been carefully sealed in our studio and is in transit to your doorstep.
+        </p>
+
+        <div class="tracking-card">
+          <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 13.5px; color: #4A443E;">
+            <tr>
+              <td style="padding: 5px 0;">📦 &nbsp;Courier Partner</td>
+              <td style="text-align: right; font-weight: 600; color: #2D3926;">{{carrier}}</td>
+            </tr>
+            <tr>
+              <td style="padding: 5px 0;">🔍 &nbsp;Tracking Number</td>
+              <td style="text-align: right; font-weight: bold; font-family: monospace; color: #8C2D38;">{{trackingNumber}}</td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding-top: 8px;"><div style="border-top: 1px dashed #D5CDC2; height: 1px;"></div></td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding-top: 8px; font-size: 12.5px; color: #7A6652; font-style: italic;">
+                {{note}}
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <a href="{{trackingUrl}}" class="btn" target="_blank">Track Shipment Live ➔</a>
+
+        <div style="text-align: center; padding: 24px 20px 10px;">
+          <div style="font-size: 13.5px; font-weight: 600; color: #2D3926;">Questions? We're here to help!</div>
+          <div style="font-size: 13px; color: #524B46; margin-top: 2px;">
+            Contact us at <a href="mailto:support@lilycharm.in" style="color: #C8433C; font-weight: bold; text-decoration: none;">support@lilycharm.in</a>
+          </div>
+          <div style="margin-top: 16px; color: #D5CDC2;">──────── &nbsp;💖&nbsp; ────────</div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <div>Made with 💖 by <strong>Lily Charm Studio</strong></div>
+        <div style="margin-top: 4px; opacity: 0.8;">© 2026 Lily Charm Studio. All rights reserved.</div>
+      </div>
+
     </div>
   </div>
 </body>
