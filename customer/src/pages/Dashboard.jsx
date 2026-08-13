@@ -103,8 +103,9 @@ export default function Dashboard() {
     if (!email) return
     try {
       const cleanEmail = email.toLowerCase().trim()
+      const userId = user?._id || user?.id || userProfile?._id || ''
       const [ordRes, reqRes] = await Promise.all([
-        fetch(`${API_URL}/orders/mine?email=${encodeURIComponent(cleanEmail)}`),
+        fetch(`${API_URL}/orders/mine?email=${encodeURIComponent(cleanEmail)}&userId=${encodeURIComponent(userId)}`),
         fetch(`${API_URL}/custom-requests`),
       ])
       if (ordRes.ok) {
@@ -117,8 +118,15 @@ export default function Dashboard() {
         if (fallbackRes.ok) {
           const fallbackData = await fallbackRes.json()
           const rawOrders = Array.isArray(fallbackData) ? fallbackData : (fallbackData.orders || [])
+          const altEmails = Array.isArray(userProfile?.alternateEmails)
+            ? userProfile.alternateEmails.map((e) => e.toLowerCase().trim())
+            : []
+          const allMyEmails = [cleanEmail, ...altEmails]
           const filtered = rawOrders.filter(
-            (o) => o?.shippingAddress?.email && o.shippingAddress.email.toLowerCase().trim() === cleanEmail
+            (o) =>
+              (userId && (o.user === userId || o.user?._id === userId)) ||
+              (o?.shippingAddress?.email && allMyEmails.includes(o.shippingAddress.email.toLowerCase().trim())) ||
+              (o?.email && allMyEmails.includes(o.email.toLowerCase().trim()))
           )
           setUserOrders(filtered)
         }
@@ -126,8 +134,14 @@ export default function Dashboard() {
 
       if (reqRes.ok) {
         const reqs = await reqRes.json()
+        const altEmails = Array.isArray(userProfile?.alternateEmails)
+          ? userProfile.alternateEmails.map((e) => e.toLowerCase().trim())
+          : []
+        const allMyEmails = [cleanEmail, ...altEmails]
         const myReqs = (Array.isArray(reqs) ? reqs : []).filter(
-          (r) => r?.email && r.email.toLowerCase().trim() === cleanEmail
+          (r) =>
+            (userId && (r.user === userId || r.user?._id === userId)) ||
+            (r?.email && allMyEmails.includes(r.email.toLowerCase().trim()))
         )
         setUserCustomRequests(myReqs)
       }
@@ -343,6 +357,8 @@ export default function Dashboard() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
+                userId: user?._id || user?.id || userProfile?._id || '',
+                userEmail: userProfile?.email || user?.email || '',
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,

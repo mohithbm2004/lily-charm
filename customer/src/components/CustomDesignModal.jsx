@@ -110,6 +110,8 @@ export default function CustomDesignModal({ isOpen, onClose }) {
     try {
       const payload = {
         ...formData,
+        userId: user?._id || user?.id || '',
+        userEmail: user?.email || '',
         images: selectedImages,
         image: selectedImages[0] || '',
       }
@@ -138,7 +140,10 @@ export default function CustomDesignModal({ isOpen, onClose }) {
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
-      if (window.Razorpay) return resolve(true)
+      if (window.Razorpay) {
+        resolve(true)
+        return
+      }
       const script = document.createElement('script')
       script.src = 'https://checkout.razorpay.com/v1/checkout.js'
       script.onload = () => resolve(true)
@@ -236,6 +241,8 @@ export default function CustomDesignModal({ isOpen, onClose }) {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
+                userId: user?._id || user?.id || '',
+                userEmail: user?.email || '',
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,

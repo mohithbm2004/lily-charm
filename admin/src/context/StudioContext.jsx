@@ -740,15 +740,15 @@ export function StudioProvider({ children }) {
     }
   }
 
-  const updateCustomRequestStatus = async (id, status) => {
+  const updateCustomRequestStatus = async (id, status, reason = '') => {
     setCustomRequests((prev) =>
-      prev.map((r) => (r._id === id ? { ...r, status } : r))
+      prev.map((r) => (r._id === id ? { ...r, status, ...(reason ? { adminNotes: reason } : {}) } : r))
     )
     try {
       await fetch(`${API_URL}/custom-requests/${id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, reason, adminNotes: reason }),
       })
       refreshCustomRequestsFromApi()
     } catch (e) {

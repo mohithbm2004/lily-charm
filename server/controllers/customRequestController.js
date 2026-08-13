@@ -1,8 +1,10 @@
 import CustomRequest from '../models/CustomRequest.js'
 import Order from '../models/Order.js'
 import Setting from '../models/Setting.js'
+import User from '../models/User.js'
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryHelper.js'
 import { emitCustomRequestCreated, emitCustomRequestUpdated, emitCustomRequestDeleted, emitOrderCreated } from '../socket.js'
+import { sendCustomQuoteReadyEmail, sendCustomRequestRejectedEmail } from '../services/orderEmail.service.js'
 
 async function processCustomImages(req, folder = 'lily-charm/custom-requests') {
   const rawList = []
@@ -61,6 +63,21 @@ export async function createCustomRequest(req, res, next) {
       return res.status(400).json({ message: 'Customer name, email, and full delivery address (address, city, pincode) are required!' })
     }
 
+    // Resolve user account if available
+    let linkedUserId = body.user || body.userId || req.user?._id
+    if (!linkedUserId && body.email) {
+      const u = await User.findOne({
+        $or: [
+          { email: body.email.toLowerCase().trim() },
+          { alternateEmails: body.email.toLowerCase().trim() },
+        ],
+      })
+      if (u) linkedUserId = u._id
+    }
+    if (linkedUserId) {
+      body.user = linkedUserId
+    }
+
     const uploadedUrls = await processCustomImages(req, 'lily-charm/custom-requests')
     if (uploadedUrls.length > 0) {
       body.images = uploadedUrls
@@ -96,6 +113,14 @@ export async function quotePrice(req, res, next) {
 
     if (!customRequest) return res.status(404).json({ message: 'Custom request not found' })
     emitCustomRequestUpdated(customRequest)
+
+    // Trigger Quote Ready Email to customer asynchronously
+    try {
+      await sendCustomQuoteReadyEmail(customRequest)
+    } catch (mailErr) {
+      console.warn('[CUSTOM QUOTE EMAIL WARNING]:', mailErr.message || mailErr)
+    }
+
     res.json(customRequest)
   } catch (err) {
     next(err)
@@ -112,7 +137,7 @@ export async function acceptQuoteAndCreateOrder(req, res, next) {
       return res.status(400).json({ message: 'This custom request has not been quoted by admin yet.' })
     }
 
-    const { shippingAddress, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body
+    const { shippingAddress, userId, userEmail, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body
 
     const itemTitle = `Custom Artwork: ${customRequest.stylePreference || 'Bespoke Floral Frame'}`
     const price = customRequest.quotedPrice
@@ -136,9 +161,42 @@ export async function acceptQuoteAndCreateOrder(req, res, next) {
 
     const total = price + shipping
 
+    // Resolve customer User account
+    let resolvedUser = null
+    const candidateUserId = userId || customRequest.user || req.user?._id
+    if (candidateUserId) {
+      resolvedUser = await User.findById(candidateUserId)
+    }
+    if (!resolvedUser) {
+      const emailCandidates = [
+        userEmail,
+        shippingAddress?.email,
+        customRequest.email,
+      ].filter(Boolean).map((e) => e.toLowerCase().trim())
+
+      if (emailCandidates.length > 0) {
+        resolvedUser = await User.findOne({
+          $or: [
+            { email: { $in: emailCandidates } },
+            { alternateEmails: { $in: emailCandidates } },
+          ],
+        })
+      }
+    }
+
+    // Unify email into user's alternateEmails if placed under another email
+    const orderShippingEmail = (shippingAddress?.email || customRequest.email || '').toLowerCase().trim()
+    if (resolvedUser && orderShippingEmail && resolvedUser.email !== orderShippingEmail) {
+      if (!Array.isArray(resolvedUser.alternateEmails)) resolvedUser.alternateEmails = []
+      if (!resolvedUser.alternateEmails.includes(orderShippingEmail)) {
+        resolvedUser.alternateEmails.push(orderShippingEmail)
+        await resolvedUser.save()
+      }
+    }
+
     const newOrder = await Order.create({
       orderNumber: `LC-CQ-${Date.now().toString().slice(-6)}`,
-      user: customRequest.user || req.user?._id,
+      user: resolvedUser ? resolvedUser._id : (customRequest.user || null),
       items: [
         {
           title: itemTitle,
@@ -169,6 +227,9 @@ export async function acceptQuoteAndCreateOrder(req, res, next) {
       statusHistory: [{ status: 'Confirmed', note: 'Custom price quote accepted and paid online via Razorpay.' }],
     })
 
+    if (resolvedUser && !customRequest.user) {
+      customRequest.user = resolvedUser._id
+    }
     customRequest.status = 'Paid & Order Placed'
     customRequest.convertedOrderId = newOrder._id.toString()
     await customRequest.save()
@@ -206,14 +267,28 @@ export async function declineQuote(req, res, next) {
 // PATCH /api/custom-requests/:id/status — Update status of a custom request directly
 export async function updateCustomRequestStatus(req, res, next) {
   try {
-    const { status } = req.body
+    const { status, reason, adminNotes } = req.body
+    const updateData = { status }
+    if (adminNotes !== undefined) updateData.adminNotes = adminNotes
+    if (reason && !adminNotes) updateData.adminNotes = reason
+
     const customRequest = await CustomRequest.findByIdAndUpdate(
       req.params.id,
-      { status },
+      updateData,
       { new: true }
     )
     if (!customRequest) return res.status(404).json({ message: 'Custom design request not found' })
     emitCustomRequestUpdated(customRequest)
+
+    // Trigger rejection notification email if status is Rejected or Declined
+    if (status === 'Rejected' || status === 'Declined') {
+      try {
+        await sendCustomRequestRejectedEmail(customRequest, reason || adminNotes || customRequest.adminNotes)
+      } catch (mailErr) {
+        console.warn('[CUSTOM REJECTED EMAIL WARNING]:', mailErr.message || mailErr)
+      }
+    }
+
     res.json(customRequest)
   } catch (err) {
     next(err)

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom Artwork Quote Ready — Lily Charm</title>
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FAF7F2; color: #2B2625; }
+    .container { max-width: 600px; margin: 20px auto; background-color: #FFFFFF; border: 1px solid #E6DDD0; border-radius: 8px; overflow: hidden; }
+    .header { background-color: #212B1C; color: #FFFFFF; text-align: center; padding: 32px 20px; }
+    .header h1 { margin: 0; font-size: 26px; letter-spacing: 3px; font-weight: 300; text-transform: uppercase; color: #FAF7F2; }
+    .header p { margin: 6px 0 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #E8DCC4; }
+    .content { padding: 32px 28px; }
+    .title { font-size: 20px; color: #212B1C; margin-top: 0; margin-bottom: 12px; font-weight: 600; }
+    .text { font-size: 14px; line-height: 1.6; color: #524B46; margin-bottom: 18px; }
+    .badge { display: inline-block; background-color: #E8F5E9; color: #2E7D32; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 13px; margin-bottom: 20px; border: 1px solid #C8E6C9; }
+    .quote-box { background-color: #FBF9F5; border: 1px solid #E6DDD0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    .quote-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+    .price-highlight { font-size: 24px; font-weight: bold; color: #1B5E20; margin: 8px 0; }
+    .btn-container { text-align: center; margin: 28px 0 16px; }
+    .btn { display: inline-block; background-color: #212B1C; color: #FAF7F2 !important; text-decoration: none; padding: 14px 32px; border-radius: 25px; font-weight: bold; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .footer { border-top: 1px solid #E6DDD0; background-color: #FAF7F2; padding: 20px; text-align: center; font-size: 11px; color: #8C847D; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>LILY CHARM</h1>
+      <p>Handcrafted Botanical Art & Velvet Sculptures</p>
+    </div>
+    <div class="content">
+      <span class="badge">✨ Custom Price Quote Ready</span>
+      <h2 class="title">Your Bespoke Design Quote is Prepared</h2>
+      <p class="text">Hello {{customerName}} 👋,</p>
+      <p class="text">Our lead artisan has reviewed your custom botanical design request for <strong>"{{stylePreference}}"</strong> and prepared your official price quote.</p>
+
+      <div class="quote-box">
+        <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #8C847D; font-weight: bold;">Artisan Quoted Price</div>
+        <div class="price-highlight">₹{{quotedPrice}}</div>
+        {{adminNotesHtml}}
+        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed #E6DDD0; font-size: 12px; color: #524B46;">
+          {{shippingNote}}
+        </div>
+      </div>
+
+      <p class="text">To review the quote and proceed with handcrafting, click below to accept and complete your secure order:</p>
+
+      <div class="btn-container">
+        <a href="{{actionUrl}}" class="btn" target="_blank">Review & Accept Quote ➔</a>
+      </div>
+
+      <p class="text" style="font-size: 12px; color: #8C847D; text-align: center;">
+        You can also check your quotes at any time under your <a href="{{dashboardUrl}}" style="color: #212B1C; font-weight: bold;">Customer Dashboard</a>.
+      </p>
+    </div>
+    <div class="footer">
+      <p>© 2026 Lily Charm Studio & Botanical Atelier. All rights reserved.</p>
+      <p>Bengaluru, Karnataka, India • contact@lilycharm.in</p>
+    </div>
+  </div>
+</body>
+</html>

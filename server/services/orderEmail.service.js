@@ -300,6 +300,76 @@ export async function sendNewsletterEmail(recipients = [], subject, content) {
   return results
 }
 
+/**
+ * ZeptoMail: Send Custom Design Quote Ready Email
+ */
+export async function sendCustomQuoteReadyEmail(customRequest) {
+  const recipientEmail = customRequest?.email
+  if (!recipientEmail) return null
+
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
+  const actionUrl = `${clientUrl}/dashboard?tab=custom-quotes`
+  const dashboardUrl = `${clientUrl}/dashboard`
+
+  const adminNotesHtml = customRequest.adminNotes
+    ? `<div style="margin-top: 10px; font-size: 13px; color: #4A3E39; line-height: 1.5;"><strong>Artisan Note:</strong> <em>${customRequest.adminNotes}</em></div>`
+    : ''
+
+  const price = Number(customRequest.quotedPrice || 0)
+  const shippingNote = price >= 2500
+    ? '✨ <strong>Free Standard Studio Shipping</strong> applies to this custom artwork.'
+    : '📦 Standard Studio Delivery applies at checkout.'
+
+  const html = compileTemplate('customQuoteReady.html', {
+    customerName: customRequest.name || 'Valued Collector',
+    stylePreference: customRequest.stylePreference || 'Bespoke Botanical Artwork',
+    quotedPrice: formatPrice(price),
+    adminNotesHtml,
+    shippingNote,
+    actionUrl,
+    dashboardUrl,
+  })
+
+  return await sendEmail({
+    type: 'order',
+    to: recipientEmail,
+    subject: `✨ Custom Design Quote Ready: ₹${formatPrice(price)} — Lily Charm`,
+    text: `Your custom botanical quote for "${customRequest.stylePreference}" is ready: ₹${formatPrice(price)}. Review and place order at ${actionUrl}`,
+    html,
+  })
+}
+
+/**
+ * ZeptoMail: Send Custom Design Request Rejected Email with Reason
+ */
+export async function sendCustomRequestRejectedEmail(customRequest, rejectionReason = '') {
+  const recipientEmail = customRequest?.email
+  if (!recipientEmail) return null
+
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
+  const shopUrl = `${clientUrl}/shop`
+
+  const finalReason =
+    rejectionReason ||
+    customRequest.adminNotes ||
+    'Due to botanical availability and current atelier production capacity, we are unable to handcraft this specific bespoke design concept at this time.'
+
+  const html = compileTemplate('customRequestRejected.html', {
+    customerName: customRequest.name || 'Valued Collector',
+    stylePreference: customRequest.stylePreference || 'Custom Botanical Concept',
+    rejectionReason: finalReason,
+    shopUrl,
+  })
+
+  return await sendEmail({
+    type: 'support',
+    to: recipientEmail,
+    subject: `Update on Your Custom Design Request — Lily Charm`,
+    text: `Update regarding your custom botanical design request for "${customRequest.stylePreference}": ${finalReason}. Explore ready-to-ship artwork at ${shopUrl}`,
+    html,
+  })
+}
+
 export default {
   sendOrderConfirmation,
   sendOrderInvoice,
@@ -312,4 +382,6 @@ export default {
   sendRefundRejected,
   sendRefundNotice,
   sendNewsletterEmail,
+  sendCustomQuoteReadyEmail,
+  sendCustomRequestRejectedEmail,
 }

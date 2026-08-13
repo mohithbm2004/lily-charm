@@ -306,11 +306,24 @@ export async function verifyPayment(req, res, next) {
 // GET /api/orders/my-orders or /api/orders/mine — Customer order history
 export async function getMyOrders(req, res, next) {
   try {
-    const userId = req.user?._id
+    const rawUserId = req.user?._id || req.query.userId
     const rawEmail = (req.query.email || req.user?.email || '').toLowerCase().trim()
 
     const queryConditions = []
-    if (userId) queryConditions.push({ user: userId })
+
+    if (rawUserId && mongoose.Types.ObjectId.isValid(rawUserId)) {
+      queryConditions.push({ user: rawUserId })
+      const u = await User.findById(rawUserId)
+      if (u) {
+        const allUserEmails = [u.email, ...(u.alternateEmails || [])].filter(Boolean)
+        allUserEmails.forEach((em) => {
+          const safe = em.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+          const reg = new RegExp(`^${safe}$`, 'i')
+          queryConditions.push({ 'shippingAddress.email': reg })
+          queryConditions.push({ email: reg })
+        })
+      }
+    }
 
     if (rawEmail) {
       const safeEmail = rawEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -327,14 +340,15 @@ export async function getMyOrders(req, res, next) {
 
       if (matchingUser) {
         queryConditions.push({ user: matchingUser._id })
-        if (Array.isArray(matchingUser.alternateEmails)) {
-          matchingUser.alternateEmails.forEach((alt) => {
-            if (alt) {
-              const altRegex = new RegExp(`^${alt}$`, 'i')
-              queryConditions.push({ 'shippingAddress.email': altRegex })
-            }
-          })
-        }
+        const allEmails = [matchingUser.email, ...(matchingUser.alternateEmails || [])].filter(Boolean)
+        allEmails.forEach((alt) => {
+          if (alt) {
+            const altSafe = alt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            const altRegex = new RegExp(`^${altSafe}$`, 'i')
+            queryConditions.push({ 'shippingAddress.email': altRegex })
+            queryConditions.push({ email: altRegex })
+          }
+        })
       }
     }
 

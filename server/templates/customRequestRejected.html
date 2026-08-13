@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom Design Request Update — Lily Charm</title>
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FAF7F2; color: #2B2625; }
+    .container { max-width: 600px; margin: 20px auto; background-color: #FFFFFF; border: 1px solid #E6DDD0; border-radius: 8px; overflow: hidden; }
+    .header { background-color: #212B1C; color: #FFFFFF; text-align: center; padding: 32px 20px; }
+    .header h1 { margin: 0; font-size: 26px; letter-spacing: 3px; font-weight: 300; text-transform: uppercase; color: #FAF7F2; }
+    .header p { margin: 6px 0 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #E8DCC4; }
+    .content { padding: 32px 28px; }
+    .title { font-size: 20px; color: #212B1C; margin-top: 0; margin-bottom: 12px; font-weight: 600; }
+    .text { font-size: 14px; line-height: 1.6; color: #524B46; margin-bottom: 18px; }
+    .badge { display: inline-block; background-color: #FFEBEE; color: #C62828; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 13px; margin-bottom: 20px; border: 1px solid #FFCDD2; }
+    .reason-box { background-color: #FFF8F8; border-left: 4px solid #D32F2F; padding: 16px; margin: 20px 0; border-radius: 4px; }
+    .btn-container { text-align: center; margin: 28px 0 16px; }
+    .btn { display: inline-block; background-color: #212B1C; color: #FAF7F2 !important; text-decoration: none; padding: 14px 32px; border-radius: 25px; font-weight: bold; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .footer { border-top: 1px solid #E6DDD0; background-color: #FAF7F2; padding: 20px; text-align: center; font-size: 11px; color: #8C847D; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>LILY CHARM</h1>
+      <p>Handcrafted Botanical Art & Velvet Sculptures</p>
+    </div>
+    <div class="content">
+      <span class="badge">✕ Custom Request Status Update</span>
+      <h2 class="title">Update on Your Custom Design Request</h2>
+      <p class="text">Hello {{customerName}} 👋,</p>
+      <p class="text">Thank you for submitting your custom botanical artwork request for <strong>"{{stylePreference}}"</strong>.</p>
+      <p class="text">After careful evaluation by our studio artisans, we regret to inform you that we are currently unable to fulfill this specific custom request.</p>
+
+      <div class="reason-box">
+        <strong style="color: #B71C1C; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Artisan Review Feedback:</strong>
+        <p style="margin: 6px 0 0; font-size: 14px; color: #333333; line-height: 1.5;">{{rejectionReason}}</p>
+      </div>
+
+      <p class="text">You are always welcome to submit a different custom concept or explore our ready-to-ship handcrafted collections in the atelier:</p>
+
+      <div class="btn-container">
+        <a href="{{shopUrl}}" class="btn" target="_blank">Explore Studio Artworks ➔</a>
+      </div>
+
+      <p class="text" style="font-size: 12px; color: #8C847D; text-align: center;">
+        If you have questions or would like to discuss alternative designs, feel free to reply to this email or reach us at <strong style="color: #212B1C;">contact@lilycharm.in</strong>.
+      </p>
+    </div>
+    <div class="footer">
+      <p>© 2026 Lily Charm Studio & Botanical Atelier. All rights reserved.</p>
+      <p>Bengaluru, Karnataka, India • contact@lilycharm.in</p>
+    </div>
+  </div>
+</body>
+</html>

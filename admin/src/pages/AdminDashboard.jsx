@@ -468,7 +468,19 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
             <label className="font-bold text-[0.68rem] uppercase">Status:</label>
             <select
               value={req.status || 'Quote Pending'}
-              onChange={(e) => updateCustomRequestStatus(req._id, e.target.value)}
+              onChange={(e) => {
+                const newStatus = e.target.value
+                if (newStatus === 'Rejected') {
+                  const reason = window.prompt(
+                    'Enter rejection feedback/reason to email to the customer:',
+                    req.adminNotes || 'Due to botanical availability and studio production capacity, we are unable to handcraft this specific bespoke design concept at this time.'
+                  )
+                  if (reason === null) return // Admin clicked cancel on prompt
+                  updateCustomRequestStatus(req._id, newStatus, reason)
+                } else {
+                  updateCustomRequestStatus(req._id, newStatus)
+                }
+              }}
               className="border border-[var(--color-line)] bg-[var(--color-bg)] p-1.5 text-xs font-semibold"
             >
               <option value="Quote Pending">Quote Pending</option>
