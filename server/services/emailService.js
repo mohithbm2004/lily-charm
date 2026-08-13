@@ -1,5 +1,6 @@
 import { sendOtpEmail, sendPasswordResetEmail, sendWelcomeEmail } from './otp.service.js'
 import {
+  getCustomerTransactionalEmail,
   sendOrderConfirmation,
   sendOrderInvoice,
   sendOrderPacked,
@@ -18,6 +19,7 @@ import {
 } from './email.service.js'
 
 export {
+  getCustomerTransactionalEmail,
   sendOtpEmail,
   sendPasswordResetEmail,
   sendWelcomeEmail,

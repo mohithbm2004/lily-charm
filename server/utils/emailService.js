@@ -1,4 +1,5 @@
 import {
+  getCustomerTransactionalEmail,
   sendOrderConfirmation,
   sendOrderInvoice,
   sendOrderPacked,
@@ -8,6 +9,8 @@ import {
   sendRefundNotice,
 } from '../services/orderEmail.service.js'
 import { sendEmail } from '../services/email.service.js'
+
+export { getCustomerTransactionalEmail }
 
 export async function sendOrderConfirmationEmail(order) {
   try {
@@ -90,6 +93,7 @@ export async function sendAdminNewOrderNotification(order) {
 }
 
 export default {
+  getCustomerTransactionalEmail,
   sendOrderConfirmationEmail,
   sendOrderStatusEmail,
   sendAdminNewOrderNotification,

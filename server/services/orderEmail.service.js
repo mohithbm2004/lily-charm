@@ -1,8 +1,78 @@
 import { sendEmail, compileTemplate } from './email.service.js'
 import { sendWelcomeEmail } from './otp.service.js'
+import User from '../models/User.js'
 
 function formatPrice(val) {
   return Number(val || 0).toLocaleString('en-IN')
+}
+
+/**
+ * Centralized Recipient Selector for Customer Transactional Emails:
+ * Ensures all transactional emails (order confirmation, status updates, invoices, refunds, quotes)
+ * are ALWAYS dispatched to the customer's REGISTERED ACCOUNT EMAIL ADDRESS when an account exists.
+ *
+ * Hierarchy:
+ * 1. If explicit user object/doc provided with email -> user.email
+ * 2. If order/request has a linked user ID -> fetch User from DB -> user.email
+ * 3. If order/request has email or shippingAddress.email matching a registered account -> user.email
+ * 4. Guest checkout only (no registered account in DB) -> order.email || order.shippingAddress.email
+ */
+export async function getCustomerTransactionalEmail(orderOrRequest, explicitUser = null) {
+  if (!orderOrRequest && !explicitUser) return null
+
+  // 1. Explicit User object or document passed
+  if (explicitUser && explicitUser.email) {
+    return explicitUser.email.toLowerCase().trim()
+  }
+
+  // 2. Populated or referenced user on the order/request
+  const candidateUserId = orderOrRequest?.user?._id || orderOrRequest?.user || orderOrRequest?.userId
+  if (candidateUserId) {
+    if (typeof candidateUserId === 'object' && candidateUserId.email) {
+      return candidateUserId.email.toLowerCase().trim()
+    }
+    try {
+      const dbUser = await User.findById(candidateUserId).select('email')
+      if (dbUser && dbUser.email) {
+        return dbUser.email.toLowerCase().trim()
+      }
+    } catch (e) {
+      console.warn('[GET TRANSACTIONAL EMAIL] Error looking up userId:', e.message)
+    }
+  }
+
+  // 3. Fallback database lookup: Check if any contact/shipping email matches a registered user in DB
+  const rawCandidateEmails = [
+    orderOrRequest?.email,
+    orderOrRequest?.shippingAddress?.email,
+    orderOrRequest?.billingAddress?.email,
+  ]
+    .filter(Boolean)
+    .map((e) => e.toLowerCase().trim())
+
+  if (rawCandidateEmails.length > 0) {
+    try {
+      const matchedUser = await User.findOne({
+        $or: [
+          { email: { $in: rawCandidateEmails } },
+          { alternateEmails: { $in: rawCandidateEmails } },
+        ],
+      }).select('email')
+
+      if (matchedUser && matchedUser.email) {
+        return matchedUser.email.toLowerCase().trim()
+      }
+    } catch (e) {
+      console.warn('[GET TRANSACTIONAL EMAIL] Error looking up candidate emails:', e.message)
+    }
+  }
+
+  // 4. Guest checkout ONLY: When no authenticated/registered account exists in the database
+  const guestEmail =
+    orderOrRequest?.email ||
+    orderOrRequest?.shippingAddress?.email ||
+    orderOrRequest?.billingAddress?.email
+  return guestEmail ? guestEmail.toLowerCase().trim() : null
 }
 
 function buildItemsHtml(items = []) {
@@ -16,9 +86,10 @@ function buildItemsHtml(items = []) {
       const title = item.title || item.name || 'Handcrafted Botanical Artwork'
       const qty = item.qty || 1
       const price = formatPrice((item.price || 0) * qty)
-      const specimen = item.specimen && item.specimen !== 'Specimen' && item.specimen !== 'CUSTOM-DESIGN'
-        ? `<div style="font-size: 11px; color: #7A6652; margin-top: 2px;">${item.specimen}</div>`
-        : ''
+      const specimen =
+        item.specimen && item.specimen !== 'Specimen' && item.specimen !== 'CUSTOM-DESIGN'
+          ? `<div style="font-size: 11px; color: #7A6652; margin-top: 2px;">${item.specimen}</div>`
+          : ''
 
       const imageTd = imgSrc
         ? `<td style="padding: 12px 10px 12px 14px; border-bottom: 1px solid #EFEAE1; width: 62px; vertical-align: middle;">
@@ -51,7 +122,7 @@ function buildItemsHtml(items = []) {
  * ZeptoMail: Send Order Confirmation Email (From: orders@lilycharm.in)
  */
 export async function sendOrderConfirmation(order) {
-  const recipientEmail = order.shippingAddress?.email || order.email
+  const recipientEmail = await getCustomerTransactionalEmail(order)
   if (!recipientEmail) return null
 
   const clientUrl = process.env.CLIENT_URL || 'https://lilycharm.in'
@@ -93,7 +164,7 @@ export async function sendOrderConfirmation(order) {
  * ZeptoMail: Send Tax Invoice (From: orders@lilycharm.in with optional PDF attachment)
  */
 export async function sendOrderInvoice(order, pdfBuffer = null) {
-  const recipientEmail = order.shippingAddress?.email || order.email
+  const recipientEmail = await getCustomerTransactionalEmail(order)
   if (!recipientEmail) return null
 
   const itemsHtml = buildItemsHtml(order.items)
@@ -135,15 +206,16 @@ export async function sendOrderInvoice(order, pdfBuffer = null) {
  * ZeptoMail: Send Payment Success Email (From: orders@lilycharm.in)
  */
 export async function sendPaymentSuccess(order) {
-  const recipientEmail = order.shippingAddress?.email || order.email
+  const recipientEmail = await getCustomerTransactionalEmail(order)
   if (!recipientEmail) return null
 
   const html = compileTemplate('paymentSuccess.html', {
     customerName: order.shippingAddress?.name || 'Valued Customer',
     orderNumber: order.orderNumber,
     paymentId: order.razorpayPaymentId || 'PAID-ONLINE',
-    amountPaid: formatPrice(order.grandTotal || order.total),
+    amount: formatPrice(order.grandTotal || order.total),
     paymentMethod: order.paymentMethod || 'Razorpay Online Payment',
+    orderUrl: `${process.env.CLIENT_URL || 'https://lilycharm.in'}/account`,
   })
 
   return await sendEmail({
@@ -159,7 +231,7 @@ export async function sendPaymentSuccess(order) {
  * ZeptoMail: Send Order Packed Email (From: orders@lilycharm.in)
  */
 export async function sendOrderPacked(order) {
-  const recipientEmail = order.shippingAddress?.email || order.email
+  const recipientEmail = await getCustomerTransactionalEmail(order)
   if (!recipientEmail) return null
 
   const html = compileTemplate('packed.html', {
@@ -180,17 +252,17 @@ export async function sendOrderPacked(order) {
  * ZeptoMail: Send Order Shipped Email (From: orders@lilycharm.in)
  */
 export async function sendOrderShipped(order) {
-  const recipientEmail = order.shippingAddress?.email || order.email
+  const recipientEmail = await getCustomerTransactionalEmail(order)
   if (!recipientEmail) return null
 
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
+  const clientUrl = process.env.CLIENT_URL || 'https://lilycharm.in'
   const html = compileTemplate('shipped.html', {
     statusTitle: 'Order Dispatched & In Transit',
     customerName: order.shippingAddress?.name || 'Valued Customer',
     orderNumber: order.orderNumber,
     carrier: order.carrier || 'BlueDart / Delhivery',
     trackingNumber: order.trackingNumber || 'TRACK-LIVE',
-    note: 'Your package is on its way to your delivery address.',
+    note: order.notes || 'Your package is on its way to your delivery address.',
     trackingUrl: `${clientUrl}/account`,
   })
 
@@ -207,7 +279,7 @@ export async function sendOrderShipped(order) {
  * ZeptoMail: Send Out For Delivery Email (From: orders@lilycharm.in)
  */
 export async function sendOrderOutForDelivery(order) {
-  const recipientEmail = order.shippingAddress?.email || order.email
+  const recipientEmail = await getCustomerTransactionalEmail(order)
   if (!recipientEmail) return null
 
   const shippingAddressStr = `${order.shippingAddress?.line1 || order.shippingAddress?.address || ''}, ${order.shippingAddress?.city || ''} - ${order.shippingAddress?.pincode || ''}`
@@ -230,10 +302,10 @@ export async function sendOrderOutForDelivery(order) {
  * ZeptoMail: Send Order Delivered Email (From: orders@lilycharm.in)
  */
 export async function sendOrderDelivered(order) {
-  const recipientEmail = order.shippingAddress?.email || order.email
+  const recipientEmail = await getCustomerTransactionalEmail(order)
   if (!recipientEmail) return null
 
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
+  const clientUrl = process.env.CLIENT_URL || 'https://lilycharm.in'
   const html = compileTemplate('delivered.html', {
     customerName: order.shippingAddress?.name || 'Valued Customer',
     orderNumber: order.orderNumber,
@@ -253,7 +325,7 @@ export async function sendOrderDelivered(order) {
  * ZeptoMail: Send Refund Approved Email (From: orders@lilycharm.in)
  */
 export async function sendRefundApproved(order) {
-  const recipientEmail = order.shippingAddress?.email || order.email
+  const recipientEmail = await getCustomerTransactionalEmail(order)
   if (!recipientEmail) return null
 
   const refundAmount = order.refundAmount || order.grandTotal || order.total
@@ -261,7 +333,7 @@ export async function sendRefundApproved(order) {
     customerName: order.shippingAddress?.name || 'Valued Customer',
     orderNumber: order.orderNumber,
     refundAmount: formatPrice(refundAmount),
-    refundId: order.refundId || 'REFUND-PROCESSED',
+    refundId: order.refundId || order.razorpayRefundId || 'REFUND-PROCESSED',
   })
 
   return await sendEmail({
@@ -277,7 +349,7 @@ export async function sendRefundApproved(order) {
  * ZeptoMail: Send Refund Rejected Email (From: orders@lilycharm.in)
  */
 export async function sendRefundRejected(order, reason = '') {
-  const recipientEmail = order.shippingAddress?.email || order.email
+  const recipientEmail = await getCustomerTransactionalEmail(order)
   if (!recipientEmail) return null
 
   const html = compileTemplate('refundRejected.html', {
@@ -313,7 +385,7 @@ export async function sendRefundNotice(order, isApproved = true, amount = 0, rea
 export async function sendNewsletterEmail(recipients = [], subject, content) {
   const results = []
   const emailList = Array.isArray(recipients) ? recipients : [recipients]
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
+  const clientUrl = process.env.CLIENT_URL || 'https://lilycharm.in'
 
   for (const email of emailList) {
     try {
@@ -344,10 +416,10 @@ export async function sendNewsletterEmail(recipients = [], subject, content) {
  * ZeptoMail: Send Custom Design Quote Ready Email
  */
 export async function sendCustomQuoteReadyEmail(customRequest) {
-  const recipientEmail = customRequest?.email
+  const recipientEmail = await getCustomerTransactionalEmail(customRequest)
   if (!recipientEmail) return null
 
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
+  const clientUrl = process.env.CLIENT_URL || 'https://lilycharm.in'
   const actionUrl = `${clientUrl}/dashboard?tab=custom-quotes`
   const dashboardUrl = `${clientUrl}/dashboard`
 
@@ -356,9 +428,10 @@ export async function sendCustomQuoteReadyEmail(customRequest) {
     : ''
 
   const price = Number(customRequest.quotedPrice || 0)
-  const shippingNote = price >= 2500
-    ? '✨ <strong>Free Standard Studio Shipping</strong> applies to this custom artwork.'
-    : '📦 Standard Studio Delivery applies at checkout.'
+  const shippingNote =
+    price >= 2500
+      ? '✨ <strong>Free Standard Studio Shipping</strong> applies to this custom artwork.'
+      : '📦 Standard Studio Delivery applies at checkout.'
 
   const html = compileTemplate('customQuoteReady.html', {
     customerName: customRequest.name || 'Valued Collector',
@@ -383,10 +456,10 @@ export async function sendCustomQuoteReadyEmail(customRequest) {
  * ZeptoMail: Send Custom Design Request Rejected Email with Reason
  */
 export async function sendCustomRequestRejectedEmail(customRequest, rejectionReason = '') {
-  const recipientEmail = customRequest?.email
+  const recipientEmail = await getCustomerTransactionalEmail(customRequest)
   if (!recipientEmail) return null
 
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
+  const clientUrl = process.env.CLIENT_URL || 'https://lilycharm.in'
   const shopUrl = `${clientUrl}/shop`
 
   const finalReason =
@@ -411,6 +484,7 @@ export async function sendCustomRequestRejectedEmail(customRequest, rejectionRea
 }
 
 export default {
+  getCustomerTransactionalEmail,
   sendOrderConfirmation,
   sendOrderInvoice,
   sendPaymentSuccess,
