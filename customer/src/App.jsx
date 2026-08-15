@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard'
 import Collections from './pages/Collections'
 import About from './pages/About'
 import Contact from './pages/Contact'
+import FAQ from './pages/FAQ'
 import ResetPassword from './pages/ResetPassword'
 import PayCustomQuote from './pages/PayCustomQuote'
 
@@ -49,6 +50,7 @@ export default function App() {
             <Route path="/custom-quote/:id/pay" element={<PageTransition><PayCustomQuote /></PageTransition>} />
             <Route path="/about" element={<PageTransition><About /></PageTransition>} />
             <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
+            <Route path="/faq" element={<PageTransition><FAQ /></PageTransition>} />
             <Route path="/journal" element={<Navigate to="/" replace />} />
             <Route path="/reset-password" element={<PageTransition><ResetPassword /></PageTransition>} />
           </Routes>
