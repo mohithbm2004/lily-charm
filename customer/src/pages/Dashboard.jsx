@@ -876,54 +876,101 @@ export default function Dashboard() {
                           {['Pending Payment', 'Paid', 'Confirmed', 'Pending'].includes(o.status) && (
                             <button
                               onClick={() => {
+                                const isPaidOrder = o.paymentStatus === 'Paid'
                                 const orderTotal = o.grandTotal ?? o.total ?? 0
                                 const processingFee = Math.round(orderTotal * 0.03)
                                 const netRefund = Math.max(0, orderTotal - processingFee)
 
-                                showConfirm({
-                                  title: 'Cancel Order Confirmation',
-                                  type: 'warning',
-                                  message: `Are you sure you want to cancel order "${o.orderNumber || o._id}"? Automatic refund will be processed back to your original payment method.`,
-                                  details: [
-                                    { label: 'Order Number', value: o.orderNumber || o._id },
-                                    { label: 'Original Order Total', value: formatPrice(orderTotal) },
-                                    { label: 'Processing Fee (3%)', value: `- ${formatPrice(processingFee)}`, color: 'text-rose-700 font-bold' },
-                                    { label: 'Net Refund to Customer (97%)', value: formatPrice(netRefund), color: 'text-emerald-800 font-bold text-sm', isTotal: true },
-                                  ],
-                                  disclaimer: 'Customer self-cancellation incurs a 3% payment processing fee. The net 97% refund is automatically credited back to your original payment method within 5–7 banking days. (Note: 100% full refund applies if cancelled by Studio).',
-                                  confirmText: `Confirm Cancellation (${formatPrice(netRefund)} Refund)`,
-                                  cancelText: 'Keep Order',
-                                  onConfirm: async () => {
-                                    try {
-                                      const res = await fetch(`${API_URL}/orders/${o._id}/cancel`, {
-                                        method: 'PATCH',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ reason: 'Cancelled by customer via dashboard' }),
-                                      })
-                                      const data = await res.json()
-                                      if (res.ok) {
-                                        showAlert({
-                                          title: 'Order Cancelled & Refund Initiated',
-                                          type: 'success',
-                                          message: `✨ Order ${o.orderNumber || o._id} has been cancelled. Net refund of ${formatPrice(netRefund)} (97%) has been sent to your original payment method.`,
+                                if (isPaidOrder) {
+                                  showConfirm({
+                                    title: 'Cancel Order Confirmation',
+                                    type: 'warning',
+                                    message: `Are you sure you want to cancel paid order "${o.orderNumber || o._id}"? Automatic refund will be processed back to your original payment method.`,
+                                    details: [
+                                      { label: 'Order Number', value: o.orderNumber || o._id },
+                                      { label: 'Original Order Total', value: formatPrice(orderTotal) },
+                                      { label: 'Processing Fee (3%)', value: `- ${formatPrice(processingFee)}`, color: 'text-rose-700 font-bold' },
+                                      { label: 'Net Refund to Customer (97%)', value: formatPrice(netRefund), color: 'text-emerald-800 font-bold text-sm', isTotal: true },
+                                    ],
+                                    disclaimer: 'Customer self-cancellation incurs a 3% payment processing fee. The net 97% refund is automatically credited back to your original payment method within 5–7 banking days. (Note: 100% full refund applies if cancelled by Studio).',
+                                    confirmText: `Confirm Cancellation (${formatPrice(netRefund)} Refund)`,
+                                    cancelText: 'Keep Order',
+                                    onConfirm: async () => {
+                                      try {
+                                        const res = await fetch(`${API_URL}/orders/${o._id}/cancel`, {
+                                          method: 'PATCH',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ reason: 'Cancelled by customer via dashboard' }),
                                         })
-                                        fetchUserOrdersAndRequests(userProfile.email)
-                                      } else {
+                                        const data = await res.json()
+                                        if (res.ok) {
+                                          showAlert({
+                                            title: 'Order Cancelled & Refund Initiated',
+                                            type: 'success',
+                                            message: `✨ Order ${o.orderNumber || o._id} has been cancelled. Net refund of ${formatPrice(netRefund)} (97%) has been sent to your original payment method.`,
+                                          })
+                                          fetchUserOrdersAndRequests(userProfile.email)
+                                        } else {
+                                          showAlert({
+                                            title: 'Cancellation Failed',
+                                            type: 'error',
+                                            message: data.message || 'Failed to cancel order.',
+                                          })
+                                        }
+                                      } catch {
                                         showAlert({
-                                          title: 'Cancellation Failed',
+                                          title: 'Connection Error',
                                           type: 'error',
-                                          message: data.message || 'Failed to cancel order.',
+                                          message: 'Network error attempting order cancellation.',
                                         })
                                       }
-                                    } catch {
-                                      showAlert({
-                                        title: 'Connection Error',
-                                        type: 'error',
-                                        message: 'Network error attempting order cancellation.',
-                                      })
-                                    }
-                                  },
-                                })
+                                    },
+                                  })
+                                } else {
+                                  showConfirm({
+                                    title: 'Cancel Unpaid Order',
+                                    type: 'warning',
+                                    message: `Are you sure you want to cancel order "${o.orderNumber || o._id}"? Because this order is unpaid, no payment has been charged and no refund will be issued.`,
+                                    details: [
+                                      { label: 'Order Number', value: o.orderNumber || o._id },
+                                      { label: 'Order Total', value: formatPrice(orderTotal) },
+                                      { label: 'Payment Status', value: 'Unpaid / Pending' },
+                                    ],
+                                    disclaimer: 'This order will be cancelled immediately. No charges were made to your account.',
+                                    confirmText: 'Confirm Order Cancellation',
+                                    cancelText: 'Keep Order',
+                                    onConfirm: async () => {
+                                      try {
+                                        const res = await fetch(`${API_URL}/orders/${o._id}/cancel`, {
+                                          method: 'PATCH',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ reason: 'Cancelled by customer before payment' }),
+                                        })
+                                        const data = await res.json()
+                                        if (res.ok) {
+                                          showAlert({
+                                            title: 'Order Cancelled',
+                                            type: 'success',
+                                            message: `✨ Order ${o.orderNumber || o._id} has been cancelled. No payment was charged.`,
+                                          })
+                                          fetchUserOrdersAndRequests(userProfile.email)
+                                        } else {
+                                          showAlert({
+                                            title: 'Cancellation Failed',
+                                            type: 'error',
+                                            message: data.message || 'Failed to cancel order.',
+                                          })
+                                        }
+                                      } catch {
+                                        showAlert({
+                                          title: 'Connection Error',
+                                          type: 'error',
+                                          message: 'Network error attempting order cancellation.',
+                                        })
+                                      }
+                                    },
+                                  })
+                                }
                               }}
                               className="bg-rose-700 hover:bg-rose-800 text-white font-bold text-[0.65rem] uppercase tracking-wider px-3 py-2 transition-colors flex items-center gap-1 rounded"
                             >

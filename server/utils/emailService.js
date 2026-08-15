@@ -7,6 +7,7 @@ import {
   sendOrderOutForDelivery,
   sendOrderDelivered,
   sendRefundNotice,
+  sendOrderCancellation,
 } from '../services/orderEmail.service.js'
 import { sendEmail } from '../services/email.service.js'
 
@@ -54,12 +55,23 @@ export async function sendOrderStatusEmail(order, newStatus, note = '') {
       return await sendOrderDelivered(order)
     }
 
-    // 5. Refund / Cancelled
-    if (statusLower.includes('refund') || statusLower.includes('cancelled')) {
+    // 5. Refund Processed / Cancelled with Refund
+    if (
+      statusLower.includes('refund') ||
+      statusLower === 'cancelled & refunded' ||
+      order.paymentStatus === 'Refunded' ||
+      Boolean(order.razorpayRefundId) ||
+      (statusLower.includes('cancelled') && Number(order.refundAmount) > 0 && order.paymentStatus === 'Refunded')
+    ) {
       return await sendRefundNotice(order, true, order.refundAmount, note)
     }
 
-    // 6. Internal / Studio steps (Processing, Handcrafting, Confirmed, Paid, Pending Payment) -> Do NOT send dispatch email
+    // 6. Cancelled without Refund (Unpaid / Pending payment cancelled)
+    if (statusLower.includes('cancelled') || statusLower.includes('cancel')) {
+      return await sendOrderCancellation(order, note)
+    }
+
+    // 7. Internal / Studio steps (Processing, Handcrafting, Confirmed, Paid, Pending Payment) -> Do NOT send dispatch email
     return { success: true, skipped: true, reason: `No customer email needed for status: ${newStatus}` }
   } catch (err) {
     console.warn('[ORDER STATUS EMAIL WARNING]:', err.message || err)

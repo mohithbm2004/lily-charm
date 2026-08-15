@@ -221,6 +221,16 @@ export async function createQuoteRazorpayOrder(req, res, next) {
     const totalAmount = price + shipping
     const amountInPaise = Math.round(totalAmount * 100)
 
+    let customerEmail = customRequest.email
+    let customerName = customRequest.name
+    if (customRequest.user) {
+      const userDoc = await User.findById(customRequest.user).select('email name')
+      if (userDoc?.email) {
+        customerEmail = userDoc.email
+        customerName = userDoc.name || customerName
+      }
+    }
+
     let razorpayOrderId = null
     try {
       if (razorpay && razorpay.orders) {
@@ -231,8 +241,8 @@ export async function createQuoteRazorpayOrder(req, res, next) {
           notes: {
             customRequestId: customRequest._id.toString(),
             type: 'custom_quote',
-            customerName: customRequest.name,
-            customerEmail: customRequest.email,
+            customerName,
+            customerEmail: customerEmail.toLowerCase().trim(),
           },
         })
         razorpayOrderId = razorpayOrder.id

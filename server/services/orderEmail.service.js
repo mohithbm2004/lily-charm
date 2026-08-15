@@ -380,6 +380,37 @@ export async function sendRefundNotice(order, isApproved = true, amount = 0, rea
 }
 
 /**
+ * ZeptoMail: Send Order Cancellation Notice (No Refund / Unpaid Order) (From: orders@lilycharm.in)
+ */
+export async function sendOrderCancellation(order, reason = '') {
+  const recipientEmail = await getCustomerTransactionalEmail(order)
+  if (!recipientEmail) return null
+
+  const clientUrl = process.env.CLIENT_URL || 'https://lilycharm.in'
+  const shopUrl = `${clientUrl}/collections`
+
+  const reasonHtml = reason
+    ? `<p style="margin: 0 0 6px;"><strong>Cancellation Reason:</strong> ${reason}</p>`
+    : ''
+
+  const html = compileTemplate('orderCancelled.html', {
+    customerName: order.shippingAddress?.name || 'Valued Customer',
+    orderNumber: order.orderNumber,
+    paymentNotice: 'Unpaid / No payment charged',
+    reasonHtml,
+    shopUrl,
+  })
+
+  return await sendEmail({
+    type: 'order',
+    to: recipientEmail,
+    subject: `Order Cancelled: ${order.orderNumber} - Lily Charm`,
+    text: `Your order ${order.orderNumber} has been cancelled. No payment was charged.`,
+    html,
+  })
+}
+
+/**
  * ZeptoMail: Send Newsletter Broadcast Email (From: contact@lilycharm.in)
  */
 export async function sendNewsletterEmail(recipients = [], subject, content) {
@@ -495,6 +526,7 @@ export default {
   sendRefundApproved,
   sendRefundRejected,
   sendRefundNotice,
+  sendOrderCancellation,
   sendNewsletterEmail,
   sendCustomQuoteReadyEmail,
   sendCustomRequestRejectedEmail,

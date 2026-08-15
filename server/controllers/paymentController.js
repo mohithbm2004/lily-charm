@@ -210,6 +210,37 @@ export async function handleRazorpayWebhook(req, res, next) {
           )
         }
       }
+    } else if (event.event === 'refund.created' || event.event === 'refund.processed') {
+      const refundEntity = event.payload?.refund?.entity
+      if (refundEntity) {
+        const paymentId = refundEntity.payment_id
+        const refundId = refundEntity.id
+        const amount = (refundEntity.amount || 0) / 100
+
+        const order = await Order.findOne({
+          $or: [{ razorpayPaymentId: paymentId }, { razorpayRefundId: refundId }],
+        })
+
+        if (order) {
+          order.status = 'Cancelled & Refunded'
+          order.paymentStatus = 'Refunded'
+          order.refundStatus = 'Processed'
+          order.razorpayRefundId = refundId
+          if (!order.refundAmount) order.refundAmount = amount
+          order.statusHistory.push({
+            status: 'Cancelled & Refunded',
+            note: `Refund confirmed via Razorpay webhook (${refundId}).`,
+          })
+          await order.save()
+
+          await Payment.findOneAndUpdate(
+            { $or: [{ razorpayPaymentId: paymentId }, { order: order._id }] },
+            { status: 'refunded', refundId, refundAmount: amount }
+          )
+
+          emitOrderUpdated(order)
+        }
+      }
     }
 
     res.status(200).json({ status: 'ok' })
