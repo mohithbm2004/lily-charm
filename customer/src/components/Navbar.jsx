@@ -13,6 +13,7 @@ const navLinks = [
   { to: '/shop', label: 'SHOP' },
   { to: '/collections', label: 'COLLECTIONS' },
   { to: '/about', label: 'ABOUT' },
+  { to: '/faq', label: 'FAQS' },
   { to: '/contact', label: 'CONTACT' },
 ]
 
