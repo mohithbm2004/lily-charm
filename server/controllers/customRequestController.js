@@ -130,34 +130,26 @@ export async function getPublicQuoteSummary(req, res, next) {
 // POST /api/custom-requests — Create new custom design request from customer
 export async function createCustomRequest(req, res, next) {
   try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Please log in to request a custom quote.' })
+    }
+
     const body = { ...req.body }
 
     if (
       !body.name?.trim() ||
-      !body.email?.trim() ||
       !body.address?.trim() ||
       !body.city?.trim() ||
       !body.pincode?.trim()
     ) {
       return res.status(400).json({
-        message: 'Customer name, email, and full delivery address (address, city, pincode) are required!',
+        message: 'Customer name and full delivery address (address, city, pincode) are required!',
       })
     }
 
-    // Resolve user account if available
-    let linkedUserId = body.user || body.userId || req.user?._id
-    if (!linkedUserId && body.email) {
-      const u = await User.findOne({
-        $or: [
-          { email: body.email.toLowerCase().trim() },
-          { alternateEmails: body.email.toLowerCase().trim() },
-        ],
-      })
-      if (u) linkedUserId = u._id
-    }
-    if (linkedUserId) {
-      body.user = linkedUserId
-    }
+    // Strictly bind to authenticated user session
+    body.user = req.user._id
+    body.email = req.user.email // Always enforce authenticated user's registered email
 
     const uploadedUrls = await processCustomImages(req, 'lily-charm/custom-requests')
     if (uploadedUrls.length > 0) {

@@ -6,7 +6,13 @@ import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { API_URL } from '../config/api'
 
-export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
+export default function AuthModal({
+  isOpen,
+  onClose,
+  initialMode = 'login',
+  onSuccess,
+  customNotice,
+}) {
   const { updateUserProfile, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
 
@@ -178,6 +184,18 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
     }
   }
 
+  const handleAuthSuccess = (authenticatedUser) => {
+    updateUserProfile(authenticatedUser)
+    setTimeout(() => {
+      onClose()
+      if (typeof onSuccess === 'function') {
+        onSuccess(authenticatedUser)
+      } else {
+        navigate('/dashboard')
+      }
+    }, 600)
+  }
+
   const handleGoogleCredentialSuccess = async (credentialResponse) => {
     setIsLoading(true)
     setErrorMessage('')
@@ -185,12 +203,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
       const tokenOrCredential = credentialResponse.credential || credentialResponse.access_token
       const result = await loginWithGoogle(tokenOrCredential)
       if (result.ok) {
-        updateUserProfile(result.user)
         setSuccessMessage('🎉 Signed in successfully!')
-        setTimeout(() => {
-          onClose()
-          navigate('/dashboard')
-        }, 800)
+        handleAuthSuccess(result.user)
       } else {
         setErrorMessage(result.error || 'Could not sign in with Google. Please try again.')
       }
@@ -210,12 +224,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
         const tokenOrCode = tokenResponse.access_token || tokenResponse.credential
         const result = await loginWithGoogle(tokenOrCode)
         if (result.ok) {
-          updateUserProfile(result.user)
           setSuccessMessage('🎉 Signed in successfully!')
-          setTimeout(() => {
-            onClose()
-            navigate('/dashboard')
-          }, 800)
+          handleAuthSuccess(result.user)
         } else {
           setErrorMessage(result.error || 'Could not sign in with Google. Please try again.')
         }
@@ -272,13 +282,9 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
 
         const data = await res.json()
         if (res.ok) {
-          updateUserProfile(data.user)
           if (data.token) localStorage.setItem('lilycharm_token', data.token)
           setSuccessMessage('🎉 Welcome back! Signed in successfully.')
-          setTimeout(() => {
-            onClose()
-            navigate('/dashboard')
-          }, 800)
+          handleAuthSuccess(data.user)
         } else if (res.status === 403 && data.requiresOtp) {
           setMode('otp')
         } else {
@@ -300,13 +306,9 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
         if (res.ok && data.requiresOtp) {
           setMode('otp')
         } else if (res.ok) {
-          updateUserProfile(data.user)
           if (data.token) localStorage.setItem('lilycharm_token', data.token)
           setSuccessMessage('✨ Account created successfully!')
-          setTimeout(() => {
-            onClose()
-            navigate('/dashboard')
-          }, 800)
+          handleAuthSuccess(data.user)
         } else {
           setErrorMessage(data.message || 'Registration failed.')
         }
@@ -371,6 +373,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                 ? 'Forgot Password'
                 : 'Verify Your Email'}
             </h2>
+
+            {customNotice && (
+              <div className="p-2.5 sm:p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold rounded-2xl text-center leading-snug">
+                🌸 {customNotice}
+              </div>
+            )}
 
             {mode !== 'otp' && (
               <div className="flex border-b border-[var(--color-line)]">

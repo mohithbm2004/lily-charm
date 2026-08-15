@@ -14,6 +14,10 @@ import { emitOrderCreated, emitOrderUpdated, emitOrderCancelled, emitCartUpdated
 // POST /api/create-order or /api/orders/create-razorpay-order
 export async function createRazorpayOrder(req, res, next) {
   try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Please log in to complete your order.' })
+    }
+
     const { amount, currency = 'INR', receipt } = req.body
     const parsedAmount = Number(amount)
     if (isNaN(parsedAmount) || parsedAmount < 100) {
@@ -50,6 +54,10 @@ export async function createRazorpayOrder(req, res, next) {
 // POST /api/orders — Create full MongoDB Order & Razorpay Order
 export async function createOrder(req, res, next) {
   try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Please log in to complete your order.' })
+    }
+
     const {
       items,
       shippingAddress,

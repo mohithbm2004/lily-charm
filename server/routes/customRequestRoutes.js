@@ -11,12 +11,13 @@ import {
   deleteCustomRequest,
 } from '../controllers/customRequestController.js'
 import { uploadAnyImages } from '../middleware/upload.js'
+import { protect } from '../middleware/auth.js'
 
 const router = Router()
 
 router.get('/', listCustomRequests)
 router.get('/:id/public-summary', getPublicQuoteSummary)
-router.post('/', uploadAnyImages, createCustomRequest)
+router.post('/', protect, uploadAnyImages, createCustomRequest)
 router.patch('/:id/quote', quotePrice)
 router.post('/:id/create-razorpay-order', createQuoteRazorpayOrder)
 router.post('/:id/accept', acceptQuoteAndCreateOrder)

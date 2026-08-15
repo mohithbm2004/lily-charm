@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Sparkles, Upload, CheckCircle2, Search, Check, Ban, Link as LinkIcon } from 'lucide-react'
+import { X, Sparkles, Upload, CheckCircle2, Search, Check, Ban, Link as LinkIcon, Package } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatPrice } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
 import { useAlert } from '../context/AlertContext'
 import { useStudio } from '../context/StudioContext'
+import AuthModal from './AuthModal'
 import { API_URL } from '../config/api'
 
 export default function CustomDesignModal({ isOpen, onClose }) {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const { showAlert, showConfirm } = useAlert()
   const { shippingSettings } = useStudio()
   const [activeTab, setActiveTab] = useState('submit') // 'submit' | 'check-quotes'
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const [authInitialMode, setAuthInitialMode] = useState('login')
 
   const isShippingEnabled = shippingSettings?.shippingFeeEnabled ?? true
   const standardShippingFee = shippingSettings?.standardShippingFee ?? 100
@@ -139,6 +142,13 @@ export default function CustomDesignModal({ isOpen, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    if (!user || !token) {
+      setAuthInitialMode('login')
+      setIsAuthModalOpen(true)
+      return
+    }
+
     const errs = {}
     if (!formData.name?.trim()) errs.name = 'Full Name is required!'
     if (!formData.email?.trim()) errs.email = 'Email Address is required!'
@@ -170,7 +180,10 @@ export default function CustomDesignModal({ isOpen, onClose }) {
 
       const res = await fetch(`${API_URL}/custom-requests`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(payload),
       })
 
@@ -178,9 +191,8 @@ export default function CustomDesignModal({ isOpen, onClose }) {
         setSubmittedSuccess(true)
         setSearchEmail(formData.email)
       } else {
-        const errText = await res.text()
-        console.error('Failed to submit custom request:', res.status, errText)
-        alert('We could not send your request. Please try again.')
+        const errData = await res.json().catch(() => ({}))
+        alert(errData.message || 'We could not send your request. Please try again.')
       }
     } catch (err) {
       console.error('Error submitting custom design request:', err)
@@ -459,7 +471,43 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                   </div>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+                <>
+                  {!user && (
+                    <div className="bg-amber-50/90 border border-amber-300 rounded-2xl p-4 sm:p-5 mb-4 text-xs text-[var(--color-ink)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+                      <div className="space-y-1">
+                        <p className="font-bold text-sm text-amber-950 flex items-center gap-1.5">
+                          <span>🌸</span> Please log in to request a custom quote.
+                        </p>
+                        <p className="text-[0.72rem] text-amber-900/80 leading-relaxed">
+                          Sign in to save your bespoke floral request and track studio quote estimates.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAuthInitialMode('login')
+                            setIsAuthModalOpen(true)
+                          }}
+                          className="btn-primary text-xs py-2 px-4 rounded-xl flex-1 sm:flex-initial text-center font-bold tracking-wider uppercase cursor-pointer"
+                        >
+                          Sign In
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAuthInitialMode('register')
+                            setIsAuthModalOpen(true)
+                          }}
+                          className="btn-outline text-xs py-2 px-4 rounded-xl flex-1 sm:flex-initial text-center font-bold tracking-wider uppercase cursor-pointer"
+                        >
+                          Create Account
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSubmit} className="space-y-4 text-xs">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block font-bold uppercase mb-1">
@@ -684,6 +732,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                     </button>
                   </div>
                 </form>
+                </>
               )}
             </>
           )}
@@ -862,6 +911,26 @@ export default function CustomDesignModal({ isOpen, onClose }) {
           )}
         </motion.div>
       </div>
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authInitialMode}
+        customNotice="Please log in to request a custom quote."
+        onSuccess={(loggedInUser) => {
+          setFormData((prev) => ({
+            ...prev,
+            name: loggedInUser.name || prev.name,
+            email: loggedInUser.email || prev.email,
+            phone: loggedInUser.phone || prev.phone,
+            address: loggedInUser.address || prev.address,
+            city: loggedInUser.city || prev.city,
+            pincode: loggedInUser.pincode || prev.pincode,
+          }))
+          setSearchEmail(loggedInUser.email || '')
+          setIsAuthModalOpen(false)
+        }}
+      />
     </AnimatePresence>
   )
 }

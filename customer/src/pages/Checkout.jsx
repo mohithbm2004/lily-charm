@@ -4,7 +4,8 @@ import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { formatPrice } from '../lib/format'
 import Reveal from '../components/Reveal'
-import { CheckCircle2, ShoppingBag, AlertTriangle } from 'lucide-react'
+import AuthModal from '../components/AuthModal'
+import { CheckCircle2, ShoppingBag, AlertTriangle, LogIn, UserPlus } from 'lucide-react'
 
 import { useStudio } from '../context/StudioContext'
 import { API_URL } from '../config/api'
@@ -18,6 +19,8 @@ export default function Checkout() {
   const [orderConfirmed, setOrderConfirmed] = useState(null)
   const [couponInput, setCouponInput] = useState('')
   const [couponMsg, setCouponMsg] = useState(null)
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const [authInitialMode, setAuthInitialMode] = useState('login')
 
   const isShippingEnabled = shippingSettings?.shippingFeeEnabled ?? true
   const standardShippingFee = shippingSettings?.standardShippingFee ?? 100
@@ -139,6 +142,12 @@ export default function Checkout() {
   const handlePay = async (e) => {
     e.preventDefault()
     if (processing) return
+
+    if (!user || !token) {
+      setAuthInitialMode('login')
+      setIsAuthModalOpen(true)
+      return
+    }
 
     const errs = {}
     if (!form.name?.trim()) errs.name = 'Full name is required.'
@@ -359,7 +368,43 @@ export default function Checkout() {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pt-24 sm:pt-32 pb-16 sm:pb-24 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 lg:gap-14 w-full max-w-full">
       <Reveal>
-        <h1 className="text-2xl sm:text-3xl mb-6 sm:mb-8 font-[var(--font-display)] font-bold uppercase">Checkout</h1>
+        <h1 className="text-2xl sm:text-3xl mb-4 sm:mb-6 font-[var(--font-display)] font-bold uppercase">Checkout</h1>
+
+        {!user && (
+          <div className="bg-amber-50/90 border border-amber-300 rounded-2xl p-4 sm:p-5 mb-6 text-xs text-[var(--color-ink)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+            <div className="space-y-1">
+              <p className="font-bold text-sm text-amber-950 flex items-center gap-1.5">
+                <span>🌸</span> Please log in to complete your order.
+              </p>
+              <p className="text-[0.72rem] text-amber-900/80 leading-relaxed">
+                Log in with your email or Google account. Your bag will be safely merged and kept intact.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthInitialMode('login')
+                  setIsAuthModalOpen(true)
+                }}
+                className="btn-primary text-xs py-2 px-4 rounded-xl flex-1 sm:flex-initial text-center font-bold tracking-wider uppercase cursor-pointer"
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthInitialMode('register')
+                  setIsAuthModalOpen(true)
+                }}
+                className="btn-outline text-xs py-2 px-4 rounded-xl flex-1 sm:flex-initial text-center font-bold tracking-wider uppercase cursor-pointer"
+              >
+                Create Account
+              </button>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handlePay} className="space-y-6 sm:space-y-8">
           <div>
             <p className="eyebrow mb-3 sm:mb-4">Contact Information</p>
@@ -657,6 +702,25 @@ export default function Checkout() {
           </div>
         </div>
       </Reveal>
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authInitialMode}
+        customNotice="Please log in to complete your order."
+        onSuccess={(loggedInUser) => {
+          setForm((prev) => ({
+            ...prev,
+            name: loggedInUser.name || prev.name,
+            email: loggedInUser.email || prev.email,
+            phone: loggedInUser.phone || prev.phone,
+            address: loggedInUser.address || prev.address,
+            city: loggedInUser.city || prev.city,
+            pincode: loggedInUser.pincode || prev.pincode,
+          }))
+          setIsAuthModalOpen(false)
+        }}
+      />
     </div>
   )
 }
