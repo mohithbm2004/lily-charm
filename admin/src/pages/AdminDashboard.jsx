@@ -246,6 +246,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     specimen: `Flower ${products.length + 1}`,
     category: 'velvet-lilies',
     price: 3499,
+    description: '',
     materials: 'Handcrafted velvet pipe cleaners, faux pearls, satin ribbon',
     dimensions: '35 cm height',
     image: '/images/products/flower-1-1.jpg',
@@ -698,6 +699,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
 
     setEditingProduct({
       ...product,
+      description: product.description || '',
       images: pImages,
       image: pImages[0] || product.image || '',
       imageOrientation: product.imageOrientation || 'portrait',
@@ -794,6 +796,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
         specimen: `Flower ${products.length + 2}`,
         category: collections[0]?.slug || collections[0]?.id || 'general',
         price: 3499,
+        description: '',
         materials: 'Handcrafted velvet pipe cleaners, faux pearls, satin ribbon',
         dimensions: '35 cm height',
         image: '',
@@ -3254,6 +3257,18 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                 </div>
                 <div>
                   <label className="block font-bold uppercase mb-1">
+                    Product Description
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Describe the floral craftsmanship, velvet materials, colors, stem style, and care notes..."
+                    value={newFlower.description || ''}
+                    onChange={(e) => setNewFlower({ ...newFlower, description: e.target.value })}
+                    className="w-full border border-[var(--color-line)] p-2.5 bg-[var(--color-bg)] text-xs focus:outline-none focus:border-[var(--color-primary)] transition-colors leading-relaxed"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold uppercase mb-1">
                     Photo Upload (Select Multiple Files) <span className="text-red-500 font-bold ml-0.5">*</span>
                   </label>
                   <input
@@ -3429,6 +3444,18 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                       ⚠️ Price field is empty! Please enter a valid price.
                     </p>
                   )}
+                </div>
+                <div>
+                  <label className="block font-bold uppercase mb-1">
+                    Product Description
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Describe the floral craftsmanship, velvet materials, colors, stem style, and care notes..."
+                    value={editingProduct.description || ''}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
+                    className="w-full border border-[var(--color-line)] p-2.5 bg-[var(--color-bg)] text-xs focus:outline-none focus:border-[var(--color-primary)] transition-colors leading-relaxed"
+                  />
                 </div>
                 <div>
                   <label className="block font-bold uppercase mb-1">
