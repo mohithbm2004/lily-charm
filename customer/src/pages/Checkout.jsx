@@ -21,6 +21,7 @@ export default function Checkout() {
   const [couponMsg, setCouponMsg] = useState(null)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authInitialMode, setAuthInitialMode] = useState('login')
+  const [termsAccepted, setTermsAccepted] = useState(false)
 
   const isShippingEnabled = shippingSettings?.shippingFeeEnabled ?? true
   const standardShippingFee = shippingSettings?.standardShippingFee ?? 100
@@ -157,6 +158,7 @@ export default function Checkout() {
     if (!form.address?.trim()) errs.address = 'Street address is required.'
     if (!form.city?.trim()) errs.city = 'City / District is required.'
     if (!/^\d{6}$/.test(form.pincode)) errs.pincode = 'Please enter a valid 6-digit PIN code.'
+    if (!termsAccepted) errs.terms = 'Please accept the handmade product terms before placing your order.'
 
     if (Object.keys(errs).length > 0) {
       setFormErrors(errs)
@@ -198,6 +200,7 @@ export default function Checkout() {
         shipping,
         total,
         paymentMethod: 'Razorpay Prepaid',
+        termsAccepted: true,
       }
 
       const res = await fetch(`${API_URL}/orders`, {
@@ -602,6 +605,50 @@ export default function Checkout() {
             <p className="text-[0.68rem] sm:text-[0.7rem]">
               • <strong>Studio Admin Cancellation:</strong> If cancelled by Studio Admin, a <strong>100% full refund</strong> is issued immediately with 0% deduction.
             </p>
+          </div>
+
+          {/* Mandatory Handmade Product Terms & Conditions */}
+          <div className={`p-3.5 sm:p-4 bg-[var(--color-beige)]/40 border rounded-2xl space-y-2 transition-colors ${
+            formErrors.terms ? 'border-red-500 bg-red-50/20' : 'border-[var(--color-line)]'
+          }`}>
+            <label
+              htmlFor="handmadeTermsCheckbox"
+              className="flex items-start gap-2.5 text-xs text-[var(--color-ink)] cursor-pointer select-none"
+            >
+              <input
+                type="checkbox"
+                id="handmadeTermsCheckbox"
+                name="handmadeTermsAccepted"
+                required
+                aria-required="true"
+                checked={termsAccepted}
+                onChange={(e) => {
+                  setTermsAccepted(e.target.checked)
+                  if (e.target.checked && formErrors.terms) {
+                    setFormErrors((prev) => ({ ...prev, terms: '' }))
+                  }
+                }}
+                className="mt-0.5 w-4 h-4 rounded border-[var(--color-line)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer shrink-0 accent-[var(--color-primary)]"
+              />
+              <span className="leading-snug text-[0.74rem] sm:text-[0.76rem] text-[var(--color-ink)]">
+                I understand and agree that handmade products may have slight variations from the product images due to their handmade nature.{' '}
+                <a
+                  href="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--color-primary)] underline font-bold hover:opacity-80 inline-block"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  View Terms & Conditions
+                </a>
+              </span>
+            </label>
+
+            {formErrors.terms && (
+              <p className="text-red-600 text-[0.7rem] font-bold flex items-center gap-1">
+                ⚠️ {formErrors.terms}
+              </p>
+            )}
           </div>
 
           <button type="submit" disabled={processing} className="btn-primary w-full py-3.5 text-xs uppercase tracking-widest font-bold disabled:opacity-60 rounded-full">

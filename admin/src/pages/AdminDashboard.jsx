@@ -1460,6 +1460,31 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                             {o.razorpayPaymentId && (
                               <p className="text-[0.6rem] font-mono text-[var(--color-ink-soft)]">ID: {o.razorpayPaymentId}</p>
                             )}
+
+                            {/* Handmade Terms Acceptance Verification */}
+                            <div className="pt-1.5 border-t border-[var(--color-line)]/50">
+                              {o.termsAccepted ? (
+                                <div className="space-y-0.5">
+                                  <span className="inline-flex items-center gap-1 text-[0.62rem] font-mono font-bold bg-emerald-50 text-emerald-900 border border-emerald-300 px-1.5 py-0.5 rounded">
+                                    ✓ Terms v{o.termsVersion || '1.0'} Accepted
+                                  </span>
+                                  {o.termsAcceptedAt && (
+                                    <p className="text-[0.58rem] text-[var(--color-ink-soft)] font-mono">
+                                      {new Date(o.termsAcceptedAt).toLocaleString('en-IN', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                    </p>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="inline-flex items-center text-[0.58rem] font-mono text-stone-600 bg-stone-100 border border-stone-300 px-1.5 py-0.5 rounded">
+                                  Terms: Legacy / None
+                                </span>
+                              )}
+                            </div>
                           </td>
 
                           {/* Tracking Number Input */}
@@ -2813,6 +2838,15 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                         {o.shippingAddress?.city && (
                           <span className="px-2 py-0.5 bg-sky-50 text-sky-900 border border-sky-200 rounded">
                             📍 {o.shippingAddress.city} {o.shippingAddress?.pincode ? `(${o.shippingAddress.pincode})` : ''}
+                          </span>
+                        )}
+                        {o.termsAccepted ? (
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-950 border border-emerald-300 rounded font-bold">
+                            ✓ Handmade Terms v{o.termsVersion || '1.0'} Accepted
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-stone-100 text-stone-600 border border-stone-200 rounded">
+                            Handmade Terms: Legacy / None
                           </span>
                         )}
                       </div>

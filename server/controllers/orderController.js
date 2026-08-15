@@ -51,6 +51,8 @@ export async function createRazorpayOrder(req, res, next) {
   }
 }
 
+export const HANDMADE_TERMS_VERSION = '1.0'
+
 // POST /api/orders — Create full MongoDB Order & Razorpay Order
 export async function createOrder(req, res, next) {
   try {
@@ -68,7 +70,14 @@ export async function createOrder(req, res, next) {
       shippingCharge: reqShipping = 0,
       tax: reqTax = 0,
       paymentMethod = 'Razorpay Prepaid',
+      termsAccepted,
     } = req.body
+
+    if (termsAccepted !== true) {
+      return res.status(400).json({
+        message: 'Please accept the handmade product terms before placing your order.',
+      })
+    }
 
     if (!items?.length) return res.status(400).json({ message: 'Cart is empty' })
 
@@ -171,6 +180,9 @@ export async function createOrder(req, res, next) {
       paymentMethod,
       paymentStatus: 'Pending',
       status: 'Pending Payment',
+      termsAccepted: true,
+      termsAcceptedAt: new Date(),
+      termsVersion: HANDMADE_TERMS_VERSION,
       statusHistory: [{ status: 'Pending Payment', note: 'Order created, awaiting Razorpay payment verification.' }],
     })
 

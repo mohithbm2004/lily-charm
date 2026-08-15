@@ -82,6 +82,9 @@ export function exportOrdersToCSV(orders = []) {
       'Razorpay Refund ID': o.razorpayRefundId || 'None',
       'Refund Amount (INR)': o.refundAmount || 0,
       'Cancellation Fee (INR)': o.cancellationFee || 0,
+      'Handmade Terms Accepted': o.termsAccepted ? 'Yes' : 'No / Legacy',
+      'Terms Version': o.termsVersion || (o.termsAccepted ? '1.0' : 'N/A'),
+      'Terms Accepted At': o.termsAcceptedAt ? formatDateTime(o.termsAcceptedAt) : 'N/A',
       'Order Notes & History': o.notes || (o.statusHistory || []).map((h) => `${h.status}: ${h.note || ''}`).join(' | '),
     }
   })
