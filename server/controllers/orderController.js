@@ -71,7 +71,7 @@ export async function createOrder(req, res, next) {
         product: isValidObjectId(pId) ? pId : null,
         title: i.title || 'Botanical Artwork',
         price: Number(i.price) || 0,
-        qty: Number(i.qty) || 1,
+        qty: Math.min(4, Math.max(1, Number(i.qty) || 1)),
         image: i.image || (Array.isArray(i.images) ? i.images[0] : '') || '',
         specimen: i.specimen || 'Specimen',
       }

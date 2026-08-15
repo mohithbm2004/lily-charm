@@ -3,6 +3,8 @@ import { createContext, useContext, useEffect, useMemo, useReducer, useState } f
 import { API_URL } from '../config/api'
 import { getSocket } from '../services/socket'
 
+export const MAX_QTY_PER_PRODUCT = 4
+
 const CartContext = createContext(null)
 
 function reducer(state, action) {
@@ -10,21 +12,32 @@ function reducer(state, action) {
     case 'ADD': {
       const existing = state.items.find((i) => i.id === action.product.id)
       if (existing) {
+        const newQty = Math.min(MAX_QTY_PER_PRODUCT, existing.qty + action.qty)
         return {
           ...state,
           items: state.items.map((i) =>
-            i.id === action.product.id ? { ...i, qty: i.qty + action.qty } : i
+            i.id === action.product.id ? { ...i, qty: newQty } : i
           ),
         }
       }
-      return { ...state, items: [...state.items, { ...action.product, qty: action.qty }] }
+      return {
+        ...state,
+        items: [
+          ...state.items,
+          { ...action.product, qty: Math.min(MAX_QTY_PER_PRODUCT, Math.max(1, action.qty)) },
+        ],
+      }
     }
     case 'REMOVE':
       return { ...state, items: state.items.filter((i) => i.id !== action.id) }
     case 'SET_QTY':
       return {
         ...state,
-        items: state.items.map((i) => (i.id === action.id ? { ...i, qty: Math.max(1, action.qty) } : i)),
+        items: state.items.map((i) =>
+          i.id === action.id
+            ? { ...i, qty: Math.min(MAX_QTY_PER_PRODUCT, Math.max(1, action.qty)) }
+            : i
+        ),
       }
     case 'OPEN':
       return { ...state, open: true }
@@ -198,6 +211,7 @@ export function CartProvider({ children }) {
       count,
       coupon: couponInfo,
       discountAmount,
+      maxQtyPerProduct: MAX_QTY_PER_PRODUCT,
       addItem: (product, qty = 1) => dispatch({ type: 'ADD', product, qty }),
       removeItem: (id) => dispatch({ type: 'REMOVE', id }),
       setQty: (id, qty) => dispatch({ type: 'SET_QTY', id, qty }),

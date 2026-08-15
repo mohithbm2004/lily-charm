@@ -7,7 +7,19 @@ import { useStudio } from '../context/StudioContext'
 import { formatPrice } from '../lib/format'
 
 export default function CartDrawer() {
-  const { items, open, closeCart, removeItem, setQty, subtotal, coupon: activeCoupon, discountAmount, applyCoupon, removeCoupon } = useCart()
+  const {
+    items,
+    open,
+    closeCart,
+    removeItem,
+    setQty,
+    subtotal,
+    coupon: activeCoupon,
+    discountAmount,
+    applyCoupon,
+    removeCoupon,
+    maxQtyPerProduct = 4,
+  } = useCart()
   const { shippingSettings } = useStudio()
   const [couponInput, setCouponInput] = useState('')
   const [couponMsg, setCouponMsg] = useState(null)
@@ -76,12 +88,27 @@ export default function CartDrawer() {
                       <p className="text-xs sm:text-sm text-[var(--color-ink-soft)] mt-0.5">{formatPrice(item.price)}</p>
                     </div>
                     <div className="flex items-center justify-between gap-2 mt-2">
-                      <div className="flex items-center border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-full overflow-hidden px-1">
-                        <button onClick={() => setQty(item.id, item.qty - 1)} className="w-7 h-7 flex items-center justify-center hover:bg-black/5 rounded-full" aria-label="Decrease"><Minus size={11} /></button>
-                        <span className="w-7 text-center text-xs font-bold font-mono">{item.qty}</span>
-                        <button onClick={() => setQty(item.id, item.qty + 1)} className="w-7 h-7 flex items-center justify-center hover:bg-black/5 rounded-full" aria-label="Increase"><Plus size={11} /></button>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-full overflow-hidden px-1">
+                          <button onClick={() => setQty(item.id, item.qty - 1)} className="w-7 h-7 flex items-center justify-center hover:bg-black/5 rounded-full cursor-pointer" aria-label="Decrease"><Minus size={11} /></button>
+                          <span className="w-7 text-center text-xs font-bold font-mono">{item.qty}</span>
+                          <button
+                            onClick={() => setQty(item.id, item.qty + 1)}
+                            disabled={item.qty >= maxQtyPerProduct}
+                            className="w-7 h-7 flex items-center justify-center hover:bg-black/5 rounded-full disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                            aria-label="Increase"
+                            title={item.qty >= maxQtyPerProduct ? `Studio limit of ${maxQtyPerProduct} per design reached` : 'Increase quantity'}
+                          >
+                            <Plus size={11} />
+                          </button>
+                        </div>
+                        {item.qty >= maxQtyPerProduct && (
+                          <span className="text-[0.62rem] text-amber-800 font-mono font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                            Max {maxQtyPerProduct} / order
+                          </span>
+                        )}
                       </div>
-                      <button onClick={() => removeItem(item.id)} className="text-[0.68rem] text-rose-700 font-bold uppercase hover:underline">Remove</button>
+                      <button onClick={() => removeItem(item.id)} className="text-[0.68rem] text-rose-700 font-bold uppercase hover:underline cursor-pointer">Remove</button>
                     </div>
                   </div>
                 </div>

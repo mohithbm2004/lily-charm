@@ -119,38 +119,49 @@ export default function Product() {
             </p>
 
             {/* Purchase Action Controls */}
-            <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-2.5 sm:gap-4 pt-2">
-              <div className="flex items-center border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-full shrink-0 overflow-hidden px-1">
+            <div className="space-y-2 pt-2">
+              <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-2.5 sm:gap-4">
+                <div className="flex items-center border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-full shrink-0 overflow-hidden px-1">
+                  <button
+                    onClick={() => setQty((q) => Math.max(1, q - 1))}
+                    className="w-10 h-11 flex items-center justify-center hover:bg-black/5 rounded-full cursor-pointer"
+                    aria-label="Decrease quantity"
+                  >
+                    <Minus size={13} />
+                  </button>
+                  <span className="w-10 text-center text-sm font-bold font-mono">{qty}</span>
+                  <button
+                    onClick={() => setQty((q) => Math.min(4, q + 1))}
+                    disabled={qty >= 4}
+                    className="w-10 h-11 flex items-center justify-center hover:bg-black/5 rounded-full disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                    aria-label="Increase quantity"
+                    title={qty >= 4 ? 'Maximum limit of 4 units per design' : 'Increase quantity'}
+                  >
+                    <Plus size={13} />
+                  </button>
+                </div>
+
                 <button
-                  onClick={() => setQty((q) => Math.max(1, q - 1))}
-                  className="w-10 h-11 flex items-center justify-center hover:bg-black/5 rounded-full"
-                  aria-label="Decrease quantity"
+                  onClick={() => {
+                    addItem(product, qty)
+                    openCart()
+                  }}
+                  className="btn-primary flex-1 py-3 text-xs uppercase font-bold tracking-widest text-center rounded-full shadow-md cursor-pointer"
                 >
-                  <Minus size={13} />
+                  Add to Cart • {formatPrice(product.price * qty)}
                 </button>
-                <span className="w-10 text-center text-sm font-bold font-mono">{qty}</span>
+
                 <button
-                  onClick={() => setQty((q) => q + 1)}
-                  className="w-10 h-11 flex items-center justify-center hover:bg-black/5 rounded-full"
-                  aria-label="Increase quantity"
+                  aria-label="Add to wishlist"
+                  className="w-11 h-11 border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-full flex items-center justify-center shrink-0 hover:bg-black/5 cursor-pointer"
                 >
-                  <Plus size={13} />
+                  <Heart size={16} strokeWidth={1.4} />
                 </button>
               </div>
 
-              <button
-                onClick={() => { addItem(product, qty); openCart() }}
-                className="btn-primary flex-1 py-3 text-xs uppercase font-bold tracking-widest text-center rounded-full"
-              >
-                Add to Cart • {formatPrice(product.price * qty)}
-              </button>
-
-              <button
-                aria-label="Add to wishlist"
-                className="w-11 h-11 border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-full flex items-center justify-center shrink-0 hover:bg-black/5"
-              >
-                <Heart size={16} strokeWidth={1.4} />
-              </button>
+              <p className="text-[0.68rem] text-[var(--color-primary)] font-mono font-medium flex items-center gap-1">
+                🌸 Limited Studio Edition: Maximum 4 units per handcrafted design.
+              </p>
             </div>
 
             {/* Details Accordion / Tabs */}
