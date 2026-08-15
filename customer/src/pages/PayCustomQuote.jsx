@@ -18,10 +18,13 @@ import {
 import { formatPrice } from '../lib/format'
 import Reveal from '../components/Reveal'
 import { API_URL } from '../config/api'
+import { useAuth } from '../context/AuthContext'
 
 export default function PayCustomQuote() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { token } = useAuth()
+  const authToken = token || localStorage.getItem('lilycharm_token') || ''
 
   const [quote, setQuote] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -34,7 +37,9 @@ export default function PayCustomQuote() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`${API_URL}/custom-requests/${id}/public-summary`)
+      const res = await fetch(`${API_URL}/custom-requests/${id}/public-summary`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      })
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
         throw new Error(errData.message || 'We could not find this custom price quote.')
@@ -82,7 +87,10 @@ export default function PayCustomQuote() {
       // 1. Fetch Server-Side Razorpay Order for this specific Custom Quote
       const rzpRes = await fetch(`${API_URL}/custom-requests/${id}/create-razorpay-order`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
       })
 
       if (!rzpRes.ok) {
@@ -123,9 +131,11 @@ export default function PayCustomQuote() {
           try {
             const verifyRes = await fetch(`${API_URL}/custom-requests/${id}/accept`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${authToken}`,
+              },
               body: JSON.stringify({
-                userEmail: quote.email,
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,

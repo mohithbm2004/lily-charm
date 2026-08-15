@@ -20,6 +20,8 @@ import contactRoutes from './routes/contactRoutes.js'
 import cartRoutes from './routes/cartRoutes.js'
 import healthRouter from './routes/healthRouter.js'
 import { createRazorpayOrder, verifyPayment } from './controllers/orderController.js'
+import { handleRazorpayWebhook } from './controllers/paymentController.js'
+import { protect } from './middleware/auth.js'
 import { startAutomaticDbCleanup } from './utils/dbCleanup.js'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
 
@@ -62,13 +64,16 @@ app.use(
       ) {
         return callback(null, true)
       }
-      return callback(null, true)
+      return callback(new Error('CORS origin denied.'))
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Admin-MFA-Code', 'X-Admin-Session-Id'],
   })
 )
+
+// Razorpay signs the exact request bytes, so this route must run before the JSON parser.
+app.post('/api/payment/webhook', express.raw({ type: 'application/json', limit: '50mb' }), handleRazorpayWebhook)
 
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ limit: '50mb', extended: true }))
@@ -96,8 +101,8 @@ const apiLimiter = rateLimit({
 
 app.use('/api/', apiLimiter)
 
-app.post('/api/create-order', createRazorpayOrder)
-app.post('/api/verify-payment', verifyPayment)
+app.post('/api/create-order', protect, createRazorpayOrder)
+app.post('/api/verify-payment', protect, verifyPayment)
 
 // Primary Routes
 app.use('/api/admin', adminRoutes)

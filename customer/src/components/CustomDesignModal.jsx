@@ -172,8 +172,6 @@ export default function CustomDesignModal({ isOpen, onClose }) {
     try {
       const payload = {
         ...formData,
-        userId: user?._id || user?.id || '',
-        userEmail: user?.email || '',
         images: selectedImages,
         image: selectedImages[0] || '',
       }
@@ -220,15 +218,13 @@ export default function CustomDesignModal({ isOpen, onClose }) {
     if (!emailToSearch || !emailToSearch.trim()) return
     setIsSearchingQuotes(true)
     try {
-      const res = await fetch(`${API_URL}/custom-requests`)
+      const res = await fetch(`${API_URL}/custom-requests/mine`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       if (res.ok) {
         const allData = await res.json()
         const rawList = Array.isArray(allData) ? allData : []
-        const cleanSearch = emailToSearch.toLowerCase().trim()
-        const filtered = rawList.filter(
-          (r) => r?.email && r.email.toLowerCase().trim() === cleanSearch
-        )
-        setMyRequests(filtered)
+        setMyRequests(rawList)
       }
     } catch (e) {
       console.error('Failed to search quotes:', e)
@@ -249,35 +245,15 @@ export default function CustomDesignModal({ isOpen, onClose }) {
       const shipping = getCustomOrderShipping(reqDoc.quotedPrice)
       const totalAmount = (reqDoc.quotedPrice || 0) + shipping
 
-      // 1. Fetch Razorpay Order ID (amount in paise)
-      let rzpOrderData = null
-      try {
-        const rzpOrderRes = await fetch(`${API_URL}/create-order`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: Math.round(totalAmount * 100), currency: 'INR' }),
-        })
-        if (rzpOrderRes.ok) {
-          rzpOrderData = await rzpOrderRes.json()
-        }
-      } catch (e) {
-        console.error('Failed to create Razorpay order ID:', e)
-      }
-
-      if (!rzpOrderData || !rzpOrderData.id) {
-        try {
-          const fallbackRes = await fetch(`${API_URL}/orders/create-razorpay-order`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ amount: Math.round(totalAmount * 100), currency: 'INR' }),
-          })
-          if (fallbackRes.ok) {
-            rzpOrderData = await fallbackRes.json()
-          }
-        } catch (e) {
-          console.error('Failed fallback Razorpay order creation:', e)
-        }
-      }
+      // 1. Create a Razorpay order bound to this authenticated custom request.
+      const rzpOrderRes = await fetch(`${API_URL}/custom-requests/${reqDoc._id}/create-razorpay-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      const rzpOrderData = rzpOrderRes.ok ? await rzpOrderRes.json() : null
 
       const razorpayOrderId = rzpOrderData?.id || rzpOrderData?.order_id
       if (!razorpayOrderId) {
@@ -288,7 +264,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
       // 2. Open Razorpay Payment Gateway Modal
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_TNkyGJugajutew',
-        amount: Math.round(totalAmount * 100),
+        amount: rzpOrderData.amount,
         currency: 'INR',
         name: 'Lily Charm Flower Studio',
         description: `Payment for Custom Artwork Quote #${reqDoc._id.slice(-6)}`,
@@ -303,10 +279,11 @@ export default function CustomDesignModal({ isOpen, onClose }) {
           try {
             const acceptRes = await fetch(`${API_URL}/custom-requests/${reqDoc._id}/accept`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
               body: JSON.stringify({
-                userId: user?._id || user?.id || '',
-                userEmail: user?.email || '',
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,
@@ -355,6 +332,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
         try {
           await fetch(`${API_URL}/custom-requests/${reqDoc._id}/decline`, {
             method: 'PATCH',
+            headers: { Authorization: `Bearer ${token}` },
           })
           showAlert({
             title: 'Quote Declined',

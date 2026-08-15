@@ -9,6 +9,10 @@ import { emitOrderUpdated } from '../socket.js'
 // GET /api/payment/admin/ledger — Payment Revenue & Analytics Dashboard for Admin
 export async function getPaymentLedger(req, res, next) {
   try {
+    if (!req.admin && req.user?.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required to view the payment ledger.' })
+    }
+
     const totalPayments = await Payment.countDocuments()
     const successfulPayments = await Payment.countDocuments({ status: 'captured' })
     const failedPayments = await Payment.countDocuments({ status: 'failed' })
@@ -47,33 +51,34 @@ export async function getPaymentLedger(req, res, next) {
 export async function handleRazorpayWebhook(req, res, next) {
   try {
     const signature = req.headers['x-razorpay-signature']
-    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET
 
-    // 1. Verify Webhook Signature if configured
-    if (webhookSecret && signature) {
-      const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body)
-      const expectedSignature = crypto
-        .createHmac('sha256', webhookSecret)
-        .update(rawBody)
-        .digest('hex')
-
-      let isMatch = false
-      try {
-        isMatch = crypto.timingSafeEqual(
-          Buffer.from(signature, 'utf-8'),
-          Buffer.from(expectedSignature, 'utf-8')
-        )
-      } catch {
-        isMatch = false
-      }
-
-      if (!isMatch) {
-        console.error('[RAZORPAY WEBHOOK ERROR]: Invalid webhook signature.')
-        return res.status(400).json({ success: false, message: 'Invalid webhook signature.' })
-      }
+    if (!webhookSecret || !signature) {
+      return res.status(400).json({ success: false, message: 'Missing Razorpay webhook signature configuration.' })
     }
 
-    const event = req.body
+    const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : JSON.stringify(req.body)
+    const expectedSignature = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(rawBody)
+      .digest('hex')
+
+    let isMatch = false
+    try {
+      isMatch = crypto.timingSafeEqual(
+        Buffer.from(signature, 'utf-8'),
+        Buffer.from(expectedSignature, 'utf-8')
+      )
+    } catch {
+      isMatch = false
+    }
+
+    if (!isMatch) {
+      console.error('[RAZORPAY WEBHOOK ERROR]: Invalid webhook signature.')
+      return res.status(400).json({ success: false, message: 'Invalid webhook signature.' })
+    }
+
+    const event = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString('utf8')) : req.body
     if (process.env.NODE_ENV !== 'production') {
       console.log('[RAZORPAY WEBHOOK EVENT]:', event.event)
     }
@@ -104,7 +109,7 @@ export async function handleRazorpayWebhook(req, res, next) {
         let customRequest = null
 
         if (customRequestId) {
-          customRequest = await CustomRequest.findById(customRequestId)
+          customRequest = await CustomRequest.findOne({ _id: customRequestId, razorpayOrderId })
         }
         if (!customRequest && razorpayOrderId) {
           customRequest = await CustomRequest.findOne({ razorpayOrderId })
@@ -116,8 +121,7 @@ export async function handleRazorpayWebhook(req, res, next) {
             customRequestId: customRequest._id,
             razorpayOrderId,
             razorpayPaymentId,
-            razorpaySignature: signature || '',
-            userEmail: customRequest.email,
+            razorpaySignature: signature,
           })
 
           return res.status(200).json({
@@ -130,10 +134,7 @@ export async function handleRazorpayWebhook(req, res, next) {
       }
 
       // Check if this payment belongs to a Standard Order
-      let order = await Order.findOne({ razorpayOrderId })
-      if (!order && notes.orderNumber) {
-        order = await Order.findOne({ orderNumber: notes.orderNumber })
-      }
+      const order = await Order.findOne({ razorpayOrderId })
 
       if (order) {
         // Idempotency check: if order is already Paid/Confirmed, skip duplicate email/status updates

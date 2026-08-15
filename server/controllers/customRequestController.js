@@ -96,10 +96,8 @@ export async function listMyCustomRequests(req, res, next) {
 // GET /api/custom-requests — List all customer custom design requests (Admin / Studio)
 export async function listCustomRequests(req, res, next) {
   try {
-    // If a customer calls this endpoint without admin privilege, strictly filter by their own user ID
-    if (req.user && !req.admin && req.user.role !== 'admin') {
-      const requests = await CustomRequest.find({ user: req.user._id }).sort({ createdAt: -1 })
-      return res.json(requests)
+    if (!req.admin && req.user?.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required to list custom requests.' })
     }
 
     const requests = await CustomRequest.find({}).sort({ createdAt: -1 })
@@ -112,9 +110,17 @@ export async function listCustomRequests(req, res, next) {
 // GET /api/custom-requests/:id/public-summary — Public Sanitized Summary for Direct Payment Page from Gmail
 export async function getPublicQuoteSummary(req, res, next) {
   try {
+    if (!req.user?._id) {
+      return res.status(401).json({ message: 'Authentication required to view this custom request.' })
+    }
+
     const customRequest = await CustomRequest.findById(req.params.id)
     if (!customRequest) {
       return res.status(404).json({ message: 'Custom design request not found.' })
+    }
+
+    if (String(customRequest.user) !== String(req.user._id)) {
+      return res.status(403).json({ message: 'Access denied. You do not own this custom request.' })
     }
 
     const shippingCharge = await calculateStudioShipping(customRequest.quotedPrice || 0)
@@ -188,6 +194,10 @@ export async function createCustomRequest(req, res, next) {
 // PATCH /api/custom-requests/:id/quote — Admin quotes price for a custom request
 export async function quotePrice(req, res, next) {
   try {
+    if (!req.admin && req.user?.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required to quote custom requests.' })
+    }
+
     const { quotedPrice, adminNotes } = req.body
     if (!quotedPrice || Number(quotedPrice) <= 0) {
       return res.status(400).json({ message: 'Quoted price must be greater than zero!' })
@@ -228,8 +238,16 @@ export async function quotePrice(req, res, next) {
 // POST /api/custom-requests/:id/create-razorpay-order — Server-Side Razorpay Order Initialization for Custom Quotes
 export async function createQuoteRazorpayOrder(req, res, next) {
   try {
+    if (!req.user?._id) {
+      return res.status(401).json({ message: 'Authentication required to pay this custom request.' })
+    }
+
     const customRequest = await CustomRequest.findById(req.params.id)
     if (!customRequest) return res.status(404).json({ message: 'Custom request not found' })
+
+    if (String(customRequest.user) !== String(req.user._id)) {
+      return res.status(403).json({ message: 'Access denied. You do not own this custom request.' })
+    }
 
     if (customRequest.status !== 'Quoted' || !customRequest.quotedPrice) {
       return res.status(400).json({ message: 'This custom request is not in a quoted status.' })
@@ -322,11 +340,17 @@ export async function processCustomQuotePaymentSuccess({
   razorpayPaymentId,
   razorpaySignature = '',
   shippingAddressOverride = null,
-  userId = null,
-  userEmail = null,
 }) {
   const customRequest = await CustomRequest.findById(customRequestId)
   if (!customRequest) return null
+
+  if (!customRequest.user) {
+    throw new Error('Custom request has no owning user.')
+  }
+
+  if (!razorpayOrderId || String(customRequest.razorpayOrderId) !== String(razorpayOrderId)) {
+    throw new Error('Razorpay order does not belong to this custom request.')
+  }
 
   // Idempotency: Check if already converted into official order
   if (
@@ -342,41 +366,6 @@ export async function processCustomQuotePaymentSuccess({
   const total = price + shipping
   const itemTitle = `Custom Artwork: ${customRequest.stylePreference || 'Bespoke Floral Frame'}`
 
-  // Resolve customer User account
-  let resolvedUser = null
-  const candidateUserId = userId || customRequest.user
-  if (candidateUserId) {
-    resolvedUser = await User.findById(candidateUserId)
-  }
-  if (!resolvedUser) {
-    const emailCandidates = [
-      userEmail,
-      shippingAddressOverride?.email,
-      customRequest.email,
-    ]
-      .filter(Boolean)
-      .map((e) => e.toLowerCase().trim())
-
-    if (emailCandidates.length > 0) {
-      resolvedUser = await User.findOne({
-        $or: [
-          { email: { $in: emailCandidates } },
-          { alternateEmails: { $in: emailCandidates } },
-        ],
-      })
-    }
-  }
-
-  // Unify email into user's alternateEmails if placed under another email
-  const orderShippingEmail = (shippingAddressOverride?.email || customRequest.email || '').toLowerCase().trim()
-  if (resolvedUser && orderShippingEmail && resolvedUser.email !== orderShippingEmail) {
-    if (!Array.isArray(resolvedUser.alternateEmails)) resolvedUser.alternateEmails = []
-    if (!resolvedUser.alternateEmails.includes(orderShippingEmail)) {
-      resolvedUser.alternateEmails.push(orderShippingEmail)
-      await resolvedUser.save()
-    }
-  }
-
   const shipAddr = shippingAddressOverride || {
     name: customRequest.name,
     email: customRequest.email,
@@ -389,7 +378,7 @@ export async function processCustomQuotePaymentSuccess({
 
   const newOrder = await Order.create({
     orderNumber: `LC-CQ-${Date.now().toString().slice(-6)}`,
-    user: resolvedUser ? resolvedUser._id : customRequest.user || null,
+    user: customRequest.user,
     items: [
       {
         title: itemTitle,
@@ -414,9 +403,6 @@ export async function processCustomQuotePaymentSuccess({
     statusHistory: [{ status: 'Confirmed', note: 'Custom price quote accepted and paid online via Razorpay.' }],
   })
 
-  if (resolvedUser && !customRequest.user) {
-    customRequest.user = resolvedUser._id
-  }
   customRequest.status = 'Paid & Order Placed'
   customRequest.convertedOrderId = newOrder._id.toString()
   customRequest.razorpayOrderId = razorpayOrderId || customRequest.razorpayOrderId
@@ -461,13 +447,19 @@ export async function processCustomQuotePaymentSuccess({
 // POST /api/custom-requests/:id/accept — Customer accepts price quote & verifies Razorpay payment server-side
 export async function acceptQuoteAndCreateOrder(req, res, next) {
   try {
+    if (!req.user?._id) {
+      return res.status(401).json({ message: 'Authentication required to accept this custom quote.' })
+    }
+
     const customRequest = await CustomRequest.findById(req.params.id)
     if (!customRequest) return res.status(404).json({ message: 'Custom request not found' })
 
+    if (String(customRequest.user) !== String(req.user._id)) {
+      return res.status(403).json({ message: 'Access denied. You do not own this custom quote.' })
+    }
+
     const {
       shippingAddress,
-      userId,
-      userEmail,
       razorpayOrderId,
       razorpayPaymentId,
       razorpaySignature,
@@ -487,35 +479,41 @@ export async function acceptQuoteAndCreateOrder(req, res, next) {
       })
     }
 
-    if (!razorpayPaymentId) {
-      return res.status(400).json({ message: 'Missing Razorpay payment ID.' })
+    if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+      return res.status(400).json({ message: 'Missing Razorpay payment verification credentials.' })
     }
 
-    // Verify HMAC-SHA256 Signature if secret exists
+    if (String(customRequest.razorpayOrderId) !== String(razorpayOrderId)) {
+      return res.status(400).json({ message: 'Razorpay order does not belong to this custom request.' })
+    }
+
+    // Verify HMAC-SHA256 Signature against the stored custom request Razorpay order.
     const keySecret = process.env.RAZORPAY_KEY_SECRET
-    if (keySecret && razorpayOrderId && razorpaySignature) {
-      const generatedSignature = crypto
-        .createHmac('sha256', keySecret)
-        .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-        .digest('hex')
+    if (!keySecret) {
+      return res.status(500).json({ message: 'Razorpay secret key is missing in environment.' })
+    }
 
-      let isMatch = false
-      try {
-        isMatch = crypto.timingSafeEqual(
-          Buffer.from(generatedSignature, 'utf-8'),
-          Buffer.from(razorpaySignature, 'utf-8')
-        )
-      } catch {
-        isMatch = false
-      }
+    const generatedSignature = crypto
+      .createHmac('sha256', keySecret)
+      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+      .digest('hex')
 
-      if (!isMatch) {
-        console.error('[CUSTOM QUOTE SIGNATURE MISMATCH]:', { generatedSignature, razorpaySignature })
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid payment signature verification.',
-        })
-      }
+    let isMatch = false
+    try {
+      isMatch = crypto.timingSafeEqual(
+        Buffer.from(generatedSignature, 'utf-8'),
+        Buffer.from(razorpaySignature, 'utf-8')
+      )
+    } catch {
+      isMatch = false
+    }
+
+    if (!isMatch) {
+      console.error('[CUSTOM QUOTE SIGNATURE MISMATCH]:', { generatedSignature, razorpaySignature })
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid payment signature verification.',
+      })
     }
 
     const result = await processCustomQuotePaymentSuccess({
@@ -524,8 +522,6 @@ export async function acceptQuoteAndCreateOrder(req, res, next) {
       razorpayPaymentId,
       razorpaySignature,
       shippingAddressOverride: shippingAddress,
-      userId,
-      userEmail,
     })
 
     res.json({
@@ -564,6 +560,10 @@ export async function declineQuote(req, res, next) {
 // PATCH /api/custom-requests/:id/status — Update status of a custom request directly
 export async function updateCustomRequestStatus(req, res, next) {
   try {
+    if (!req.admin && req.user?.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required to update custom requests.' })
+    }
+
     const { status, reason, adminNotes } = req.body
     const updateData = { status }
     if (adminNotes !== undefined) updateData.adminNotes = adminNotes
@@ -594,6 +594,10 @@ export async function updateCustomRequestStatus(req, res, next) {
 // DELETE /api/custom-requests/:id — Delete a custom request and its Cloudinary images
 export async function deleteCustomRequest(req, res, next) {
   try {
+    if (!req.admin && req.user?.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required to delete custom requests.' })
+    }
+
     const customRequest = await CustomRequest.findByIdAndDelete(req.params.id)
     if (!customRequest) return res.status(404).json({ message: 'Custom design request not found' })
 

@@ -24,6 +24,8 @@ const productSchema = new mongoose.Schema(
     imageY: { type: Number, default: 50 },    // focal point y  0–100
     imageScale: { type: Number, default: 1 }, // zoom factor   1–3
     imageRatio: { type: Number, default: null }, // naturalWidth/naturalHeight
+    isArchived: { type: Boolean, default: false, index: true },
+    archived: { type: Boolean, default: false },
   },
   { timestamps: true }
 )

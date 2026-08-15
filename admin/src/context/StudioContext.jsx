@@ -40,7 +40,10 @@ export function StudioProvider({ children }) {
     try {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 6000)
-      const res = await fetch(`${API_URL}/auth/users`, { signal: controller.signal })
+      const res = await fetch(`${API_URL}/auth/users`, {
+        signal: controller.signal,
+        credentials: 'include',
+      })
       clearTimeout(timeoutId)
       if (res.ok) {
         const data = await res.json()
@@ -120,7 +123,10 @@ export function StudioProvider({ children }) {
     try {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 3000)
-      const res = await fetch(`${API_URL}/custom-requests`, { signal: controller.signal })
+      const res = await fetch(`${API_URL}/custom-requests`, {
+        signal: controller.signal,
+        credentials: 'include',
+      })
       clearTimeout(timeoutId)
       if (res.ok) {
         const data = await res.json()
@@ -137,7 +143,10 @@ export function StudioProvider({ children }) {
     try {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 4000)
-      const res = await fetch(`${API_URL}/orders`, { signal: controller.signal })
+      const res = await fetch(`${API_URL}/orders`, {
+        signal: controller.signal,
+        credentials: 'include',
+      })
       clearTimeout(timeoutId)
       if (res.ok) {
         const data = await res.json()
@@ -495,6 +504,7 @@ export function StudioProvider({ children }) {
       const res = await fetch(`${API_URL}/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(payload),
       })
       if (res.ok) {
@@ -527,6 +537,7 @@ export function StudioProvider({ children }) {
       const res = await fetch(`${API_URL}/products/${targetId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(payload),
       })
       if (res.ok) {
@@ -547,8 +558,8 @@ export function StudioProvider({ children }) {
     setProducts((prev) => prev.filter((p) => p.id !== id && p._id !== id && p.mongoId !== id && p.specimen !== specimen))
 
     try {
-      if (id) await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' })
-      else if (specimen) await fetch(`${API_URL}/products/${specimen}`, { method: 'DELETE' })
+      if (id) await fetch(`${API_URL}/products/${id}`, { method: 'DELETE', credentials: 'include' })
+      else if (specimen) await fetch(`${API_URL}/products/${specimen}`, { method: 'DELETE', credentials: 'include' })
       refreshProductsFromApi()
     } catch (e) {
       console.error('Failed to delete creation in MongoDB API:', e)
@@ -559,7 +570,7 @@ export function StudioProvider({ children }) {
     setProducts([])
     localStorage.setItem('lilycharm_products', JSON.stringify([]))
     try {
-      await fetch(`${API_URL}/products`, { method: 'DELETE' })
+      await fetch(`${API_URL}/products`, { method: 'DELETE', credentials: 'include' })
       refreshProductsFromApi()
     } catch (e) {
       console.error('Failed to delete all products in MongoDB API:', e)
@@ -583,6 +594,7 @@ export function StudioProvider({ children }) {
       const res = await fetch(`${API_URL}/collections`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(payload),
       })
       if (res.ok) {
@@ -612,6 +624,7 @@ export function StudioProvider({ children }) {
       const res = await fetch(`${API_URL}/collections/${targetId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(payload),
       })
       if (res.ok) {
@@ -632,8 +645,8 @@ export function StudioProvider({ children }) {
     setCollections((prev) => prev.filter((c) => c.id !== id && c._id !== id && c.mongoId !== id && c.slug !== slug && c.slug !== id))
 
     try {
-      if (id) await fetch(`${API_URL}/collections/${id}`, { method: 'DELETE' })
-      else if (slug) await fetch(`${API_URL}/collections/${slug}`, { method: 'DELETE' })
+      if (id) await fetch(`${API_URL}/collections/${id}`, { method: 'DELETE', credentials: 'include' })
+      else if (slug) await fetch(`${API_URL}/collections/${slug}`, { method: 'DELETE', credentials: 'include' })
       refreshCollectionsFromApi()
     } catch (e) {
       console.error('Failed to delete collection:', e)
@@ -644,7 +657,7 @@ export function StudioProvider({ children }) {
     setCollections([])
     localStorage.setItem('lilycharm_collections', JSON.stringify([]))
     try {
-      await fetch(`${API_URL}/collections`, { method: 'DELETE' })
+      await fetch(`${API_URL}/collections`, { method: 'DELETE', credentials: 'include' })
       refreshCollectionsFromApi()
     } catch (e) {
       console.error('Failed to delete all collections in MongoDB API:', e)
@@ -675,6 +688,7 @@ export function StudioProvider({ children }) {
 
       const res = await fetch(`${API_URL}/orders/${id}/status`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
@@ -691,7 +705,7 @@ export function StudioProvider({ children }) {
     const id = typeof orderOrId === 'object' ? (orderOrId.mongoId || orderOrId._id || orderOrId.orderNumber || orderOrId.id) : orderOrId
     setOrders((prev) => prev.filter((o) => o.id !== id && o.mongoId !== id && o._id !== id && o.orderNumber !== id))
     try {
-      await fetch(`${API_URL}/orders/${id}`, { method: 'DELETE' })
+      await fetch(`${API_URL}/orders/${id}`, { method: 'DELETE', credentials: 'include' })
       refreshOrdersFromApi()
     } catch (e) {
       console.error('Failed to delete order:', e)
@@ -702,7 +716,7 @@ export function StudioProvider({ children }) {
     setOrders([])
     localStorage.setItem('lilycharm_orders', JSON.stringify([]))
     try {
-      await fetch(`${API_URL}/orders`, { method: 'DELETE' })
+      await fetch(`${API_URL}/orders`, { method: 'DELETE', credentials: 'include' })
       refreshOrdersFromApi()
     } catch (e) {
       console.error('Failed to delete all orders:', e)
@@ -715,6 +729,7 @@ export function StudioProvider({ children }) {
       await fetch(`${API_URL}/settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ marqueeText: text }),
       })
     } catch (e) {
@@ -728,6 +743,7 @@ export function StudioProvider({ children }) {
       await fetch(`${API_URL}/settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           offerCode: offerObj.code,
           discountPercent: offerObj.discountPercent,
@@ -747,6 +763,7 @@ export function StudioProvider({ children }) {
     try {
       await fetch(`${API_URL}/custom-requests/${id}/status`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, reason, adminNotes: reason }),
       })
@@ -763,6 +780,7 @@ export function StudioProvider({ children }) {
     try {
       await fetch(`${API_URL}/custom-requests/${id}/quote`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quotedPrice, adminNotes }),
       })
@@ -775,7 +793,7 @@ export function StudioProvider({ children }) {
   const deleteCustomRequest = async (id) => {
     setCustomRequests((prev) => prev.filter((r) => r._id !== id))
     try {
-      await fetch(`${API_URL}/custom-requests/${id}`, { method: 'DELETE' })
+      await fetch(`${API_URL}/custom-requests/${id}`, { method: 'DELETE', credentials: 'include' })
       refreshCustomRequestsFromApi()
     } catch (e) {
       console.error('Failed to delete custom request:', e)
@@ -799,6 +817,7 @@ export function StudioProvider({ children }) {
       await fetch(`${API_URL}/settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(updated),
       })
       refreshSettingsFromApi()
@@ -811,7 +830,9 @@ export function StudioProvider({ children }) {
 
   const refreshReviewsFromApi = async () => {
     try {
-      const res = await fetch(`${API_URL}/reviews?admin=true`)
+      const res = await fetch(`${API_URL}/reviews?admin=true`, {
+        credentials: 'include',
+      })
       if (res.ok) {
         const data = await res.json()
         if (Array.isArray(data)) {
@@ -835,6 +856,7 @@ export function StudioProvider({ children }) {
       await fetch(`${API_URL}/reviews/${id}/display`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ isDisplayed }),
       })
       refreshReviewsFromApi()
@@ -846,7 +868,7 @@ export function StudioProvider({ children }) {
   const deleteReview = async (id) => {
     setReviews((prev) => prev.filter((r) => r._id !== id))
     try {
-      await fetch(`${API_URL}/reviews/${id}`, { method: 'DELETE' })
+      await fetch(`${API_URL}/reviews/${id}`, { method: 'DELETE', credentials: 'include' })
       refreshReviewsFromApi()
     } catch (e) {
       console.error('Failed to delete review:', e)
@@ -862,7 +884,10 @@ export function StudioProvider({ children }) {
     try {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 4000)
-      const res = await fetch(`${API_URL}/coupons`, { signal: controller.signal })
+      const res = await fetch(`${API_URL}/coupons`, {
+        signal: controller.signal,
+        credentials: 'include',
+      })
       clearTimeout(timeoutId)
       if (res.ok) {
         const data = await res.json()

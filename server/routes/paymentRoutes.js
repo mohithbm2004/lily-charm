@@ -1,12 +1,13 @@
 import { Router } from 'express'
 import { createRazorpayOrder, verifyPayment } from '../controllers/orderController.js'
-import { getPaymentLedger, handleRazorpayWebhook } from '../controllers/paymentController.js'
+import { getPaymentLedger } from '../controllers/paymentController.js'
+import { protect } from '../middleware/auth.js'
+import { protectAdmin } from '../middleware/adminAuth.js'
 
 const router = Router()
 
-router.post('/create-order', createRazorpayOrder)
-router.post('/verify', verifyPayment)
-router.post('/webhook', handleRazorpayWebhook)
-router.get('/admin/ledger', getPaymentLedger)
+router.post('/create-order', protect, createRazorpayOrder)
+router.post('/verify', protect, verifyPayment)
+router.get('/admin/ledger', protectAdmin, getPaymentLedger)
 
 export default router

@@ -83,9 +83,14 @@ export default function Dashboard() {
   const [confirmedCustomOrder, setConfirmedCustomOrder] = useState(null)
 
   const fetchProfileFromApi = async (email) => {
-    if (!email) return
+    const currentToken = token || localStorage.getItem('lilycharm_token')
+    if (!currentToken) return
     try {
-      const res = await fetch(`${API_URL}/auth/profile?email=${encodeURIComponent(email)}`)
+      const res = await fetch(`${API_URL}/auth/profile`, {
+        headers: {
+          Authorization: `Bearer ${currentToken}`,
+        },
+      })
       if (res.ok) {
         const data = await res.json()
         if (data && typeof data === 'object') {
@@ -277,35 +282,15 @@ export default function Dashboard() {
       const shipping = getCustomOrderShipping(req.quotedPrice)
       const totalAmount = (req.quotedPrice || 0) + shipping
 
-      // 1. Fetch Razorpay Order ID from backend (amount in paise)
-      let rzpOrderData = null
-      try {
-        const rzpOrderRes = await fetch(`${API_URL}/create-order`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: Math.round(totalAmount * 100), currency: 'INR' }),
-        })
-        if (rzpOrderRes.ok) {
-          rzpOrderData = await rzpOrderRes.json()
-        }
-      } catch (e) {
-        console.error('Failed to create Razorpay order ID via /create-order:', e)
-      }
-
-      if (!rzpOrderData || !rzpOrderData.id) {
-        try {
-          const fallbackRes = await fetch(`${API_URL}/orders/create-razorpay-order`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ amount: Math.round(totalAmount * 100), currency: 'INR' }),
-          })
-          if (fallbackRes.ok) {
-            rzpOrderData = await fallbackRes.json()
-          }
-        } catch (e) {
-          console.error('Failed to create Razorpay order ID via /orders/create-razorpay-order:', e)
-        }
-      }
+      // 1. Create a Razorpay order bound to this authenticated custom request.
+      const rzpOrderRes = await fetch(`${API_URL}/custom-requests/${req._id}/create-razorpay-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      const rzpOrderData = rzpOrderRes.ok ? await rzpOrderRes.json() : null
 
       const razorpayOrderId = rzpOrderData?.id || rzpOrderData?.order_id
       if (!razorpayOrderId) {
@@ -316,7 +301,7 @@ export default function Dashboard() {
       // 2. Launch Razorpay Standard Checkout Modal
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_TNkyGJugajutew',
-        amount: Math.round(totalAmount * 100),
+        amount: rzpOrderData.amount,
         currency: 'INR',
         name: 'Lily Charm Flower Studio',
         description: `Payment for Custom Artwork Quote #${req._id.slice(-6)}`,
@@ -331,10 +316,11 @@ export default function Dashboard() {
           try {
             const acceptRes = await fetch(`${API_URL}/custom-requests/${req._id}/accept`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
               body: JSON.stringify({
-                userId: user?._id || user?.id || userProfile?._id || '',
-                userEmail: userProfile?.email || user?.email || '',
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,
@@ -403,6 +389,7 @@ export default function Dashboard() {
     setIsSavingProfile(true)
 
     try {
+      const currentToken = token || localStorage.getItem('lilycharm_token')
       const payload = {
         ...userProfile,
         image: avatarPreview,
@@ -410,7 +397,10 @@ export default function Dashboard() {
 
       const res = await fetch(`${API_URL}/auth/profile`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${currentToken}`,
+        },
         body: JSON.stringify(payload),
       })
 

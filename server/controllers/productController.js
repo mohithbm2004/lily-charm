@@ -6,8 +6,22 @@ import { emitProductCreated, emitProductUpdated, emitProductDeleted } from '../s
 // GET /api/products — List all products with optional filters
 export async function listProducts(req, res, next) {
   try {
-    const { category, maxPrice, sort, search } = req.query
+    const { category, maxPrice, sort, search, includeArchived } = req.query
     const filter = {}
+
+    // Check if requester is authenticated admin
+    const isAdmin = Boolean(
+      req.admin ||
+      req.user?.role === 'admin' ||
+      req.cookies?.lily_admin_session ||
+      req.headers['x-admin-session-id']
+    )
+
+    if (!isAdmin || includeArchived !== 'true') {
+      filter.isArchived = { $ne: true }
+      filter.archived = { $ne: true }
+    }
+
     if (category && category !== 'all') filter.category = category
     if (maxPrice) filter.price = { $lte: Number(maxPrice) }
     if (search) filter.$text = { $search: search }
@@ -31,6 +45,18 @@ export async function getProduct(req, res, next) {
       $or: [{ slug: req.params.id }, { _id: req.params.id }],
     })
     if (!product) return res.status(404).json({ message: 'Product not found' })
+
+    const isAdmin = Boolean(
+      req.admin ||
+      req.user?.role === 'admin' ||
+      req.cookies?.lily_admin_session ||
+      req.headers['x-admin-session-id']
+    )
+
+    if ((product.isArchived || product.archived) && !isAdmin) {
+      return res.status(404).json({ message: 'Product is archived and unavailable.' })
+    }
+
     res.json(product)
   } catch (err) {
     next(err)

@@ -444,18 +444,30 @@ export async function resetPassword(req, res, next) {
   }
 }
 
-// POST /api/auth/profile — Create or update user profile
+// POST /api/auth/profile — Update currently authenticated user profile
 export async function createOrUpdateProfile(req, res, next) {
   try {
-    const { name, email, phone, address, city, pincode, image } = req.body
-
-    if (!email || !name) {
-      return res.status(400).json({ message: 'Name and email address are required!' })
+    if (!req.user?._id) {
+      return res.status(401).json({ message: 'Authentication required to update profile.' })
     }
 
-    const cleanEmail = email.toLowerCase().trim()
-    let profileImageUrl = ''
+    const { name, phone, address, city, pincode, image } = req.body
 
+    const user = await User.findById(req.user._id)
+    if (!user) {
+      return res.status(404).json({ message: 'User account not found.' })
+    }
+
+    if (name && name.trim()) {
+      user.name = name.trim()
+    }
+
+    if (phone !== undefined) user.phone = phone
+    if (address !== undefined) user.address = address
+    if (city !== undefined) user.city = city
+    if (pincode !== undefined) user.pincode = pincode
+
+    let profileImageUrl = ''
     if (image && !image.startsWith('http')) {
       const cloudRes = await uploadToCloudinary(image, 'lily-charm/profiles')
       if (cloudRes && cloudRes.secure_url) profileImageUrl = cloudRes.secure_url
@@ -463,51 +475,31 @@ export async function createOrUpdateProfile(req, res, next) {
       profileImageUrl = image
     }
 
-    let user = await User.findOne({ email: cleanEmail })
-
-    if (user) {
-      user.name = name
-      user.phone = phone || user.phone
-      user.address = address || user.address
-      user.city = city || user.city
-      user.pincode = pincode || user.pincode
-      if (profileImageUrl) {
-        user.profileImage = profileImageUrl
-        user.avatar = profileImageUrl
-      }
-      await user.save()
-    } else {
-      user = await User.create({
-        name,
-        email: cleanEmail,
-        phone,
-        address,
-        city,
-        pincode,
-        profileImage: profileImageUrl,
-        avatar: profileImageUrl,
-        isVerified: true,
-      })
+    if (profileImageUrl) {
+      user.profileImage = profileImageUrl
+      user.avatar = profileImageUrl
     }
 
+    await user.save()
+
     res.status(200).json({
-      message: 'User profile saved successfully in MongoDB Atlas!',
+      message: 'User profile updated successfully!',
       user,
-      token: generateToken(user._id),
     })
   } catch (err) {
     next(err)
   }
 }
 
-// GET /api/auth/profile — Fetch user profile by email query
+// GET /api/auth/profile — Fetch currently authenticated user profile
 export async function getProfileByEmail(req, res, next) {
   try {
-    const email = req.query.email || req.params.email
-    if (!email) return res.status(400).json({ message: 'Email query param required' })
+    if (!req.user?._id) {
+      return res.status(401).json({ message: 'Authentication required to view profile.' })
+    }
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() })
-    if (!user) return res.status(404).json({ message: 'User profile not found' })
+    const user = await User.findById(req.user._id)
+    if (!user) return res.status(404).json({ message: 'User profile not found.' })
 
     res.json(user)
   } catch (err) {
@@ -525,26 +517,25 @@ export async function getMe(req, res, next) {
   }
 }
 
-// GET /api/auth/users — List all registered user profiles for Admin
+// GET /api/auth/users — List registered user profiles for Admin (sanitized)
 export async function listUsers(req, res, next) {
   try {
-    const users = await User.find({}).sort({ createdAt: -1 })
+    const users = await User.find({})
+      .select('-password -resetPasswordToken -resetOtpHash -lastUsedResetTokenHash -otp')
+      .sort({ createdAt: -1 })
     res.json(users)
   } catch (err) {
     next(err)
   }
 }
 
-// GET /api/auth/test-email — Diagnostic endpoint to inspect live email delivery status
+// GET /api/auth/test-email — Diagnostic endpoint (Admin only)
 export async function testEmail(req, res) {
   try {
     const targetEmail = req.query.email || 'bmmohith48@gmail.com'
     const result = await sendOtpEmail(targetEmail, 'Test User', '998877')
     res.json({
       success: true,
-      emailHost: process.env.EMAIL_HOST,
-      emailUser: process.env.EMAIL_USER,
-      emailPassLength: process.env.EMAIL_PASS?.length || 0,
       result,
     })
   } catch (err) {
@@ -552,8 +543,6 @@ export async function testEmail(req, res) {
       success: false,
       errorName: err.name,
       errorMessage: err.message,
-      errorCode: err.code,
-      stack: err.stack,
     })
   }
 }

@@ -1,4 +1,7 @@
 import Review from '../models/Review.js'
+import Order from '../models/Order.js'
+import AdminSession from '../models/AdminSession.js'
+import jwt from 'jsonwebtoken'
 import { emitReviewCreated, emitReviewUpdated, emitReviewDeleted } from '../socket.js'
 
 const DEFAULT_REVIEWS = [
@@ -37,7 +40,21 @@ const DEFAULT_REVIEWS = [
 // GET /api/reviews — List reviews (public: only isDisplayed=true, admin: all)
 export async function listReviews(req, res, next) {
   try {
-    const showAll = req.query.all === 'true' || req.query.admin === 'true'
+    // Check if caller is authenticated admin
+    let isAdmin = Boolean(req.admin || req.user?.role === 'admin')
+    if (!isAdmin) {
+      const sessionId = req.cookies?.lily_admin_session || req.headers['x-admin-session-id']
+      if (sessionId) {
+        try {
+          const session = await AdminSession.findOne({ sessionId })
+          if (session && Date.now() <= new Date(session.expiresAt).getTime()) {
+            isAdmin = true
+          }
+        } catch {}
+      }
+    }
+
+    const showAll = isAdmin && (req.query.all === 'true' || req.query.admin === 'true')
     const filter = showAll ? {} : { isDisplayed: true }
 
     if (req.query.productId) {
@@ -64,13 +81,38 @@ export async function listReviews(req, res, next) {
 // POST /api/reviews — Customer submits new review / feedback
 export async function createReview(req, res, next) {
   try {
-    const { name, email, rating, title, comment, productTitle, product, userId } = req.body
+    const { name, email, rating, title, comment, productTitle, product } = req.body
 
     if (!name || !comment) {
       return res.status(400).json({ message: 'Name and feedback comment are required.' })
     }
 
     const numRating = Math.max(1, Math.min(5, Number(rating) || 5))
+
+    // Resolve authenticated customer to determine verified buyer status
+    let reviewerUserId = req.user?._id
+    if (!reviewerUserId && req.headers.authorization?.startsWith('Bearer ')) {
+      try {
+        const decoded = jwt.verify(req.headers.authorization.split(' ')[1], process.env.JWT_SECRET)
+        reviewerUserId = decoded.id
+      } catch {}
+    }
+
+    let isVerifiedBuyer = false
+    if (reviewerUserId) {
+      const queryCriteria = []
+      if (product) queryCriteria.push({ 'items.product': product })
+      if (productTitle) queryCriteria.push({ 'items.title': productTitle.trim() })
+
+      if (queryCriteria.length > 0) {
+        const qualifyingOrder = await Order.findOne({
+          user: reviewerUserId,
+          paymentStatus: 'Paid',
+          $or: queryCriteria,
+        })
+        isVerifiedBuyer = Boolean(qualifyingOrder)
+      }
+    }
 
     const newReview = await Review.create({
       name: name.trim(),
@@ -80,9 +122,9 @@ export async function createReview(req, res, next) {
       comment: comment.trim(),
       productTitle: productTitle || 'Lily Charm Floral Creation',
       product: product || undefined,
-      user: userId || undefined,
-      isDisplayed: false, // Moderated by studio admin before public storefront display
-      isVerifiedBuyer: true,
+      user: reviewerUserId || undefined,
+      isDisplayed: false, // Must be moderated and approved by admin
+      isVerifiedBuyer,
     })
 
     emitReviewCreated(newReview)

@@ -7,13 +7,14 @@ import {
   deleteAllCollections,
 } from '../controllers/collectionController.js'
 import { uploadAnyImages } from '../middleware/upload.js'
+import { protectAdmin } from '../middleware/adminAuth.js'
 
 const router = Router()
 
 router.get('/', listCollections)
-router.post('/', uploadAnyImages, createCollection)
-router.put('/:id', uploadAnyImages, updateCollection)
-router.delete('/', deleteAllCollections)
-router.delete('/:id', deleteCollection)
+router.post('/', protectAdmin, uploadAnyImages, createCollection)
+router.put('/:id', protectAdmin, uploadAnyImages, updateCollection)
+router.delete('/', protectAdmin, deleteAllCollections)
+router.delete('/:id', protectAdmin, deleteCollection)
 
 export default router

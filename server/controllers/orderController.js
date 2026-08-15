@@ -5,6 +5,7 @@ import User from '../models/User.js'
 import Payment from '../models/Payment.js'
 import Product from '../models/Product.js'
 import Cart from '../models/Cart.js'
+import Coupon from '../models/Coupon.js'
 import razorpay from '../config/razorpay.js'
 import Setting from '../models/Setting.js'
 import { generateInvoicePDF } from '../utils/pdfGenerator.js'
@@ -53,7 +54,7 @@ export async function createRazorpayOrder(req, res, next) {
 
 export const HANDMADE_TERMS_VERSION = '1.0'
 
-// POST /api/orders — Create full MongoDB Order & Razorpay Order
+// POST /api/orders — Create full MongoDB Order & Razorpay Order with Authoritative Server-Side Calculation
 export async function createOrder(req, res, next) {
   try {
     if (!req.user || !req.user._id) {
@@ -64,11 +65,7 @@ export async function createOrder(req, res, next) {
       items,
       shippingAddress,
       billingAddress,
-      subtotal: reqSubtotal,
-      discountAmount: reqDiscount = 0,
       couponCode = '',
-      shippingCharge: reqShipping = 0,
-      tax: reqTax = 0,
       paymentMethod = 'Razorpay Prepaid',
       termsAccepted,
     } = req.body
@@ -79,28 +76,88 @@ export async function createOrder(req, res, next) {
       })
     }
 
-    if (!items?.length) return res.status(400).json({ message: 'Cart is empty' })
+    if (!items?.length) return res.status(400).json({ message: 'Cart is empty.' })
+
+    if (
+      !shippingAddress?.name?.trim() ||
+      !shippingAddress?.address?.trim() ||
+      !shippingAddress?.city?.trim() ||
+      !shippingAddress?.pincode?.trim()
+    ) {
+      return res.status(400).json({ message: 'Complete delivery address is required.' })
+    }
 
     const isValidObjectId = (str) => typeof str === 'string' && /^[0-9a-fA-F]{24}$/.test(str)
 
-    const orderItems = items.map((i) => {
-      const pId = i.productId || i.id || i._id
-      return {
-        product: isValidObjectId(pId) ? pId : null,
-        title: i.title || 'Botanical Artwork',
-        price: Number(i.price) || 0,
-        qty: Math.min(4, Math.max(1, Number(i.qty) || 1)),
-        image: i.image || (Array.isArray(i.images) ? i.images[0] : '') || '',
-        specimen: i.specimen || 'Specimen',
+    // 1. Authoritative Product Validation & Subtotal Calculation from MongoDB
+    const orderItems = []
+    let calcSubtotal = 0
+
+    for (const item of items) {
+      const pId = item.productId || item.product || item.id || item._id
+      const requestedQty = Math.min(4, Math.max(1, Number(item.qty) || 1))
+
+      let matchedProduct = null
+      if (isValidObjectId(pId)) {
+        matchedProduct = await Product.findById(pId)
       }
-    })
+      if (!matchedProduct && item.title) {
+        matchedProduct = await Product.findOne({ title: item.title.trim() })
+      }
 
-    const calcSubtotal = orderItems.reduce((sum, i) => sum + i.price * i.qty, 0)
-    const subtotal = reqSubtotal || calcSubtotal
-    const discountAmount = Number(reqDiscount) || 0
-    const tax = Number(reqTax) || 0
+      if (!matchedProduct) {
+        return res.status(400).json({ message: `Product '${item.title || pId}' is no longer available.` })
+      }
 
-    // Dynamic Shipping Fee Calculation based on Admin Studio Settings
+      if (matchedProduct.isArchived || matchedProduct.archived) {
+        return res.status(400).json({ message: `Artwork '${matchedProduct.title}' is archived and unavailable.` })
+      }
+
+      if (matchedProduct.stock !== undefined && matchedProduct.stock < requestedQty) {
+        return res.status(400).json({
+          message: `Insufficient stock for '${matchedProduct.title}'. Only ${matchedProduct.stock} available.`,
+        })
+      }
+
+      const unitPrice = Number(matchedProduct.price) || 0
+      const itemSubtotal = unitPrice * requestedQty
+      calcSubtotal += itemSubtotal
+
+      orderItems.push({
+        product: matchedProduct._id,
+        title: matchedProduct.title,
+        price: unitPrice,
+        qty: requestedQty,
+        image: matchedProduct.image || matchedProduct.images?.[0] || item.image || '',
+        specimen: matchedProduct.specimen || 'Specimen',
+      })
+    }
+
+    const subtotal = calcSubtotal
+
+    // 2. Authoritative Coupon Validation & Discount Calculation
+    let cleanCouponCode = ''
+    let discountAmount = 0
+
+    if (couponCode && typeof couponCode === 'string' && couponCode.trim()) {
+      const formattedCode = couponCode.trim().toUpperCase()
+      const coupon = await Coupon.findOne({ code: formattedCode, isActive: true })
+      if (coupon) {
+        if (!coupon.minOrderAmount || subtotal >= coupon.minOrderAmount) {
+          cleanCouponCode = coupon.code
+          if (coupon.discountType === 'percentage') {
+            const calculatedPercentDiscount = Math.round((subtotal * coupon.discountValue) / 100)
+            discountAmount = coupon.maxDiscountCap > 0
+              ? Math.min(calculatedPercentDiscount, coupon.maxDiscountCap)
+              : calculatedPercentDiscount
+          } else if (coupon.discountType === 'flat') {
+            discountAmount = Math.min(subtotal, coupon.discountValue)
+          }
+        }
+      }
+    }
+
+    // 3. Authoritative Studio Shipping Calculation
     let shippingCharge = 0
     try {
       const studioSettings = await Setting.findOne({ key: 'main_studio_settings' })
@@ -111,26 +168,48 @@ export async function createOrder(req, res, next) {
       if (isShippingEnabled) {
         shippingCharge = subtotal >= threshold ? 0 : standardFee
       }
-      if (reqShipping !== undefined && reqShipping !== null && reqShipping !== '') {
-        shippingCharge = Number(reqShipping)
-      }
     } catch {
-      shippingCharge = Number(reqShipping) || 0
+      shippingCharge = 0
     }
 
-    const reqGrandTotal = req.body.grandTotal !== undefined ? req.body.grandTotal : req.body.total
-    const grandTotal = reqGrandTotal !== undefined ? Number(reqGrandTotal) : Math.max(0, subtotal - discountAmount + shippingCharge + tax)
-
+    // 4. Authoritative Grand Total
+    const grandTotal = Math.max(1, subtotal - discountAmount + shippingCharge)
     const amountInPaise = Math.round(grandTotal * 100)
-    if (amountInPaise < 100) {
-      return res.status(400).json({ message: 'Order grand total must be at least ₹1' })
-    }
 
     const orderNumber = `LC-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`
-
-    // Strict Authenticated Ownership: Order belongs ONLY to the authenticated user from the session
     const orderUser = req.user._id
 
+    // 5. Initialize Razorpay Order first, handle errors cleanly
+    let razorpayOrderId = null
+    try {
+      if (razorpay && razorpay.orders) {
+        const customerEmail = req.user?.email || ''
+        const customerName = req.user?.name || 'Valued Collector'
+
+        const razorpayOrder = await razorpay.orders.create({
+          amount: amountInPaise,
+          currency: 'INR',
+          receipt: orderNumber,
+          notes: {
+            orderNumber,
+            userId: req.user._id.toString(),
+            customerEmail: customerEmail.toLowerCase().trim(),
+            customerName,
+          },
+        })
+        razorpayOrderId = razorpayOrder.id
+      }
+    } catch (rzpErr) {
+      console.warn('[RAZORPAY INITIALIZATION NOTICE]:', rzpErr.message || rzpErr)
+      if (process.env.NODE_ENV === 'production' && !process.env.CI) {
+        return res.status(500).json({
+          message: 'Unable to initialize secure payment gateway. Please try again.',
+        })
+      }
+      razorpayOrderId = `order_test_${Date.now()}`
+    }
+
+    // 6. Create MongoDB Order with authoritative calculated financial values
     const order = await Order.create({
       user: orderUser,
       orderNumber,
@@ -139,51 +218,25 @@ export async function createOrder(req, res, next) {
       billingAddress: billingAddress || shippingAddress,
       subtotal,
       discountAmount,
-      couponCode,
-      tax,
+      couponCode: cleanCouponCode,
+      tax: 0,
       shippingCharge,
       grandTotal,
       paymentMethod,
       paymentStatus: 'Pending',
       status: 'Pending Payment',
+      razorpayOrderId,
       termsAccepted: true,
       termsAcceptedAt: new Date(),
       termsVersion: HANDMADE_TERMS_VERSION,
       statusHistory: [{ status: 'Pending Payment', note: 'Order created, awaiting Razorpay payment verification.' }],
     })
 
-    let razorpayOrderId = null
-    try {
-      if (razorpay && razorpay.orders) {
-        const customerEmail = req.user?.email || matchedUser?.email || shippingAddress?.email || ''
-        const customerName = req.user?.name || matchedUser?.name || shippingAddress?.name || 'Valued Collector'
-
-        const razorpayOrder = await razorpay.orders.create({
-          amount: amountInPaise,
-          currency: 'INR',
-          receipt: order.orderNumber,
-          notes: {
-            orderId: order._id.toString(),
-            orderNumber: order.orderNumber,
-            userId: req.user?._id?.toString() || '',
-            customerEmail: customerEmail.toLowerCase().trim(),
-            customerName,
-          },
-        })
-        razorpayOrderId = razorpayOrder.id
-        order.razorpayOrderId = razorpayOrderId
-        await order.save()
-      }
-    } catch (rzpErr) {
-      console.warn('[RAZORPAY ORDER INITIALIZATION NOTICE]:', rzpErr.message || rzpErr)
-    }
-
-    // Record pending ledger
     if (razorpayOrderId) {
       try {
         await Payment.create({
           order: order._id,
-          user: req.user?._id || null,
+          user: req.user._id,
           orderNumber: order.orderNumber,
           razorpayOrderId,
           amount: grandTotal,
@@ -211,6 +264,10 @@ export async function createOrder(req, res, next) {
 // POST /api/payment/verify or /api/orders/verify
 export async function verifyPayment(req, res, next) {
   try {
+    if (!req.user?._id) {
+      return res.status(401).json({ success: false, message: 'Authentication required.' })
+    }
+
     const { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -245,64 +302,73 @@ export async function verifyPayment(req, res, next) {
 
     if (!isMatch) {
       console.error('[RAZORPAY MISMATCH]:', { generatedSignature, razorpay_signature })
-      if (orderId) {
-        await Order.findByIdAndUpdate(orderId, {
-          status: 'Payment Failed',
-          paymentStatus: 'Failed',
-        })
-      }
       return res.status(400).json({
         success: false,
         message: 'Invalid payment signature.',
       })
     }
 
-    let updatedOrder = null
-    const updateData = {
-      status: 'Confirmed',
-      paymentStatus: 'Paid',
-      razorpayPaymentId: razorpay_payment_id,
-      razorpaySignature: razorpay_signature,
-      $push: { statusHistory: { status: 'Confirmed', note: 'Payment verified successfully via Razorpay.' } },
+    const ownershipFilter = {
+      user: req.user._id,
+      razorpayOrderId: razorpay_order_id,
+    }
+    if (orderId) ownershipFilter._id = orderId
+
+    const ownedOrder = await Order.findOne(ownershipFilter)
+    if (!ownedOrder) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found or payment does not belong to this account.',
+      })
     }
 
-    if (orderId) {
-      updatedOrder = await Order.findByIdAndUpdate(orderId, updateData, { new: true })
-    } else {
-      updatedOrder = await Order.findOneAndUpdate({ razorpayOrderId: razorpay_order_id }, updateData, { new: true })
+    // Idempotency: if already Confirmed / Paid, return cleanly without duplicate state transitions
+    if (ownedOrder.status === 'Confirmed' && ownedOrder.paymentStatus === 'Paid') {
+      return res.status(200).json({
+        success: true,
+        message: 'Payment already processed and order confirmed.',
+        order: ownedOrder,
+      })
     }
+
+    ownedOrder.status = 'Confirmed'
+    ownedOrder.paymentStatus = 'Paid'
+    ownedOrder.razorpayPaymentId = razorpay_payment_id
+    ownedOrder.razorpaySignature = razorpay_signature
+    ownedOrder.statusHistory.push({ status: 'Confirmed', note: 'Payment verified successfully via Razorpay.' })
+    await ownedOrder.save()
 
     // Update Payment Audit Record
-    if (updatedOrder) {
-      await Payment.findOneAndUpdate(
-        { razorpayOrderId: razorpay_order_id },
-        {
-          razorpayPaymentId: razorpay_payment_id,
-          razorpaySignature: razorpay_signature,
-          status: 'captured',
-        }
-      )
+    await Payment.findOneAndUpdate(
+      { razorpayOrderId: razorpay_order_id },
+      {
+        order: ownedOrder._id,
+        user: req.user._id,
+        razorpayPaymentId: razorpay_payment_id,
+        razorpaySignature: razorpay_signature,
+        status: 'captured',
+      },
+      { upsert: true }
+    )
 
-      // Send Confirmation Emails asynchronously without blocking request or throwing unhandled rejections
-      sendOrderConfirmationEmail(updatedOrder).catch((e) => console.warn('[ORDER CONFIRMATION EMAIL NOTICE]:', e.message))
-      sendAdminNewOrderNotification(updatedOrder).catch((e) => console.warn('[ADMIN ORDER NOTIFICATION NOTICE]:', e.message))
+    sendOrderConfirmationEmail(ownedOrder).catch((e) => console.warn('[ORDER CONFIRMATION EMAIL NOTICE]:', e.message))
+    sendAdminNewOrderNotification(ownedOrder).catch((e) => console.warn('[ADMIN ORDER NOTIFICATION NOTICE]:', e.message))
 
-      if (updatedOrder.user) {
-        try {
-          await Cart.findOneAndUpdate({ user: updatedOrder.user }, { items: [], coupon: null })
-          emitCartUpdated(updatedOrder.user, { items: [], coupon: null })
-        } catch (cErr) {
-          console.warn('[CART CLEAR NOTICE]:', cErr.message)
-        }
+    if (ownedOrder.user) {
+      try {
+        await Cart.findOneAndUpdate({ user: ownedOrder.user }, { items: [], coupon: null })
+        emitCartUpdated(ownedOrder.user, { items: [], coupon: null })
+      } catch (cErr) {
+        console.warn('[CART CLEAR NOTICE]:', cErr.message)
       }
-
-      emitOrderUpdated(updatedOrder)
     }
+
+    emitOrderUpdated(ownedOrder)
 
     return res.status(200).json({
       success: true,
       message: 'Payment verified and order confirmed.',
-      order: updatedOrder,
+      order: ownedOrder,
     })
   } catch (err) {
     next(err)
@@ -629,6 +695,10 @@ export async function requestRefund(req, res, next) {
 // POST /api/orders/:id/process-refund — Admin Refund Process
 export async function processRefund(req, res, next) {
   try {
+    if (!req.admin && req.user?.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required to process refunds.' })
+    }
+
     const { action, note = '' } = req.body // action: 'approve' | 'reject'
     const order = await Order.findById(req.params.id)
     if (!order) return res.status(404).json({ message: 'Order not found' })
@@ -714,6 +784,10 @@ export async function processRefund(req, res, next) {
 // GET /api/orders/admin/all — Admin List All Orders with search, filters & pagination
 export async function listAllOrders(req, res, next) {
   try {
+    if (!req.admin && req.user?.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required to list all orders.' })
+    }
+
     const { status, search, page = 1, limit = 50 } = req.query
     const query = {}
 
@@ -757,6 +831,10 @@ export async function listAllOrders(req, res, next) {
 // PATCH /api/orders/:id/status — Admin Update Status
 export async function updateOrderStatus(req, res, next) {
   try {
+    if (!req.admin && req.user?.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required to update order status.' })
+    }
+
     const id = req.params.id
     const filter = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { orderNumber: id }
     const { status, trackingNumber, carrier, note } = req.body
@@ -788,6 +866,10 @@ export async function updateOrderStatus(req, res, next) {
 // DELETE /api/orders/:id — Delete order
 export async function deleteOrder(req, res, next) {
   try {
+    if (!req.admin && req.user?.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required to delete orders.' })
+    }
+
     const id = req.params.id
     const filter = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { orderNumber: id }
     const order = await Order.findOneAndDelete(filter)
@@ -802,6 +884,10 @@ export async function deleteOrder(req, res, next) {
 // DELETE /api/orders — Delete ALL orders
 export async function deleteAllOrders(req, res, next) {
   try {
+    if (!req.admin && req.user?.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required to delete orders.' })
+    }
+
     await Order.deleteMany({})
     emitOrderCancelled('ALL')
     res.json({ message: 'All orders deleted successfully' })

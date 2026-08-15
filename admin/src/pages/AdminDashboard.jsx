@@ -1535,6 +1535,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                                     if (confirm('Approve refund for this order?')) {
                                       await fetch(`${API_URL}/orders/${o._id || o.id}/process-refund`, {
                                         method: 'POST',
+                                        credentials: 'include',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ action: 'approve' }),
                                       })
@@ -1550,6 +1551,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                                     if (confirm('Reject refund request?')) {
                                       await fetch(`${API_URL}/orders/${o._id || o.id}/process-refund`, {
                                         method: 'POST',
+                                        credentials: 'include',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ action: 'reject' }),
                                       })
@@ -1580,6 +1582,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                                     try {
                                       const res = await fetch(`${API_URL}/orders/${o._id || o.id}/cancel`, {
                                         method: 'PATCH',
+                                        credentials: 'include',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ reason, isAdmin: true }),
                                       })

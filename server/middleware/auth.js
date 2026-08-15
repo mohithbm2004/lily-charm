@@ -18,11 +18,38 @@ export async function protect(req, res, next) {
   }
 }
 
-export function adminOnly(req, res, next) {
-  if (req.user?.role !== 'admin' && !req.admin) {
-    return res.status(403).json({ message: 'Admin access required' })
+export async function adminOnly(req, res, next) {
+  if (req.admin || req.user?.role === 'admin') {
+    return next()
   }
-  next()
+
+  // Check Admin Session from cookie, header, or query
+  const sessionId = req.cookies?.lily_admin_session || req.headers?.['x-admin-session-id'] || req.query?.adminSession
+  if (sessionId) {
+    try {
+      const session = await AdminSession.findOne({ sessionId })
+      if (session && Date.now() <= new Date(session.expiresAt).getTime()) {
+        req.admin = { email: session.adminEmail, sessionId: session.sessionId }
+        return next()
+      }
+    } catch {}
+  }
+
+  // Check Bearer Token if present for admin role
+  const header = req.headers.authorization
+  if (header && header.startsWith('Bearer ')) {
+    try {
+      const token = header.split(' ')[1]
+      const decoded = jwt.verify(token, process.env.JWT_SECRET)
+      const user = await User.findById(decoded.id)
+      if (user && user.role === 'admin') {
+        req.user = user
+        return next()
+      }
+    } catch {}
+  }
+
+  return res.status(403).json({ message: 'Admin access required' })
 }
 
 /**
@@ -48,6 +75,10 @@ export async function authenticateUserOrAdmin(req, res, next) {
         req.admin = { email: session.adminEmail, sessionId: session.sessionId }
       }
     } catch {}
+  }
+
+  if (!req.user && !req.admin) {
+    return res.status(401).json({ message: 'Authentication required' })
   }
 
   next()
