@@ -6,6 +6,15 @@ const StudioContext = createContext(null)
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
+const getAdminHeaders = (extraHeaders = {}) => {
+  const sessionId = typeof window !== 'undefined' ? localStorage.getItem('lilycharm_admin_session_id') : null
+  const headers = { ...extraHeaders }
+  if (sessionId) {
+    headers['x-admin-session-id'] = sessionId
+  }
+  return headers
+}
+
 const initialOrders = []
 
 export function StudioProvider({ children }) {
@@ -42,6 +51,7 @@ export function StudioProvider({ children }) {
       const timeoutId = setTimeout(() => controller.abort(), 6000)
       const res = await fetch(`${API_URL}/auth/users`, {
         signal: controller.signal,
+        headers: getAdminHeaders(),
         credentials: 'include',
       })
       clearTimeout(timeoutId)
@@ -76,7 +86,11 @@ export function StudioProvider({ children }) {
     try {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 3000)
-      const res = await fetch(`${API_URL}/products`, { signal: controller.signal })
+      const res = await fetch(`${API_URL}/products?includeArchived=true`, {
+        signal: controller.signal,
+        headers: getAdminHeaders(),
+        credentials: 'include',
+      })
       clearTimeout(timeoutId)
       if (res.ok) {
         const data = await res.json()
@@ -100,7 +114,11 @@ export function StudioProvider({ children }) {
     try {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 3000)
-      const res = await fetch(`${API_URL}/collections`, { signal: controller.signal })
+      const res = await fetch(`${API_URL}/collections`, {
+        signal: controller.signal,
+        headers: getAdminHeaders(),
+        credentials: 'include',
+      })
       clearTimeout(timeoutId)
       if (res.ok) {
         const data = await res.json()
@@ -125,6 +143,7 @@ export function StudioProvider({ children }) {
       const timeoutId = setTimeout(() => controller.abort(), 3000)
       const res = await fetch(`${API_URL}/custom-requests`, {
         signal: controller.signal,
+        headers: getAdminHeaders(),
         credentials: 'include',
       })
       clearTimeout(timeoutId)
@@ -145,6 +164,7 @@ export function StudioProvider({ children }) {
       const timeoutId = setTimeout(() => controller.abort(), 4000)
       const res = await fetch(`${API_URL}/orders`, {
         signal: controller.signal,
+        headers: getAdminHeaders(),
         credentials: 'include',
       })
       clearTimeout(timeoutId)
@@ -503,7 +523,7 @@ export function StudioProvider({ children }) {
     try {
       const res = await fetch(`${API_URL}/products`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include',
         body: JSON.stringify(payload),
       })
@@ -536,7 +556,7 @@ export function StudioProvider({ children }) {
 
       const res = await fetch(`${API_URL}/products/${targetId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include',
         body: JSON.stringify(payload),
       })
@@ -558,8 +578,8 @@ export function StudioProvider({ children }) {
     setProducts((prev) => prev.filter((p) => p.id !== id && p._id !== id && p.mongoId !== id && p.specimen !== specimen))
 
     try {
-      if (id) await fetch(`${API_URL}/products/${id}`, { method: 'DELETE', credentials: 'include' })
-      else if (specimen) await fetch(`${API_URL}/products/${specimen}`, { method: 'DELETE', credentials: 'include' })
+      if (id) await fetch(`${API_URL}/products/${id}`, { method: 'DELETE', headers: getAdminHeaders(), credentials: 'include' })
+      else if (specimen) await fetch(`${API_URL}/products/${specimen}`, { method: 'DELETE', headers: getAdminHeaders(), credentials: 'include' })
       refreshProductsFromApi()
     } catch (e) {
       console.error('Failed to delete creation in MongoDB API:', e)
@@ -570,7 +590,7 @@ export function StudioProvider({ children }) {
     setProducts([])
     localStorage.setItem('lilycharm_products', JSON.stringify([]))
     try {
-      await fetch(`${API_URL}/products`, { method: 'DELETE', credentials: 'include' })
+      await fetch(`${API_URL}/products`, { method: 'DELETE', headers: getAdminHeaders(), credentials: 'include' })
       refreshProductsFromApi()
     } catch (e) {
       console.error('Failed to delete all products in MongoDB API:', e)
@@ -593,7 +613,7 @@ export function StudioProvider({ children }) {
     try {
       const res = await fetch(`${API_URL}/collections`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include',
         body: JSON.stringify(payload),
       })
@@ -623,7 +643,7 @@ export function StudioProvider({ children }) {
     try {
       const res = await fetch(`${API_URL}/collections/${targetId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include',
         body: JSON.stringify(payload),
       })
@@ -645,8 +665,8 @@ export function StudioProvider({ children }) {
     setCollections((prev) => prev.filter((c) => c.id !== id && c._id !== id && c.mongoId !== id && c.slug !== slug && c.slug !== id))
 
     try {
-      if (id) await fetch(`${API_URL}/collections/${id}`, { method: 'DELETE', credentials: 'include' })
-      else if (slug) await fetch(`${API_URL}/collections/${slug}`, { method: 'DELETE', credentials: 'include' })
+      if (id) await fetch(`${API_URL}/collections/${id}`, { method: 'DELETE', headers: getAdminHeaders(), credentials: 'include' })
+      else if (slug) await fetch(`${API_URL}/collections/${slug}`, { method: 'DELETE', headers: getAdminHeaders(), credentials: 'include' })
       refreshCollectionsFromApi()
     } catch (e) {
       console.error('Failed to delete collection:', e)
@@ -657,7 +677,7 @@ export function StudioProvider({ children }) {
     setCollections([])
     localStorage.setItem('lilycharm_collections', JSON.stringify([]))
     try {
-      await fetch(`${API_URL}/collections`, { method: 'DELETE', credentials: 'include' })
+      await fetch(`${API_URL}/collections`, { method: 'DELETE', headers: getAdminHeaders(), credentials: 'include' })
       refreshCollectionsFromApi()
     } catch (e) {
       console.error('Failed to delete all collections in MongoDB API:', e)
@@ -689,7 +709,7 @@ export function StudioProvider({ children }) {
       const res = await fetch(`${API_URL}/orders/${id}/status`, {
         method: 'PATCH',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload),
       })
       if (!res.ok) {
@@ -705,7 +725,7 @@ export function StudioProvider({ children }) {
     const id = typeof orderOrId === 'object' ? (orderOrId.mongoId || orderOrId._id || orderOrId.orderNumber || orderOrId.id) : orderOrId
     setOrders((prev) => prev.filter((o) => o.id !== id && o.mongoId !== id && o._id !== id && o.orderNumber !== id))
     try {
-      await fetch(`${API_URL}/orders/${id}`, { method: 'DELETE', credentials: 'include' })
+      await fetch(`${API_URL}/orders/${id}`, { method: 'DELETE', headers: getAdminHeaders(), credentials: 'include' })
       refreshOrdersFromApi()
     } catch (e) {
       console.error('Failed to delete order:', e)
@@ -716,7 +736,7 @@ export function StudioProvider({ children }) {
     setOrders([])
     localStorage.setItem('lilycharm_orders', JSON.stringify([]))
     try {
-      await fetch(`${API_URL}/orders`, { method: 'DELETE', credentials: 'include' })
+      await fetch(`${API_URL}/orders`, { method: 'DELETE', headers: getAdminHeaders(), credentials: 'include' })
       refreshOrdersFromApi()
     } catch (e) {
       console.error('Failed to delete all orders:', e)
@@ -728,7 +748,7 @@ export function StudioProvider({ children }) {
     try {
       await fetch(`${API_URL}/settings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include',
         body: JSON.stringify({ marqueeText: text }),
       })
@@ -742,7 +762,7 @@ export function StudioProvider({ children }) {
     try {
       await fetch(`${API_URL}/settings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include',
         body: JSON.stringify({
           offerCode: offerObj.code,
@@ -764,7 +784,7 @@ export function StudioProvider({ children }) {
       await fetch(`${API_URL}/custom-requests/${id}/status`, {
         method: 'PATCH',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ status, reason, adminNotes: reason }),
       })
       refreshCustomRequestsFromApi()
@@ -781,7 +801,7 @@ export function StudioProvider({ children }) {
       await fetch(`${API_URL}/custom-requests/${id}/quote`, {
         method: 'PATCH',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ quotedPrice, adminNotes }),
       })
       refreshCustomRequestsFromApi()
@@ -793,7 +813,7 @@ export function StudioProvider({ children }) {
   const deleteCustomRequest = async (id) => {
     setCustomRequests((prev) => prev.filter((r) => r._id !== id))
     try {
-      await fetch(`${API_URL}/custom-requests/${id}`, { method: 'DELETE', credentials: 'include' })
+      await fetch(`${API_URL}/custom-requests/${id}`, { method: 'DELETE', headers: getAdminHeaders(), credentials: 'include' })
       refreshCustomRequestsFromApi()
     } catch (e) {
       console.error('Failed to delete custom request:', e)
@@ -816,7 +836,7 @@ export function StudioProvider({ children }) {
     try {
       await fetch(`${API_URL}/settings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include',
         body: JSON.stringify(updated),
       })
@@ -831,6 +851,7 @@ export function StudioProvider({ children }) {
   const refreshReviewsFromApi = async () => {
     try {
       const res = await fetch(`${API_URL}/reviews?admin=true`, {
+        headers: getAdminHeaders(),
         credentials: 'include',
       })
       if (res.ok) {
@@ -855,7 +876,7 @@ export function StudioProvider({ children }) {
     try {
       await fetch(`${API_URL}/reviews/${id}/display`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include',
         body: JSON.stringify({ isDisplayed }),
       })
@@ -868,7 +889,7 @@ export function StudioProvider({ children }) {
   const deleteReview = async (id) => {
     setReviews((prev) => prev.filter((r) => r._id !== id))
     try {
-      await fetch(`${API_URL}/reviews/${id}`, { method: 'DELETE', credentials: 'include' })
+      await fetch(`${API_URL}/reviews/${id}`, { method: 'DELETE', headers: getAdminHeaders(), credentials: 'include' })
       refreshReviewsFromApi()
     } catch (e) {
       console.error('Failed to delete review:', e)
@@ -886,6 +907,7 @@ export function StudioProvider({ children }) {
       const timeoutId = setTimeout(() => controller.abort(), 4000)
       const res = await fetch(`${API_URL}/coupons`, {
         signal: controller.signal,
+        headers: getAdminHeaders(),
         credentials: 'include',
       })
       clearTimeout(timeoutId)
@@ -905,7 +927,7 @@ export function StudioProvider({ children }) {
     try {
       const res = await fetch(`${API_URL}/coupons`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include',
         body: JSON.stringify(newCoupon),
       })
@@ -933,7 +955,7 @@ export function StudioProvider({ children }) {
     try {
       await fetch(`${API_URL}/coupons/${couponId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include',
         body: JSON.stringify({ isActive: newStatus }),
       })
@@ -957,7 +979,7 @@ export function StudioProvider({ children }) {
       if (id) {
         await fetch(`${API_URL}/coupons/${id}`, {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
           credentials: 'include',
         })
       }

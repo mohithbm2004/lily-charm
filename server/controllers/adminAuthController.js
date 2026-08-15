@@ -8,7 +8,7 @@ import { generate6DigitOtp, hashToken, sendOtpEmail } from '../services/otp.serv
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  sameSite: 'lax',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   secure: process.env.NODE_ENV === 'production',
   maxAge: 12 * 60 * 60 * 1000, // 12 hours max
 }
@@ -139,6 +139,7 @@ export async function adminLogin(req, res) {
     return res.status(200).json({
       success: true,
       message: 'Admin authenticated successfully.',
+      sessionId,
       admin: { email: expectedEmail, lastPasswordChange: admin.lastPasswordChange },
     })
   } catch (err) {

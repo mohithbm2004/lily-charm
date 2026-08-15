@@ -165,7 +165,11 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
   const fetchAuditLogs = useCallback(async () => {
     setLoadingAuditLogs(true)
     try {
-      const res = await fetch(`${API_URL}/admin/audit-logs`, { credentials: 'include' })
+      const sessionId = localStorage.getItem('lilycharm_admin_session_id') || ''
+      const res = await fetch(`${API_URL}/admin/audit-logs`, {
+        headers: sessionId ? { 'x-admin-session-id': sessionId } : {},
+        credentials: 'include',
+      })
       if (res.ok) {
         const data = await res.json()
         if (data.success) setAuditLogs(data.logs || [])
@@ -1533,10 +1537,14 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                                 <button
                                   onClick={async () => {
                                     if (confirm('Approve refund for this order?')) {
+                                      const sessionId = localStorage.getItem('lilycharm_admin_session_id') || ''
                                       await fetch(`${API_URL}/orders/${o._id || o.id}/process-refund`, {
                                         method: 'POST',
                                         credentials: 'include',
-                                        headers: { 'Content-Type': 'application/json' },
+                                        headers: {
+                                          'Content-Type': 'application/json',
+                                          ...(sessionId ? { 'x-admin-session-id': sessionId } : {}),
+                                        },
                                         body: JSON.stringify({ action: 'approve' }),
                                       })
                                       window.location.reload()
@@ -1549,10 +1557,14 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                                 <button
                                   onClick={async () => {
                                     if (confirm('Reject refund request?')) {
+                                      const sessionId = localStorage.getItem('lilycharm_admin_session_id') || ''
                                       await fetch(`${API_URL}/orders/${o._id || o.id}/process-refund`, {
                                         method: 'POST',
                                         credentials: 'include',
-                                        headers: { 'Content-Type': 'application/json' },
+                                        headers: {
+                                          'Content-Type': 'application/json',
+                                          ...(sessionId ? { 'x-admin-session-id': sessionId } : {}),
+                                        },
                                         body: JSON.stringify({ action: 'reject' }),
                                       })
                                       window.location.reload()
@@ -1580,10 +1592,14 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                                   const reason = prompt('Enter cancellation & refund reason for customer:', 'Cancelled by studio admin')
                                   if (reason !== null) {
                                     try {
+                                      const sessionId = localStorage.getItem('lilycharm_admin_session_id') || ''
                                       const res = await fetch(`${API_URL}/orders/${o._id || o.id}/cancel`, {
                                         method: 'PATCH',
                                         credentials: 'include',
-                                        headers: { 'Content-Type': 'application/json' },
+                                        headers: {
+                                          'Content-Type': 'application/json',
+                                          ...(sessionId ? { 'x-admin-session-id': sessionId } : {}),
+                                        },
                                         body: JSON.stringify({ reason, isAdmin: true }),
                                       })
                                       const data = await res.json()

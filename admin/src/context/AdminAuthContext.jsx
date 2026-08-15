@@ -12,9 +12,13 @@ export function AdminAuthProvider({ children }) {
   const checkAuth = useCallback(async () => {
     try {
       setLoading(true)
+      const storedSessionId = localStorage.getItem('lilycharm_admin_session_id')
+      const headers = { 'Content-Type': 'application/json' }
+      if (storedSessionId) headers['x-admin-session-id'] = storedSessionId
+
       const res = await fetch(`${API_URL}/admin/auth/me`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
       })
 
@@ -59,6 +63,10 @@ export function AdminAuthProvider({ children }) {
 
       if (!res.ok || !data.success) {
         throw new Error(data.message || 'Login failed. Please check credentials.')
+      }
+
+      if (data.sessionId) {
+        localStorage.setItem('lilycharm_admin_session_id', data.sessionId)
       }
 
       setIsAuthenticated(true)
@@ -168,14 +176,19 @@ export function AdminAuthProvider({ children }) {
 
   const logoutAllSessions = async () => {
     try {
+      const storedSessionId = localStorage.getItem('lilycharm_admin_session_id')
+      const headers = { 'Content-Type': 'application/json' }
+      if (storedSessionId) headers['x-admin-session-id'] = storedSessionId
+
       await fetch(`${API_URL}/admin/auth/logout-all`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
       })
     } catch (err) {
       console.error('logoutAllSessions error:', err)
     } finally {
+      localStorage.removeItem('lilycharm_admin_session_id')
       setIsAuthenticated(false)
       setAdmin(null)
     }
@@ -183,14 +196,19 @@ export function AdminAuthProvider({ children }) {
 
   const logout = async () => {
     try {
+      const storedSessionId = localStorage.getItem('lilycharm_admin_session_id')
+      const headers = { 'Content-Type': 'application/json' }
+      if (storedSessionId) headers['x-admin-session-id'] = storedSessionId
+
       await fetch(`${API_URL}/admin/auth/logout`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
       })
     } catch (err) {
       console.error('Logout error:', err)
     } finally {
+      localStorage.removeItem('lilycharm_admin_session_id')
       setIsAuthenticated(false)
       setAdmin(null)
     }
