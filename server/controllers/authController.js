@@ -262,21 +262,25 @@ export async function googleAuth(req, res, next) {
 export async function forgotPassword(req, res, next) {
   try {
     const { email } = req.body
-    const genericResponse = {
-      success: true,
-      message: "If an account exists with this email, you'll receive a password reset link.",
-    }
 
     if (!email) {
-      return res.status(400).json({ message: 'Email address is required!' })
+      return res.status(400).json({ message: 'Please enter a valid email address.' })
     }
 
     const cleanEmail = email.toLowerCase().trim()
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({ message: 'Please enter a valid email address.' })
+    }
+
     const user = await User.findOne({ email: cleanEmail })
 
-    // Generic response if email is not found to prevent user enumeration
+    // If email DOES NOT EXIST: do NOT create token, do NOT send email, return 404
     if (!user) {
-      return res.json(genericResponse)
+      return res.status(404).json({
+        success: false,
+        message: 'Email address is not registered. Please check your email or create an account.',
+      })
     }
 
     // Generate cryptographically secure 32-byte random token
@@ -308,7 +312,10 @@ export async function forgotPassword(req, res, next) {
     // Send password reset email asynchronously via ZeptoMail no-reply agent
     sendPasswordResetEmail(cleanEmail, user.name, resetUrl).catch(console.error)
 
-    res.json(genericResponse)
+    res.status(200).json({
+      success: true,
+      message: 'Password reset link sent to your email.',
+    })
   } catch (err) {
     next(err)
   }

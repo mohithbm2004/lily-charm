@@ -249,16 +249,24 @@ export default function AuthModal({
     setSuccessMessage('')
 
     const errors = {}
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
     if (mode === 'login') {
       if (!formData.email?.trim()) errors.email = 'Email address is required.'
+      else if (!emailRegex.test(formData.email.trim())) errors.email = 'Please enter a valid email address.'
       if (!formData.password) errors.password = 'Password is required.'
     } else if (mode === 'register') {
       if (!formData.name?.trim()) errors.name = 'Full name is required.'
       if (!formData.email?.trim()) errors.email = 'Email address is required.'
+      else if (!emailRegex.test(formData.email.trim())) errors.email = 'Please enter a valid email address.'
       if (!formData.password) errors.password = 'Password is required.'
       else if (formData.password.length < 6) errors.password = 'Password must be at least 6 characters.'
     } else if (mode === 'forgot') {
-      if (!formData.email?.trim()) errors.email = 'Email address is required.'
+      if (!formData.email?.trim()) {
+        errors.email = 'Please enter a valid email address.'
+      } else if (!emailRegex.test(formData.email.trim())) {
+        errors.email = 'Please enter a valid email address.'
+      }
     }
 
     if (Object.keys(errors).length > 0) {
@@ -275,7 +283,7 @@ export default function AuthModal({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: formData.email,
+            email: formData.email.trim(),
             password: formData.password,
           }),
         })
@@ -295,10 +303,10 @@ export default function AuthModal({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
+            name: formData.name.trim(),
+            email: formData.email.trim(),
             password: formData.password,
-            phone: formData.phone,
+            phone: formData.phone?.trim() || '',
           }),
         })
 
@@ -316,14 +324,16 @@ export default function AuthModal({
         const res = await fetch(`${API_URL}/auth/forgot-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: formData.email }),
+          body: JSON.stringify({ email: formData.email.trim() }),
         })
 
         const data = await res.json()
         if (res.ok) {
-          setSuccessMessage('🔑 Password reset link sent to your email address!')
+          setSuccessMessage(data.message || 'Password reset link sent to your email.')
         } else {
-          setErrorMessage(data.message || 'Failed to send reset link.')
+          setErrorMessage(
+            data.message || 'Email address is not registered. Please check your email or create an account.'
+          )
         }
       }
     } catch (err) {
