@@ -15,7 +15,7 @@ import {
   deleteAllOrders,
 } from '../controllers/orderController.js'
 
-import { protect } from '../middleware/auth.js'
+import { protect, authenticateUserOrAdmin } from '../middleware/auth.js'
 
 const router = Router()
 
@@ -28,10 +28,10 @@ router.get('/mine', protect, getMyOrders)
 router.get('/my-orders', protect, getMyOrders)
 router.get('/admin/all', listAllOrders)
 router.get('/', listAllOrders)
-router.get('/:id', getOrderById)
-router.get('/:id/invoice', downloadInvoice)
-router.patch('/:id/cancel', cancelOrder)
-router.post('/:id/refund-request', requestRefund)
+router.get('/:id', authenticateUserOrAdmin, getOrderById)
+router.get('/:id/invoice', authenticateUserOrAdmin, downloadInvoice)
+router.patch('/:id/cancel', authenticateUserOrAdmin, cancelOrder)
+router.post('/:id/refund-request', authenticateUserOrAdmin, requestRefund)
 router.post('/:id/process-refund', processRefund)
 router.patch('/:id/status', updateOrderStatus)
 router.delete('/', deleteAllOrders)

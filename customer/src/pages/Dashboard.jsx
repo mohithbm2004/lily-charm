@@ -14,7 +14,7 @@ import { getSocket } from '../services/socket'
 const tabs = ['My Orders', 'Profile Details', 'Custom Price Quotes', 'Saved Addresses']
 
 export default function Dashboard() {
-  const { user, logout, updateUserProfile } = useAuth()
+  const { user, token, logout, updateUserProfile } = useAuth()
   const { showAlert, showConfirm } = useAlert()
   const { shippingSettings } = useStudio()
   const navigate = useNavigate()
@@ -59,7 +59,7 @@ export default function Dashboard() {
       setUserProfile((prev) => ({ ...defaultProfile, ...(prev || {}), ...user }))
       setAvatarPreview(user.profileImage || '')
       fetchProfileFromApi(user.email)
-      fetchUserOrdersAndRequests(user.email)
+      fetchUserOrdersAndRequests()
     } else {
       setUserProfile(null)
       setUserOrders([])
@@ -67,7 +67,7 @@ export default function Dashboard() {
       setAvatarPreview('')
       localStorage.removeItem('lilycharm_user_profile')
     }
-  }, [user])
+  }, [user, token])
 
   const currentEmail = userProfile?.email || user?.email || ''
 
@@ -99,50 +99,26 @@ export default function Dashboard() {
     }
   }
 
-  const fetchUserOrdersAndRequests = async (email) => {
-    if (!email) return
+  const fetchUserOrdersAndRequests = async () => {
+    const currentToken = token || localStorage.getItem('lilycharm_token')
+    if (!currentToken || !user) return
     try {
-      const cleanEmail = email.toLowerCase().trim()
-      const userId = user?._id || user?.id || userProfile?._id || ''
       const [ordRes, reqRes] = await Promise.all([
-        fetch(`${API_URL}/orders/mine?email=${encodeURIComponent(cleanEmail)}&userId=${encodeURIComponent(userId)}`),
-        fetch(`${API_URL}/custom-requests`),
+        fetch(`${API_URL}/orders/mine`, {
+          headers: { Authorization: `Bearer ${currentToken}` },
+        }),
+        fetch(`${API_URL}/custom-requests/mine`, {
+          headers: { Authorization: `Bearer ${currentToken}` },
+        }),
       ])
       if (ordRes.ok) {
         const ordData = await ordRes.json()
-        const rawOrders = Array.isArray(ordData) ? ordData : (ordData.orders || [])
+        const rawOrders = Array.isArray(ordData) ? ordData : ordData.orders || []
         setUserOrders(rawOrders)
-      } else {
-        // Fallback to fetch all orders and filter
-        const fallbackRes = await fetch(`${API_URL}/orders`)
-        if (fallbackRes.ok) {
-          const fallbackData = await fallbackRes.json()
-          const rawOrders = Array.isArray(fallbackData) ? fallbackData : (fallbackData.orders || [])
-          const altEmails = Array.isArray(userProfile?.alternateEmails)
-            ? userProfile.alternateEmails.map((e) => e.toLowerCase().trim())
-            : []
-          const allMyEmails = [cleanEmail, ...altEmails]
-          const filtered = rawOrders.filter(
-            (o) =>
-              (userId && (o.user === userId || o.user?._id === userId)) ||
-              (o?.shippingAddress?.email && allMyEmails.includes(o.shippingAddress.email.toLowerCase().trim())) ||
-              (o?.email && allMyEmails.includes(o.email.toLowerCase().trim()))
-          )
-          setUserOrders(filtered)
-        }
       }
-
       if (reqRes.ok) {
         const reqs = await reqRes.json()
-        const altEmails = Array.isArray(userProfile?.alternateEmails)
-          ? userProfile.alternateEmails.map((e) => e.toLowerCase().trim())
-          : []
-        const allMyEmails = [cleanEmail, ...altEmails]
-        const myReqs = (Array.isArray(reqs) ? reqs : []).filter(
-          (r) =>
-            (userId && (r.user === userId || r.user?._id === userId)) ||
-            (r?.email && allMyEmails.includes(r.email.toLowerCase().trim()))
-        )
+        const myReqs = Array.isArray(reqs) ? reqs : []
         setUserCustomRequests(myReqs)
       }
     } catch (e) {
@@ -152,17 +128,17 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchProfileFromApi(currentEmail)
-    fetchUserOrdersAndRequests(currentEmail)
+    fetchUserOrdersAndRequests()
 
-    if (!currentEmail) return
+    if (!user) return
 
     const socket = getSocket()
-    const cleanEmail = currentEmail.toLowerCase().trim()
+    const currentUserId = String(user._id || user.id || '')
 
     const handleOrderCreated = (order) => {
       if (!order) return
-      const orderEmail = (order?.shippingAddress?.email || order?.email || '').toLowerCase().trim()
-      if (orderEmail === cleanEmail || order.user === user?._id) {
+      const orderUserId = String(order.user?._id || order.user || '')
+      if (orderUserId && orderUserId === currentUserId) {
         setUserOrders((prev) => [order, ...prev.filter((o) => (o._id || o.id) !== (order._id || order.id))])
       }
     }
@@ -186,8 +162,8 @@ export default function Dashboard() {
 
     const handleCustomRequestCreated = (req) => {
       if (!req) return
-      const reqEmail = (req.email || '').toLowerCase().trim()
-      if (reqEmail === cleanEmail) {
+      const reqUserId = String(req.user?._id || req.user || '')
+      if (reqUserId && reqUserId === currentUserId) {
         setUserCustomRequests((prev) => [req, ...prev.filter((r) => r._id !== req._id)])
       }
     }
@@ -222,7 +198,7 @@ export default function Dashboard() {
       socket.off('CUSTOM_REQUEST_UPDATED', handleCustomRequestUpdated)
       socket.off('CUSTOM_REQUEST_DELETED', handleCustomRequestDeleted)
     }
-  }, [currentEmail, user?._id])
+  }, [currentEmail, user?._id, token])
 
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0]
@@ -867,7 +843,10 @@ export default function Dashboard() {
                           </button>
 
                           <button
-                            onClick={() => window.open(`${API_URL}/orders/${o._id}/invoice`, '_blank')}
+                            onClick={() => {
+                              const authToken = token || localStorage.getItem('lilycharm_token') || ''
+                              window.open(`${API_URL}/orders/${o._id}/invoice?token=${encodeURIComponent(authToken)}`, '_blank')
+                            }}
                             className="btn-outline py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center rounded-full"
                           >
                             <Download size={12} /> Invoice PDF
@@ -880,6 +859,7 @@ export default function Dashboard() {
                                 const orderTotal = o.grandTotal ?? o.total ?? 0
                                 const processingFee = Math.round(orderTotal * 0.03)
                                 const netRefund = Math.max(0, orderTotal - processingFee)
+                                const authToken = token || localStorage.getItem('lilycharm_token') || ''
 
                                 if (isPaidOrder) {
                                   showConfirm({
@@ -899,7 +879,10 @@ export default function Dashboard() {
                                       try {
                                         const res = await fetch(`${API_URL}/orders/${o._id}/cancel`, {
                                           method: 'PATCH',
-                                          headers: { 'Content-Type': 'application/json' },
+                                          headers: {
+                                            'Content-Type': 'application/json',
+                                            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+                                          },
                                           body: JSON.stringify({ reason: 'Cancelled by customer via dashboard' }),
                                         })
                                         const data = await res.json()
@@ -909,7 +892,7 @@ export default function Dashboard() {
                                             type: 'success',
                                             message: `✨ Order ${o.orderNumber || o._id} has been cancelled. Net refund of ${formatPrice(netRefund)} (97%) has been sent to your original payment method.`,
                                           })
-                                          fetchUserOrdersAndRequests(userProfile.email)
+                                          fetchUserOrdersAndRequests()
                                         } else {
                                           showAlert({
                                             title: 'Cancellation Failed',
@@ -943,7 +926,10 @@ export default function Dashboard() {
                                       try {
                                         const res = await fetch(`${API_URL}/orders/${o._id}/cancel`, {
                                           method: 'PATCH',
-                                          headers: { 'Content-Type': 'application/json' },
+                                          headers: {
+                                            'Content-Type': 'application/json',
+                                            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+                                          },
                                           body: JSON.stringify({ reason: 'Cancelled by customer before payment' }),
                                         })
                                         const data = await res.json()
@@ -953,7 +939,7 @@ export default function Dashboard() {
                                             type: 'success',
                                             message: `✨ Order ${o.orderNumber || o._id} has been cancelled. No payment was charged.`,
                                           })
-                                          fetchUserOrdersAndRequests(userProfile.email)
+                                          fetchUserOrdersAndRequests()
                                         } else {
                                           showAlert({
                                             title: 'Cancellation Failed',

@@ -14,8 +14,11 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
 
   if (!isOpen || !order) return null
 
+  const getAuthToken = () => localStorage.getItem('lilycharm_token') || ''
+
   const handleDownloadInvoice = () => {
-    window.open(`${API_URL}/orders/${order._id}/invoice`, '_blank')
+    const token = getAuthToken()
+    window.open(`${API_URL}/orders/${order._id}/invoice?token=${encodeURIComponent(token)}`, '_blank')
   }
 
   const handleCancelOrder = async (e) => {
@@ -23,9 +26,13 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
     setLoading(true)
     setMessage('')
     try {
+      const token = getAuthToken()
       const res = await fetch(`${API_URL}/orders/${order._id}/cancel`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ reason: cancelReason || 'Cancelled by customer' }),
       })
       const data = await res.json()
@@ -47,9 +54,13 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
     setLoading(true)
     setMessage('')
     try {
+      const token = getAuthToken()
       const res = await fetch(`${API_URL}/orders/${order._id}/refund-request`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ reason: refundReason, amount: order.grandTotal || order.total }),
       })
       const data = await res.json()

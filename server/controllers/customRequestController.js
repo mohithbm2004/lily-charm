@@ -80,9 +80,28 @@ async function calculateStudioShipping(price) {
   }
 }
 
+// GET /api/custom-requests/mine — List current customer's custom design requests (Strictly by Authenticated User ID)
+export async function listMyCustomRequests(req, res, next) {
+  try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Authentication required to view custom requests.' })
+    }
+    const requests = await CustomRequest.find({ user: req.user._id }).sort({ createdAt: -1 })
+    res.json(requests)
+  } catch (err) {
+    next(err)
+  }
+}
+
 // GET /api/custom-requests — List all customer custom design requests (Admin / Studio)
 export async function listCustomRequests(req, res, next) {
   try {
+    // If a customer calls this endpoint without admin privilege, strictly filter by their own user ID
+    if (req.user && !req.admin && req.user.role !== 'admin') {
+      const requests = await CustomRequest.find({ user: req.user._id }).sort({ createdAt: -1 })
+      return res.json(requests)
+    }
+
     const requests = await CustomRequest.find({}).sort({ createdAt: -1 })
     res.json(requests)
   } catch (err) {
@@ -520,15 +539,21 @@ export async function acceptQuoteAndCreateOrder(req, res, next) {
   }
 }
 
-// PATCH /api/custom-requests/:id/decline — Customer declines price quote
+// PATCH /api/custom-requests/:id/decline — Customer declines price quote (Owner only)
 export async function declineQuote(req, res, next) {
   try {
-    const customRequest = await CustomRequest.findByIdAndUpdate(
-      req.params.id,
-      { status: 'Quote Declined' },
-      { new: true }
-    )
+    const customRequest = await CustomRequest.findById(req.params.id)
     if (!customRequest) return res.status(404).json({ message: 'Custom request not found' })
+
+    const isOwner = req.user && customRequest.user && String(customRequest.user) === String(req.user._id)
+    const isAdmin = Boolean(req.admin || req.user?.role === 'admin')
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: 'Access denied. You do not own this custom quote.' })
+    }
+
+    customRequest.status = 'Quote Declined'
+    await customRequest.save()
     emitCustomRequestUpdated(customRequest)
     res.json(customRequest)
   } catch (err) {

@@ -128,42 +128,8 @@ export async function createOrder(req, res, next) {
 
     const orderNumber = `LC-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`
 
-    let orderUser = req.user?._id || null
-    let matchedUser = null
-
-    if (orderUser) {
-      matchedUser = await User.findById(orderUser)
-    }
-
-    const shipEmail = shippingAddress?.email ? shippingAddress.email.toLowerCase().trim() : ''
-    const shipPhone = shippingAddress?.phone ? shippingAddress.phone.replace(/\D/g, '') : ''
-
-    if (!matchedUser && shipEmail) {
-      matchedUser = await User.findOne({
-        $or: [
-          { email: shipEmail },
-          { alternateEmails: shipEmail },
-        ],
-      })
-    }
-
-    if (!matchedUser && shipPhone && shipPhone.length >= 10) {
-      matchedUser = await User.findOne({
-        phone: { $regex: shipPhone.slice(-10) },
-      })
-    }
-
-    if (matchedUser) {
-      orderUser = matchedUser._id
-      if (shipEmail && shipEmail !== matchedUser.email && !matchedUser.alternateEmails?.includes(shipEmail)) {
-        matchedUser.alternateEmails = matchedUser.alternateEmails || []
-        matchedUser.alternateEmails.push(shipEmail)
-        if (shippingAddress?.phone && !matchedUser.phone) {
-          matchedUser.phone = shippingAddress.phone
-        }
-        await matchedUser.save()
-      }
-    }
+    // Strict Authenticated Ownership: Order belongs ONLY to the authenticated user from the session
+    const orderUser = req.user._id
 
     const order = await Order.create({
       user: orderUser,
@@ -343,92 +309,73 @@ export async function verifyPayment(req, res, next) {
   }
 }
 
-// GET /api/orders/my-orders or /api/orders/mine — Customer order history
+// GET /api/orders/my-orders or /api/orders/mine — Customer order history (Strictly by Authenticated User ID)
 export async function getMyOrders(req, res, next) {
   try {
-    const rawUserId = req.user?._id || req.query.userId
-    const rawEmail = (req.query.email || req.user?.email || '').toLowerCase().trim()
-
-    const queryConditions = []
-
-    if (rawUserId && mongoose.Types.ObjectId.isValid(rawUserId)) {
-      queryConditions.push({ user: rawUserId })
-      const u = await User.findById(rawUserId)
-      if (u) {
-        const allUserEmails = [u.email, ...(u.alternateEmails || [])].filter(Boolean)
-        allUserEmails.forEach((em) => {
-          const safe = em.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-          const reg = new RegExp(`^${safe}$`, 'i')
-          queryConditions.push({ 'shippingAddress.email': reg })
-          queryConditions.push({ email: reg })
-        })
-      }
+    const userId = req.user?._id || (req.user?.role === 'admin' ? req.query.userId : null)
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required to view order history.' })
     }
 
-    if (rawEmail) {
-      const safeEmail = rawEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      const emailRegex = new RegExp(`^${safeEmail}$`, 'i')
-      queryConditions.push({ 'shippingAddress.email': emailRegex })
-      queryConditions.push({ email: emailRegex })
-
-      const matchingUser = await User.findOne({
-        $or: [
-          { email: emailRegex },
-          { alternateEmails: emailRegex },
-        ],
-      })
-
-      if (matchingUser) {
-        queryConditions.push({ user: matchingUser._id })
-        const allEmails = [matchingUser.email, ...(matchingUser.alternateEmails || [])].filter(Boolean)
-        allEmails.forEach((alt) => {
-          if (alt) {
-            const altSafe = alt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-            const altRegex = new RegExp(`^${altSafe}$`, 'i')
-            queryConditions.push({ 'shippingAddress.email': altRegex })
-            queryConditions.push({ email: altRegex })
-          }
-        })
-      }
-    }
-
-    if (queryConditions.length === 0) return res.json([])
-
-    const orders = await Order.find({ $or: queryConditions }).sort({ createdAt: -1 })
+    // Source of Truth: query ONLY by authenticated user ID
+    const orders = await Order.find({ user: userId }).sort({ createdAt: -1 })
     res.json(orders)
   } catch (err) {
     next(err)
   }
 }
 
-// GET /api/orders/:id — Single order details
+// GET /api/orders/:id — Single order details (Authenticated Owner or Admin only)
 export async function getOrderById(req, res, next) {
   try {
     const order = await Order.findById(req.params.id)
     if (!order) return res.status(404).json({ message: 'Order not found' })
+
+    const isOwner = req.user && order.user && String(order.user) === String(req.user._id)
+    const isAdmin = Boolean(req.admin || req.user?.role === 'admin')
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: 'Access denied. You do not own this order.' })
+    }
+
     res.json(order)
   } catch (err) {
     next(err)
   }
 }
 
-// GET /api/orders/:id/invoice — Download PDF Invoice
+// GET /api/orders/:id/invoice — Download PDF Invoice (Authenticated Owner or Admin only)
 export async function downloadInvoice(req, res, next) {
   try {
     const order = await Order.findById(req.params.id)
     if (!order) return res.status(404).json({ message: 'Order not found' })
+
+    const isOwner = req.user && order.user && String(order.user) === String(req.user._id)
+    const isAdmin = Boolean(req.admin || req.user?.role === 'admin')
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: 'Access denied. You do not own this invoice.' })
+    }
+
     generateInvoicePDF(order, res)
   } catch (err) {
     next(err)
   }
 }
 
-// PATCH /api/orders/:id/cancel — Customer or Admin Order Cancellation with Strict Payment State Verification
+// PATCH /api/orders/:id/cancel — Customer or Admin Order Cancellation with Strict Ownership & Payment State Verification
 export async function cancelOrder(req, res, next) {
   try {
-    const { reason = 'Cancelled by user', isAdmin = false } = req.body
+    const { reason = 'Cancelled by user', isAdmin: reqIsAdmin = false } = req.body
     const order = await Order.findById(req.params.id)
     if (!order) return res.status(404).json({ message: 'Order not found' })
+
+    const isOwner = req.user && order.user && String(order.user) === String(req.user._id)
+    const isAdmin = Boolean(req.admin || req.user?.role === 'admin' || (reqIsAdmin && req.admin))
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: 'Access denied. You cannot cancel an order you do not own.' })
+    }
 
     // 1. Idempotency check: If already cancelled or refunded
     if (order.status === 'Cancelled' || order.status === 'Cancelled & Refunded') {
@@ -644,12 +591,19 @@ export async function cancelOrder(req, res, next) {
   }
 }
 
-// POST /api/orders/:id/refund-request — Customer Refund Request
+// POST /api/orders/:id/refund-request — Customer Refund Request (Owner only)
 export async function requestRefund(req, res, next) {
   try {
     const { reason, amount } = req.body
     const order = await Order.findById(req.params.id)
     if (!order) return res.status(404).json({ message: 'Order not found' })
+
+    const isOwner = req.user && order.user && String(order.user) === String(req.user._id)
+    const isAdmin = Boolean(req.admin || req.user?.role === 'admin')
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: 'Access denied. You cannot request a refund for an order you do not own.' })
+    }
 
     if (order.paymentStatus !== 'Paid' && !order.razorpayPaymentId) {
       return res.status(400).json({
