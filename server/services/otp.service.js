@@ -52,19 +52,17 @@ export async function sendOtpEmail(email, name, otp, isReset = false) {
  */
 export async function sendPasswordResetEmail(email, name, resetUrl) {
   const storeName = 'Lily Charm Studio'
-  const html = compileTemplate('otp.html', {
-    title: `Password Reset - ${storeName}`,
-    heading: 'Reset Password Request',
+  const html = compileTemplate('passwordReset.html', {
+    title: `Reset Your Password - ${storeName}`,
     name: name || 'Valued Customer',
-    message: `Click the link below or use your secure password reset URL: <br/><a href="${resetUrl}">${resetUrl}</a>`,
-    otp: 'RESET-LINK',
+    resetUrl,
   })
 
   return await sendEmail({
     type: 'reset-password',
     to: email,
     subject: `🔑 Reset Your Lily Charm Password`,
-    text: `Reset your Lily Charm password by visiting: ${resetUrl}`,
+    text: `Hello ${name || 'Valued Customer'}, please reset your Lily Charm password by visiting: ${resetUrl} (Valid for 15 minutes).`,
     html,
   })
 }
