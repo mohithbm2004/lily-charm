@@ -41,4 +41,7 @@ const customRequestSchema = new mongoose.Schema(
   { timestamps: true }
 )
 
+customRequestSchema.index({ user: 1, createdAt: -1 })
+customRequestSchema.index({ razorpayOrderId: 1 })
+
 export default mongoose.model('CustomRequest', customRequestSchema)
