@@ -14,6 +14,7 @@ import About from './pages/About'
 import Contact from './pages/Contact'
 import Journal from './pages/Journal'
 import ResetPassword from './pages/ResetPassword'
+import PayCustomQuote from './pages/PayCustomQuote'
 
 function PageTransition({ children }) {
   return (
@@ -45,6 +46,8 @@ export default function App() {
             <Route path="/product/:id" element={<PageTransition><Product /></PageTransition>} />
             <Route path="/checkout" element={<PageTransition><Checkout /></PageTransition>} />
             <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
+            <Route path="/pay-quote/:id" element={<PageTransition><PayCustomQuote /></PageTransition>} />
+            <Route path="/custom-quote/:id/pay" element={<PageTransition><PayCustomQuote /></PageTransition>} />
             <Route path="/about" element={<PageTransition><About /></PageTransition>} />
             <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
             <Route path="/journal" element={<PageTransition><Journal /></PageTransition>} />

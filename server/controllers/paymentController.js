@@ -1,5 +1,10 @@
+import crypto from 'crypto'
 import Payment from '../models/Payment.js'
 import Order from '../models/Order.js'
+import CustomRequest from '../models/CustomRequest.js'
+import { processCustomQuotePaymentSuccess } from './customRequestController.js'
+import { sendOrderConfirmationEmail, sendAdminNewOrderNotification } from '../utils/emailService.js'
+import { emitOrderUpdated } from '../socket.js'
 
 // GET /api/payment/admin/ledger — Payment Revenue & Analytics Dashboard for Admin
 export async function getPaymentLedger(req, res, next) {
@@ -19,6 +24,7 @@ export async function getPaymentLedger(req, res, next) {
     // Recent Payments
     const recentPayments = await Payment.find({})
       .populate('order', 'orderNumber status shippingAddress')
+      .populate('customRequest', 'name email stylePreference')
       .sort({ createdAt: -1 })
       .limit(50)
 
@@ -37,58 +43,178 @@ export async function getPaymentLedger(req, res, next) {
   }
 }
 
-// POST /api/payment/webhook — Razorpay Webhook Handler
+// POST /api/payment/webhook — Secure & Idempotent Razorpay Webhook Handler
 export async function handleRazorpayWebhook(req, res, next) {
   try {
-    const event = req.body
-    console.log('[RAZORPAY WEBHOOK EVENT]:', event.event)
+    const signature = req.headers['x-razorpay-signature']
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET
 
-    if (event.event === 'payment.captured') {
-      const paymentEntity = event.payload.payment.entity
-      const razorpayOrderId = paymentEntity.order_id
+    // 1. Verify Webhook Signature if configured
+    if (webhookSecret && signature) {
+      const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body)
+      const expectedSignature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(rawBody)
+        .digest('hex')
 
-      await Order.findOneAndUpdate(
-        { razorpayOrderId },
-        {
-          status: 'Confirmed',
-          paymentStatus: 'Paid',
-          razorpayPaymentId: paymentEntity.id,
-        }
-      )
+      let isMatch = false
+      try {
+        isMatch = crypto.timingSafeEqual(
+          Buffer.from(signature, 'utf-8'),
+          Buffer.from(expectedSignature, 'utf-8')
+        )
+      } catch {
+        isMatch = false
+      }
 
-      await Payment.findOneAndUpdate(
-        { razorpayOrderId },
-        {
-          razorpayPaymentId: paymentEntity.id,
-          status: 'captured',
-          rawResponse: paymentEntity,
-        }
-      )
-    } else if (event.event === 'payment.failed') {
-      const paymentEntity = event.payload.payment.entity
-      const razorpayOrderId = paymentEntity.order_id
-
-      await Order.findOneAndUpdate(
-        { razorpayOrderId },
-        {
-          status: 'Payment Failed',
-          paymentStatus: 'Failed',
-        }
-      )
-
-      await Payment.findOneAndUpdate(
-        { razorpayOrderId },
-        {
-          status: 'failed',
-          errorDescription: paymentEntity.error_description || 'Payment Failed',
-          rawResponse: paymentEntity,
-        }
-      )
+      if (!isMatch) {
+        console.error('[RAZORPAY WEBHOOK ERROR]: Invalid webhook signature.')
+        return res.status(400).json({ success: false, message: 'Invalid webhook signature.' })
+      }
     }
 
-    res.json({ status: 'ok' })
+    const event = req.body
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[RAZORPAY WEBHOOK EVENT]:', event.event)
+    }
+
+    if (event.event === 'payment.captured' || event.event === 'order.paid') {
+      const paymentEntity = event.payload?.payment?.entity
+      if (!paymentEntity) {
+        return res.status(200).json({ status: 'ok', note: 'No payment entity' })
+      }
+
+      const razorpayOrderId = paymentEntity.order_id
+      const razorpayPaymentId = paymentEntity.id
+      const notes = paymentEntity.notes || {}
+
+      // Validate currency
+      if (paymentEntity.currency && paymentEntity.currency !== 'INR') {
+        console.warn(`[WEBHOOK WARNING]: Unexpected currency ${paymentEntity.currency}`)
+      }
+
+      // Check if this payment belongs to a Custom Quote
+      const isCustomQuote =
+        notes.type === 'custom_quote' ||
+        Boolean(notes.customRequestId) ||
+        (paymentEntity.description && paymentEntity.description.toLowerCase().includes('custom'))
+
+      if (isCustomQuote || notes.customRequestId) {
+        const customRequestId = notes.customRequestId
+        let customRequest = null
+
+        if (customRequestId) {
+          customRequest = await CustomRequest.findById(customRequestId)
+        }
+        if (!customRequest && razorpayOrderId) {
+          customRequest = await CustomRequest.findOne({ razorpayOrderId })
+        }
+
+        if (customRequest) {
+          console.log(`[WEBHOOK] Processing Custom Quote Payment: ${customRequest._id} (Payment: ${razorpayPaymentId})`)
+          const result = await processCustomQuotePaymentSuccess({
+            customRequestId: customRequest._id,
+            razorpayOrderId,
+            razorpayPaymentId,
+            razorpaySignature: signature || '',
+            userEmail: customRequest.email,
+          })
+
+          return res.status(200).json({
+            status: 'ok',
+            type: 'custom_quote',
+            orderId: result?.order?._id,
+            alreadyProcessed: result?.alreadyProcessed,
+          })
+        }
+      }
+
+      // Check if this payment belongs to a Standard Order
+      let order = await Order.findOne({ razorpayOrderId })
+      if (!order && notes.orderNumber) {
+        order = await Order.findOne({ orderNumber: notes.orderNumber })
+      }
+
+      if (order) {
+        // Idempotency check: if order is already Paid/Confirmed, skip duplicate email/status updates
+        if (order.paymentStatus === 'Paid' && order.status === 'Confirmed') {
+          return res.status(200).json({ status: 'ok', note: 'Order already processed' })
+        }
+
+        order.status = 'Confirmed'
+        order.paymentStatus = 'Paid'
+        order.razorpayPaymentId = razorpayPaymentId
+        order.statusHistory.push({
+          status: 'Confirmed',
+          note: `Payment verified via Razorpay webhook (${razorpayPaymentId}).`,
+        })
+        await order.save()
+
+        await Payment.findOneAndUpdate(
+          { razorpayOrderId },
+          {
+            order: order._id,
+            razorpayPaymentId,
+            status: 'captured',
+            rawResponse: paymentEntity,
+          },
+          { upsert: true }
+        )
+
+        // Dispatch transactional emails safely to registered account
+        sendOrderConfirmationEmail(order).catch((e) =>
+          console.warn('[WEBHOOK ORDER CONFIRMATION EMAIL WARNING]:', e.message)
+        )
+        sendAdminNewOrderNotification(order).catch((e) =>
+          console.warn('[WEBHOOK ADMIN ORDER NOTIFICATION WARNING]:', e.message)
+        )
+
+        emitOrderUpdated(order)
+      } else {
+        // Record orphan payment in ledger for admin audit
+        await Payment.findOneAndUpdate(
+          { razorpayOrderId },
+          {
+            razorpayOrderId,
+            razorpayPaymentId,
+            amount: (paymentEntity.amount || 0) / 100,
+            currency: paymentEntity.currency || 'INR',
+            status: 'captured',
+            rawResponse: paymentEntity,
+          },
+          { upsert: true }
+        )
+      }
+    } else if (event.event === 'payment.failed') {
+      const paymentEntity = event.payload?.payment?.entity
+      if (paymentEntity) {
+        const razorpayOrderId = paymentEntity.order_id
+        if (razorpayOrderId) {
+          await Order.findOneAndUpdate(
+            { razorpayOrderId, paymentStatus: { $ne: 'Paid' } },
+            {
+              status: 'Payment Failed',
+              paymentStatus: 'Failed',
+            }
+          )
+
+          await Payment.findOneAndUpdate(
+            { razorpayOrderId },
+            {
+              razorpayPaymentId: paymentEntity.id,
+              status: 'failed',
+              errorDescription: paymentEntity.error_description || 'Payment Failed',
+              rawResponse: paymentEntity,
+            },
+            { upsert: true }
+          )
+        }
+      }
+    }
+
+    res.status(200).json({ status: 'ok' })
   } catch (err) {
-    console.error('[WEBHOOK ERROR]:', err.message)
+    console.error('[WEBHOOK PROCESSING ERROR]:', err.message)
     res.status(500).json({ message: 'Webhook processing error' })
   }
 }

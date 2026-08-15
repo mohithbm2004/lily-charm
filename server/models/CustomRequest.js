@@ -14,6 +14,11 @@ const customRequestSchema = new mongoose.Schema(
     image: { type: String, default: '' },
     images: { type: [String], default: [] },
     quotedPrice: { type: Number, default: 0 },
+    shippingCharge: { type: Number, default: 0 },
+    totalAmount: { type: Number, default: 0 },
+    razorpayOrderId: { type: String, default: '' },
+    razorpayPaymentId: { type: String, default: '' },
+    razorpaySignature: { type: String, default: '' },
     adminNotes: { type: String, default: '' },
     convertedOrderId: { type: String, default: '' },
     status: {

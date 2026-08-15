@@ -420,7 +420,7 @@ export async function sendCustomQuoteReadyEmail(customRequest) {
   if (!recipientEmail) return null
 
   const clientUrl = process.env.CLIENT_URL || 'https://lilycharm.in'
-  const actionUrl = `${clientUrl}/dashboard?tab=custom-quotes`
+  const actionUrl = `${clientUrl}/pay-quote/${customRequest._id || customRequest.id}`
   const dashboardUrl = `${clientUrl}/dashboard`
 
   const adminNotesHtml = customRequest.adminNotes

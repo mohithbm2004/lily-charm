@@ -5,7 +5,10 @@ let socket = null
 
 export function getSocket() {
   if (!socket) {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    const token =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('lilycharm_token') || localStorage.getItem('token')
+        : null
 
     socket = io(SOCKET_URL, {
       withCredentials: true,
@@ -23,6 +26,17 @@ export function getSocket() {
     socket.on('connect', () => {
       if (import.meta.env.DEV) {
         console.log(`[SOCKET] Connected to real-time server (ID: ${socket.id})`)
+      }
+      // Explicitly join customer room if token/user exists
+      const currentToken = localStorage.getItem('lilycharm_token') || localStorage.getItem('token')
+      const currentUserStr = localStorage.getItem('lilycharm_user') || localStorage.getItem('user')
+      if (currentToken && currentUserStr) {
+        try {
+          const user = JSON.parse(currentUserStr)
+          if (user?._id || user?.id) {
+            socket.emit('join_user', { userId: user._id || user.id, token: currentToken })
+          }
+        } catch {}
       }
     })
 
@@ -43,8 +57,8 @@ export function getSocket() {
         console.log(`[SOCKET] Reconnected after ${attemptNumber} attempts`)
       }
       // Re-authenticate / re-join user room on reconnect
-      const currentToken = localStorage.getItem('token')
-      const currentUserStr = localStorage.getItem('user')
+      const currentToken = localStorage.getItem('lilycharm_token') || localStorage.getItem('token')
+      const currentUserStr = localStorage.getItem('lilycharm_user') || localStorage.getItem('user')
       if (currentToken && currentUserStr) {
         try {
           const user = JSON.parse(currentUserStr)
