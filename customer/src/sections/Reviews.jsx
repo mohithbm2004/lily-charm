@@ -5,6 +5,7 @@ import { reviews as defaultReviews } from '../data/products'
 import Reveal from '../components/Reveal'
 import ReviewModal from '../components/ReviewModal'
 import { API_URL } from '../config/api'
+import { getSocket } from '../services/socket'
 
 export default function Reviews() {
   const [reviewsList, setReviewsList] = useState(defaultReviews)
@@ -19,15 +20,43 @@ export default function Reviews() {
         if (Array.isArray(data) && data.length > 0) {
           setReviewsList(data)
           setIndex(0)
+        } else if (Array.isArray(data) && data.length === 0) {
+          // If no displayed reviews, fall back to default curated reviews
+          setReviewsList(defaultReviews)
+          setIndex(0)
         }
       }
     } catch (e) {
       console.log('Using local reviews fallback')
+      setReviewsList(defaultReviews)
     }
   }
 
   useEffect(() => {
     fetchLiveReviews()
+
+    const socket = getSocket()
+    if (!socket) return
+
+    const handleReviewUpdated = () => {
+      fetchLiveReviews()
+    }
+    const handleReviewCreated = (newReview) => {
+      if (newReview?.isDisplayed) fetchLiveReviews()
+    }
+    const handleReviewDeleted = () => {
+      fetchLiveReviews()
+    }
+
+    socket.on('REVIEW_UPDATED', handleReviewUpdated)
+    socket.on('REVIEW_CREATED', handleReviewCreated)
+    socket.on('REVIEW_DELETED', handleReviewDeleted)
+
+    return () => {
+      socket.off('REVIEW_UPDATED', handleReviewUpdated)
+      socket.off('REVIEW_CREATED', handleReviewCreated)
+      socket.off('REVIEW_DELETED', handleReviewDeleted)
+    }
   }, [])
 
   useEffect(() => {
