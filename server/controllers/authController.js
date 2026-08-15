@@ -262,20 +262,34 @@ export async function googleAuth(req, res, next) {
 export async function forgotPassword(req, res, next) {
   try {
     const { email } = req.body
-    if (!email) return res.status(400).json({ message: 'Email address is required!' })
+    const genericResponse = {
+      success: true,
+      message: "If an account exists with this email, you'll receive a password reset link.",
+    }
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email address is required!' })
+    }
 
     const cleanEmail = email.toLowerCase().trim()
     const user = await User.findOne({ email: cleanEmail })
 
+    // Generic response if email is not found to prevent user enumeration
     if (!user) {
-      return res.status(404).json({ message: 'No registered user account found with this email address.' })
+      return res.json(genericResponse)
     }
 
+    // Generate cryptographically secure 32-byte random token
     const resetToken = crypto.randomBytes(32).toString('hex')
     const hashedResetToken = hashToken(resetToken)
 
+    // Store only the SHA-256 hash, 5-minute expiration, and reset single-use flags
+    // Overwriting previous token immediately invalidates any prior reset requests
     user.resetPasswordToken = hashedResetToken
-    user.resetPasswordExpire = new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
+    user.resetPasswordExpire = new Date(Date.now() + 5 * 60 * 1000) // Exactly 5 minutes
+    user.resetPasswordUsed = false
+    user.resetPasswordConsumedAt = null
+    user.resetPasswordCreatedAt = new Date()
     await user.save()
 
     const origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null)
@@ -291,10 +305,70 @@ export async function forgotPassword(req, res, next) {
 
     const resetUrl = `${clientUrl}/reset-password?token=${resetToken}`
 
-    // Send password reset email asynchronously in background
+    // Send password reset email asynchronously via ZeptoMail no-reply agent
     sendPasswordResetEmail(cleanEmail, user.name, resetUrl).catch(console.error)
 
-    res.json({ message: 'Password reset link has been sent to your email address.' })
+    res.json(genericResponse)
+  } catch (err) {
+    next(err)
+  }
+}
+
+// GET /api/auth/verify-reset-token — Validate Reset Token Status
+export async function verifyResetToken(req, res, next) {
+  try {
+    const { token } = req.query
+
+    if (!token) {
+      return res.status(400).json({
+        valid: false,
+        reason: 'invalid',
+        message: 'This password reset link is invalid. Please request a new one.',
+      })
+    }
+
+    const hashedToken = hashToken(token)
+    const user = await User.findOne({
+      $or: [
+        { resetPasswordToken: hashedToken },
+        { lastUsedResetTokenHash: hashedToken },
+      ],
+    })
+
+    if (!user) {
+      return res.status(400).json({
+        valid: false,
+        reason: 'invalid',
+        message: 'This password reset link is invalid. Please request a new one.',
+      })
+    }
+
+    if (user.lastUsedResetTokenHash === hashedToken || (user.resetPasswordUsed && user.resetPasswordToken === hashedToken)) {
+      return res.status(400).json({
+        valid: false,
+        reason: 'used',
+        message: 'This password reset link has already been used.',
+      })
+    }
+
+    if (!user.resetPasswordExpire || new Date() > new Date(user.resetPasswordExpire)) {
+      return res.status(400).json({
+        valid: false,
+        reason: 'expired',
+        message: 'This password reset link has expired. Please request a new one.',
+      })
+    }
+
+    const remainingSeconds = Math.max(
+      0,
+      Math.floor((new Date(user.resetPasswordExpire).getTime() - Date.now()) / 1000)
+    )
+
+    return res.json({
+      valid: true,
+      expiresAt: user.resetPasswordExpire,
+      remainingSeconds,
+    })
   } catch (err) {
     next(err)
   }
@@ -303,34 +377,61 @@ export async function forgotPassword(req, res, next) {
 // POST /api/auth/reset-password — Update Password using Secure Reset Token
 export async function resetPassword(req, res, next) {
   try {
-    const { token, email, newPassword } = req.body
+    const { token, newPassword } = req.body
 
-    if (!newPassword) {
-      return res.status(400).json({ message: 'New password is required!' })
-    }
-
-    let user = null
-
-    if (token) {
-      const hashedToken = hashToken(token)
-      user = await User.findOne({
-        resetPasswordToken: hashedToken,
-        resetPasswordExpire: { $gt: Date.now() },
+    if (!token) {
+      return res.status(400).json({
+        message: 'This password reset link is invalid. Please request a new one.',
       })
-    } else if (email) {
-      user = await User.findOne({ email: email.toLowerCase().trim() })
     }
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({
+        message: 'Password must be at least 6 characters long.',
+      })
+    }
+
+    const hashedToken = hashToken(token)
+    const user = await User.findOne({
+      $or: [
+        { resetPasswordToken: hashedToken },
+        { lastUsedResetTokenHash: hashedToken },
+      ],
+    })
 
     if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired password reset token.' })
+      return res.status(400).json({
+        message: 'This password reset link is invalid. Please request a new one.',
+      })
     }
 
+    if (user.lastUsedResetTokenHash === hashedToken || (user.resetPasswordUsed && user.resetPasswordToken === hashedToken)) {
+      return res.status(400).json({
+        message: 'This password reset link has already been used.',
+      })
+    }
+
+    if (!user.resetPasswordExpire || new Date() > new Date(user.resetPasswordExpire)) {
+      return res.status(400).json({
+        message: 'This password reset link has expired. Please request a new one.',
+      })
+    }
+
+    // Update password (bcrypt pre-save hook will hash it securely)
     user.password = newPassword
-    user.resetPasswordToken = ''
+
+    // Invalidate token immediately so it can NEVER be reused
+    user.lastUsedResetTokenHash = hashedToken
+    user.resetPasswordToken = null
     user.resetPasswordExpire = null
+    user.resetPasswordUsed = true
+    user.resetPasswordConsumedAt = new Date()
     await user.save()
 
-    res.json({ message: 'Password reset successfully! You can now sign in with your new password.' })
+    res.json({
+      success: true,
+      message: 'Your password has been successfully reset! You can now log in with your new password.',
+    })
   } catch (err) {
     next(err)
   }

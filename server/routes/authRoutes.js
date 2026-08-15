@@ -6,6 +6,7 @@ import {
   login,
   googleAuth,
   forgotPassword,
+  verifyResetToken,
   resetPassword,
   testEmail,
   createOrUpdateProfile,
@@ -24,6 +25,7 @@ router.post('/resend-otp', resendOtp)
 router.post('/login', login)
 router.post('/google', googleAuth)
 router.post('/forgot-password', forgotPassword)
+router.get('/verify-reset-token', verifyResetToken)
 router.post('/reset-password', resetPassword)
 
 router.post('/profile', createOrUpdateProfile)
