@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import ScrollToTop from './components/ScrollToTop'
 import Navbar from './components/Navbar'
@@ -12,7 +12,6 @@ import Dashboard from './pages/Dashboard'
 import Collections from './pages/Collections'
 import About from './pages/About'
 import Contact from './pages/Contact'
-import Journal from './pages/Journal'
 import ResetPassword from './pages/ResetPassword'
 import PayCustomQuote from './pages/PayCustomQuote'
 
@@ -50,7 +49,7 @@ export default function App() {
             <Route path="/custom-quote/:id/pay" element={<PageTransition><PayCustomQuote /></PageTransition>} />
             <Route path="/about" element={<PageTransition><About /></PageTransition>} />
             <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
-            <Route path="/journal" element={<PageTransition><Journal /></PageTransition>} />
+            <Route path="/journal" element={<Navigate to="/" replace />} />
             <Route path="/reset-password" element={<PageTransition><ResetPassword /></PageTransition>} />
           </Routes>
         </AnimatePresence>

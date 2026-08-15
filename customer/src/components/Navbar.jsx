@@ -14,7 +14,6 @@ const navLinks = [
   { to: '/collections', label: 'COLLECTIONS' },
   { to: '/about', label: 'ABOUT' },
   { to: '/contact', label: 'CONTACT' },
-  { to: '/journal', label: 'JOURNAL' },
 ]
 
 export default function Navbar() {

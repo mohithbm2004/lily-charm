@@ -37,7 +37,6 @@ export default function Footer() {
             <li><Link to="/shop" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Shop Catalog</Link></li>
             <li><Link to="/about" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">About Studio</Link></li>
             <li><Link to="/contact" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Contact Us</Link></li>
-            <li><Link to="/journal" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Studio Journal</Link></li>
           </ul>
         </div>
         <div>
