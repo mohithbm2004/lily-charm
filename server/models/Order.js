@@ -23,7 +23,7 @@ const statusHistorySchema = new mongoose.Schema(
 
 const orderSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     orderNumber: {
       type: String,
       default: () => `LC-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`,
