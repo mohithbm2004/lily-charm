@@ -17,6 +17,7 @@ import settingRoutes from './routes/settingRoutes.js'
 import couponRoutes from './routes/couponRoutes.js'
 import reviewRoutes from './routes/reviewRoutes.js'
 import contactRoutes from './routes/contactRoutes.js'
+import cartRoutes from './routes/cartRoutes.js'
 import healthRouter from './routes/healthRouter.js'
 import { createRazorpayOrder, verifyPayment } from './controllers/orderController.js'
 import { startAutomaticDbCleanup } from './utils/dbCleanup.js'
@@ -111,6 +112,7 @@ app.use('/api/settings', settingRoutes)
 app.use('/api/coupons', couponRoutes)
 app.use('/api/reviews', reviewRoutes)
 app.use('/api/contact', contactRoutes)
+app.use('/api/cart', cartRoutes)
 
 import http from 'http'
 import { initSocket } from './socket.js'

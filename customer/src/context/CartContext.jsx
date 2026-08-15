@@ -1,14 +1,83 @@
-import { createContext, useContext, useEffect, useMemo, useReducer, useState } from 'react'
-
+import { createContext, useContext, useEffect, useMemo, useReducer, useState, useRef } from 'react'
 import { API_URL } from '../config/api'
 import { getSocket } from '../services/socket'
+import { useAuth } from './AuthContext'
 
 export const MAX_QTY_PER_PRODUCT = 4
 
 const CartContext = createContext(null)
 
+const CART_STORAGE_KEY = 'lilycharm_cart'
+
+function loadInitialCart() {
+  try {
+    const saved = localStorage.getItem(CART_STORAGE_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed.items)) {
+        return {
+          items: parsed.items.map((i) => ({
+            ...i,
+            qty: Math.min(MAX_QTY_PER_PRODUCT, Math.max(1, Number(i.qty) || 1)),
+          })),
+          coupon: typeof parsed.coupon === 'string' ? parsed.coupon : null,
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[CART INIT STORAGE NOTICE]:', e)
+  }
+  return { items: [], coupon: null }
+}
+
 function reducer(state, action) {
   switch (action.type) {
+    case 'SET_CART': {
+      const safeItems = Array.isArray(action.items)
+        ? action.items.map((i) => ({
+            ...i,
+            qty: Math.min(MAX_QTY_PER_PRODUCT, Math.max(1, Number(i.qty) || 1)),
+          }))
+        : []
+      return {
+        ...state,
+        items: safeItems,
+        coupon: action.coupon !== undefined ? action.coupon : state.coupon,
+        isInitialized: true,
+      }
+    }
+    case 'VALIDATE_PRICES': {
+      if (!action.productMap) return state
+      let changed = false
+      const updatedItems = state.items.map((item) => {
+        const dbProd =
+          action.productMap.get(String(item.id)) ||
+          action.productMap.get(String(item._id)) ||
+          action.productMap.get(item.slug)
+        if (dbProd) {
+          const freshPrice = Number(dbProd.price) || item.price
+          const freshTitle = dbProd.title || item.title
+          const freshImage =
+            dbProd.image || (Array.isArray(dbProd.images) ? dbProd.images[0] : item.image)
+          if (
+            item.price !== freshPrice ||
+            item.title !== freshTitle ||
+            item.image !== freshImage
+          ) {
+            changed = true
+            return {
+              ...item,
+              price: freshPrice,
+              title: freshTitle,
+              image: freshImage,
+              qty: Math.min(MAX_QTY_PER_PRODUCT, Math.max(1, item.qty)),
+            }
+          }
+        }
+        return item
+      })
+      return changed ? { ...state, items: updatedItems } : state
+    }
     case 'ADD': {
       const existing = state.items.find((i) => i.id === action.product.id)
       if (existing) {
@@ -63,9 +132,182 @@ const DEFAULT_COUPONS = {
 }
 
 export function CartProvider({ children }) {
-  const [state, dispatch] = useReducer(reducer, { items: [], open: false, coupon: null })
+  const initialData = useMemo(() => loadInitialCart(), [])
+  const [state, dispatch] = useReducer(reducer, {
+    items: initialData.items,
+    open: false,
+    coupon: initialData.coupon,
+    isInitialized: true,
+  })
   const [dbCoupons, setDbCoupons] = useState([])
+  const { user, token } = useAuth()
+  const isInitialSyncDone = useRef(false)
 
+  // 1. Synchronously persist to localStorage on every items or coupon change
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        CART_STORAGE_KEY,
+        JSON.stringify({
+          items: state.items,
+          coupon: state.coupon,
+        })
+      )
+    } catch (e) {
+      console.warn('[CART SAVE LOCAL NOTICE]:', e)
+    }
+  }, [state.items, state.coupon])
+
+  // 2. Multi-Tab Synchronization via Window Storage Events
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === CART_STORAGE_KEY) {
+        if (e.newValue) {
+          try {
+            const parsed = JSON.parse(e.newValue)
+            if (Array.isArray(parsed.items)) {
+              dispatch({
+                type: 'SET_CART',
+                items: parsed.items,
+                coupon: parsed.coupon || null,
+              })
+            }
+          } catch {}
+        } else {
+          dispatch({ type: 'CLEAR' })
+        }
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
+
+  // 3. Logged-In Server Cart Sync & Login Cart Merge
+  useEffect(() => {
+    if (!token || !user) {
+      isInitialSyncDone.current = false
+      return
+    }
+
+    let isMounted = true
+
+    const syncServerCart = async () => {
+      try {
+        const local = loadInitialCart()
+        if (local.items.length > 0 && !isInitialSyncDone.current) {
+          // Merge guest local cart with database cart
+          const res = await fetch(`${API_URL}/cart/merge`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              guestItems: local.items,
+              coupon: local.coupon,
+            }),
+          })
+          if (res.ok && isMounted) {
+            const data = await res.json()
+            dispatch({ type: 'SET_CART', items: data.items, coupon: data.coupon })
+            isInitialSyncDone.current = true
+          }
+        } else if (!isInitialSyncDone.current) {
+          // Fetch existing database cart
+          const res = await fetch(`${API_URL}/cart`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          if (res.ok && isMounted) {
+            const data = await res.json()
+            if (Array.isArray(data.items) && data.items.length > 0) {
+              dispatch({ type: 'SET_CART', items: data.items, coupon: data.coupon })
+            }
+            isInitialSyncDone.current = true
+          }
+        }
+      } catch (err) {
+        console.warn('[CART SERVER SYNC NOTICE]:', err.message || err)
+      }
+    }
+
+    syncServerCart()
+
+    return () => {
+      isMounted = false
+    }
+  }, [user, token])
+
+  // 4. Debounced Server-Side Save for Logged-In User
+  useEffect(() => {
+    if (!token || !user || !isInitialSyncDone.current) return
+
+    const timeout = setTimeout(async () => {
+      try {
+        await fetch(`${API_URL}/cart`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            items: state.items,
+            coupon: state.coupon,
+          }),
+        })
+      } catch (err) {
+        // offline safe
+      }
+    }, 600)
+
+    return () => clearTimeout(timeout)
+  }, [state.items, state.coupon, user, token])
+
+  // 5. Real-Time Socket.IO Listener for Multi-Device/Tab sync
+  useEffect(() => {
+    const socket = getSocket()
+    if (!socket) return
+
+    const handleCartUpdated = (payload) => {
+      if (payload && Array.isArray(payload.items)) {
+        dispatch({
+          type: 'SET_CART',
+          items: payload.items,
+          coupon: payload.coupon || null,
+        })
+      }
+    }
+
+    socket.on('CART_UPDATED', handleCartUpdated)
+    return () => {
+      socket.off('CART_UPDATED', handleCartUpdated)
+    }
+  }, [])
+
+  // 6. Product Price Verification with Live Catalog
+  useEffect(() => {
+    const validatePrices = async () => {
+      try {
+        const res = await fetch(`${API_URL}/products`)
+        if (res.ok) {
+          const prods = await res.json()
+          if (Array.isArray(prods) && prods.length > 0) {
+            const pMap = new Map()
+            prods.forEach((p) => {
+              pMap.set(String(p._id), p)
+              if (p.slug) pMap.set(p.slug, p)
+              if (p.id) pMap.set(String(p.id), p)
+              if (p.specimen) pMap.set(p.specimen, p)
+            })
+            dispatch({ type: 'VALIDATE_PRICES', productMap: pMap })
+          }
+        }
+      } catch (e) {}
+    }
+    validatePrices()
+  }, [])
+
+  // 7. Active Promo Coupons Fetch & Socket Listeners
   useEffect(() => {
     const fetchCoupons = async () => {
       try {
@@ -74,9 +316,7 @@ export function CartProvider({ children }) {
           const data = await res.json()
           setDbCoupons(data)
         }
-      } catch (e) {
-        // offline safe
-      }
+      } catch (e) {}
     }
     fetchCoupons()
 
@@ -107,7 +347,7 @@ export function CartProvider({ children }) {
     socket.on('COUPON_UPDATED', handleCouponUpdated)
     socket.on('COUPON_DELETED', handleCouponDeleted)
 
-    const interval = setInterval(fetchCoupons, 20000)
+    const interval = setInterval(fetchCoupons, 30000)
     return () => {
       socket.off('COUPON_CREATED', handleCouponCreated)
       socket.off('COUPON_UPDATED', handleCouponUpdated)
@@ -179,7 +419,7 @@ export function CartProvider({ children }) {
         return { success: false, message: `Invalid promo code "${codeKey}". Try LILY10 or VELVET20!` }
       }
 
-      // Check minimum order amount requirement
+      // Check minimum order spend
       if (rule.minOrderAmount > 0 && subtotal < rule.minOrderAmount) {
         return {
           success: false,
@@ -188,7 +428,7 @@ export function CartProvider({ children }) {
       }
 
       dispatch({ type: 'APPLY_COUPON', coupon: codeKey })
-      
+
       let capNotice = ''
       if (rule.maxDiscountCap > 0) {
         capNotice = ` (Capped at max ₹${rule.maxDiscountCap.toLocaleString('en-IN')} OFF)`
@@ -217,7 +457,12 @@ export function CartProvider({ children }) {
       setQty: (id, qty) => dispatch({ type: 'SET_QTY', id, qty }),
       openCart: () => dispatch({ type: 'OPEN' }),
       closeCart: () => dispatch({ type: 'CLOSE' }),
-      clearCart: () => dispatch({ type: 'CLEAR' }),
+      clearCart: () => {
+        dispatch({ type: 'CLEAR' })
+        try {
+          localStorage.removeItem(CART_STORAGE_KEY)
+        } catch (e) {}
+      },
       applyCoupon,
       removeCoupon,
     }

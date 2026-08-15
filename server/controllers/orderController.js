@@ -4,11 +4,12 @@ import Order from '../models/Order.js'
 import User from '../models/User.js'
 import Payment from '../models/Payment.js'
 import Product from '../models/Product.js'
+import Cart from '../models/Cart.js'
 import razorpay from '../config/razorpay.js'
 import Setting from '../models/Setting.js'
 import { generateInvoicePDF } from '../utils/pdfGenerator.js'
 import { sendOrderConfirmationEmail, sendOrderStatusEmail, sendAdminNewOrderNotification } from '../utils/emailService.js'
-import { emitOrderCreated, emitOrderUpdated, emitOrderCancelled } from '../socket.js'
+import { emitOrderCreated, emitOrderUpdated, emitOrderCancelled, emitCartUpdated } from '../socket.js'
 
 // POST /api/create-order or /api/orders/create-razorpay-order
 export async function createRazorpayOrder(req, res, next) {
@@ -289,6 +290,15 @@ export async function verifyPayment(req, res, next) {
       // Send Confirmation Emails asynchronously without blocking request or throwing unhandled rejections
       sendOrderConfirmationEmail(updatedOrder).catch((e) => console.warn('[ORDER CONFIRMATION EMAIL NOTICE]:', e.message))
       sendAdminNewOrderNotification(updatedOrder).catch((e) => console.warn('[ADMIN ORDER NOTIFICATION NOTICE]:', e.message))
+
+      if (updatedOrder.user) {
+        try {
+          await Cart.findOneAndUpdate({ user: updatedOrder.user }, { items: [], coupon: null })
+          emitCartUpdated(updatedOrder.user, { items: [], coupon: null })
+        } catch (cErr) {
+          console.warn('[CART CLEAR NOTICE]:', cErr.message)
+        }
+      }
 
       emitOrderUpdated(updatedOrder)
     }

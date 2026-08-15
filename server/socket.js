@@ -301,6 +301,11 @@ export function emitSettingsUpdated(settings) {
   io.emit('SETTINGS_UPDATED', settings)
 }
 
+export function emitCartUpdated(userId, cart) {
+  if (!io || !userId) return
+  io.to(`user:${String(userId)}`).emit('CART_UPDATED', cart)
+}
+
 function sanitizeOrder(order) {
   const doc = typeof order.toObject === 'function' ? order.toObject() : { ...order }
   delete doc.__v
