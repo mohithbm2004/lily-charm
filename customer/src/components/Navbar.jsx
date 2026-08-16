@@ -105,14 +105,8 @@ export default function Navbar() {
               {user ? (
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => navigate('/dashboard?tab=My Orders')}
-                    className="text-[0.68rem] tracking-[0.14em] uppercase font-bold text-[var(--color-primary)] hover:underline flex items-center gap-1 bg-[var(--color-card-bg)] px-2.5 py-1 border border-[var(--color-line)] whitespace-nowrap"
-                  >
-                    <Package size={13} /> My Orders
-                  </button>
-                  <button
-                    onClick={() => navigate('/dashboard?tab=Profile Details')}
-                    className="text-[0.68rem] tracking-[0.14em] uppercase font-bold text-[var(--color-ink)] hover:text-[var(--color-primary)] flex items-center gap-1 bg-[var(--color-card-bg)] px-2.5 py-1 border border-[var(--color-line)] whitespace-nowrap"
+                    onClick={() => navigate('/dashboard')}
+                    className="text-[0.68rem] tracking-[0.14em] uppercase font-bold text-[var(--color-primary)] hover:underline flex items-center gap-1.5 bg-[var(--color-card-bg)] px-3 py-1.5 border border-[var(--color-line)] whitespace-nowrap rounded"
                   >
                     <UserIcon size={13} /> {user.name?.split(' ')[0] || 'Account'}
                   </button>
@@ -215,39 +209,28 @@ export default function Navbar() {
                   <Sparkles size={16} /> REQUEST CUSTOM DESIGN
                 </button>
 
-                <div className="pt-3 border-t border-[var(--color-line)] space-y-2">
+                <div className="pt-3 border-t border-[var(--color-line)]">
                   {user ? (
-                    <>
-                      <div className="flex items-center justify-between gap-3">
-                        <button
-                          onClick={() => {
-                            navigate('/dashboard?tab=My Orders')
-                            setMenuOpen(false)
-                          }}
-                          className="text-xs sm:text-sm tracking-[0.16em] uppercase font-bold text-[var(--color-primary)] flex items-center gap-2"
-                        >
-                          <Package size={16} className="shrink-0" /> <span>MY PLACED ORDERS</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            logout()
-                            setMenuOpen(false)
-                          }}
-                          className="text-xs text-rose-600 font-bold uppercase shrink-0 p-1 hover:underline"
-                        >
-                          Sign Out
-                        </button>
-                      </div>
+                    <div className="flex items-center justify-between gap-3">
                       <button
                         onClick={() => {
-                          navigate('/dashboard?tab=Profile Details')
+                          navigate('/dashboard')
                           setMenuOpen(false)
                         }}
-                        className="text-xs sm:text-sm tracking-[0.16em] uppercase font-bold text-[var(--color-ink)] flex items-center gap-2 truncate"
+                        className="text-xs sm:text-sm tracking-[0.16em] uppercase font-bold text-[var(--color-primary)] flex items-center gap-2 truncate"
                       >
-                        <UserIcon size={16} className="shrink-0" /> <span className="truncate">ACCOUNT PROFILE ({user.name?.split(' ')[0] || 'User'})</span>
+                        <UserIcon size={16} className="shrink-0" /> <span className="truncate">ACCOUNT ({user.name?.split(' ')[0] || 'User'})</span>
                       </button>
-                    </>
+                      <button
+                        onClick={() => {
+                          logout()
+                          setMenuOpen(false)
+                        }}
+                        className="text-xs text-rose-600 font-bold uppercase shrink-0 p-1 hover:underline"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
                   ) : (
                     <button
                       onClick={() => {
