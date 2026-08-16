@@ -43,6 +43,41 @@ import { formatPrice, formatDateTime, formatDateOnly } from '../lib/format'
 import { exportOrdersToCSV, exportUsersToCSV, exportCustomRequestsToCSV, exportReviewsToCSV } from '../lib/exportCSV'
 import ImageFocusPicker from '../components/ImageFocusPicker'
 import { API_URL, STOREFRONT_URL } from '../config/api'
+const FULFILLMENT_OPTIONS = [
+  { value: 'Order Confirmed', label: '✅ Order Confirmed' },
+  { value: 'Handcrafting in Studio', label: '🎨 Handcrafting in Studio' },
+  { value: 'Studio Processing', label: '✂️ Studio Processing' },
+  { value: 'Packed & Sealed', label: '📦 Packed & Sealed' },
+  { value: 'Packed & Dispatched', label: '🚚 Packed & Dispatched' },
+  { value: 'Shipped', label: '✈️ Shipped' },
+  { value: 'Out For Delivery', label: '🛵 Out For Delivery' },
+  { value: 'Delivered', label: '🎉 Delivered' },
+]
+
+const ALLOWED_ADMIN_NEXT_STEPS = {
+  'Order Confirmed': ['Handcrafting in Studio'],
+  'Confirmed': ['Handcrafting in Studio'],
+  'Handcrafting in Studio': ['Studio Processing'],
+  'Handcrafting': ['Studio Processing'],
+  'Studio Processing': ['Packed & Sealed'],
+  'Processing': ['Packed & Sealed'],
+  'Packed & Sealed': ['Packed & Dispatched'],
+  'Packed': ['Packed & Dispatched'],
+  'Packed & Dispatched': ['Shipped'],
+  'Shipped': ['Out For Delivery'],
+  'Out For Delivery': ['Delivered'],
+  'Delivered': [],
+}
+
+function normalizeAdminFulfillment(st) {
+  if (!st) return 'Order Confirmed'
+  const trimmed = st.trim()
+  if (trimmed === 'Confirmed') return 'Order Confirmed'
+  if (trimmed === 'Handcrafting') return 'Handcrafting in Studio'
+  if (trimmed === 'Processing') return 'Studio Processing'
+  if (trimmed === 'Packed') return 'Packed & Sealed'
+  return trimmed
+}
 
 export default function AdminDashboard({ activeTabName = 'Products' }) {
   const { admin, logout, changePassword, logoutAllSessions } = useAdminAuth()
@@ -1414,13 +1449,37 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                               </div>
                             ))}
                           </td>
-                          <td className="p-4 space-y-1 align-top">
-                            <p className="font-bold text-sm text-emerald-800 font-mono">{formatPrice(o.grandTotal || o.total)}</p>
-                            <span className="inline-block text-[0.62rem] font-mono font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 border border-emerald-300">
-                              {o.paymentMethod || 'Paid (Razorpay)'}
-                            </span>
+                          {/* Amount & Separate Payment Status Column */}
+                          <td className="p-4 space-y-1.5 align-top">
+                            <p className="font-bold text-sm text-[var(--color-ink)] font-mono">{formatPrice(o.grandTotal || o.total)}</p>
+                            <div>
+                              {o.paymentStatus === 'Paid' ? (
+                                <span className="inline-flex items-center gap-1 text-[0.62rem] font-mono font-bold bg-emerald-100 text-emerald-900 px-2 py-0.5 border border-emerald-300 rounded">
+                                  🟢 Payment: Paid
+                                </span>
+                              ) : o.paymentStatus === 'Refunded' ? (
+                                <span className="inline-flex items-center gap-1 text-[0.62rem] font-mono font-bold bg-purple-100 text-purple-900 px-2 py-0.5 border border-purple-300 rounded">
+                                  💸 Payment: Refunded
+                                </span>
+                              ) : o.paymentStatus === 'Partially Refunded' ? (
+                                <span className="inline-flex items-center gap-1 text-[0.62rem] font-mono font-bold bg-indigo-100 text-indigo-900 px-2 py-0.5 border border-indigo-300 rounded">
+                                  🔄 Payment: Partial Refund
+                                </span>
+                              ) : o.paymentStatus === 'Failed' ? (
+                                <span className="inline-flex items-center gap-1 text-[0.62rem] font-mono font-bold bg-rose-100 text-rose-900 px-2 py-0.5 border border-rose-300 rounded">
+                                  ❌ Payment: Failed
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[0.62rem] font-mono font-bold bg-amber-100 text-amber-900 px-2 py-0.5 border border-amber-300 rounded">
+                                  ⏳ Payment: Pending
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[0.62rem] text-[var(--color-ink-soft)] font-mono">{o.paymentMethod || 'Razorpay Prepaid'}</p>
                             {o.razorpayPaymentId && (
-                              <p className="text-[0.6rem] font-mono text-[var(--color-ink-soft)]">ID: {o.razorpayPaymentId}</p>
+                              <p className="text-[0.58rem] font-mono text-[var(--color-ink-soft)] truncate max-w-[130px]" title={o.razorpayPaymentId}>
+                                ID: {o.razorpayPaymentId}
+                              </p>
                             )}
 
                             {/* Handmade Terms Acceptance Verification */}
@@ -1457,7 +1516,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                               defaultValue={o.trackingNumber || ''}
                               onBlur={(e) => {
                                 if (e.target.value !== o.trackingNumber) {
-                                  updateOrderStatus(o.id || o._id, o.status || 'Confirmed', e.target.value)
+                                  updateOrderStatus(o.id || o._id, o.status || 'Order Confirmed', e.target.value)
                                 }
                               }}
                               className="w-full border border-[var(--color-line)] p-1.5 text-xs font-mono bg-white focus:border-[var(--color-primary)]"
@@ -1465,78 +1524,116 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                             <p className="text-[0.62rem] text-[var(--color-ink-soft)]">Carrier: {o.carrier || 'BlueDart'}</p>
                           </td>
 
-                          {/* Status Dropdown */}
+                          {/* Controlled Fulfillment Status Column */}
                           <td className="p-4 align-top space-y-2">
-                            <select
-                              value={o.status || 'Confirmed'}
-                              onChange={(e) => updateOrderStatus(o.id || o._id, e.target.value)}
-                              className="border border-[var(--color-line)] p-2 text-xs bg-[var(--color-bg)] font-bold focus:outline-none focus:border-[var(--color-primary)] w-full"
-                            >
-                              <option value="Pending Payment">⏳ Pending Payment</option>
-                              <option value="Paid">💳 Paid</option>
-                              <option value="Confirmed">✅ Order Confirmed</option>
-                              <option value="Handcrafting">🎨 Handcrafting in Studio</option>
-                              <option value="Processing">🎨 Studio Processing</option>
-                              <option value="Packed">📦 Packed & Sealed</option>
-                              <option value="Packed & Dispatched">📦 Packed & Dispatched</option>
-                              <option value="Shipped">🚚 Shipped</option>
-                              <option value="Out For Delivery">🛵 Out For Delivery</option>
-                              <option value="Delivered">🎉 Delivered</option>
-                              <option value="Cancelled">❌ Cancelled</option>
-                              <option value="Cancelled & Refunded">💸 Cancelled & Refunded</option>
-                              <option value="Refund Requested">⚠️ Refund Requested</option>
-                              <option value="Refund Approved">💸 Refund Approved</option>
-                              <option value="Refund Rejected">🚫 Refund Rejected</option>
-                            </select>
+                            {o.status === 'Pending Payment' || o.paymentStatus === 'Pending' || o.status === 'Payment Failed' ? (
+                              <div className="space-y-1">
+                                <span className="inline-flex items-center gap-1 text-xs font-bold font-mono bg-amber-50 text-amber-900 border border-amber-300 px-2.5 py-1 rounded">
+                                  ⏳ Pending Payment
+                                </span>
+                                <p className="text-[0.62rem] text-[var(--color-ink-soft)] leading-tight">
+                                  Awaiting payment confirmation
+                                </p>
+                              </div>
+                            ) : o.status === 'Cancelled' || o.status === 'Cancelled & Refunded' ? (
+                              <div className="space-y-1">
+                                <span className="inline-flex items-center gap-1 text-xs font-bold font-mono bg-rose-50 text-rose-900 border border-rose-300 px-2.5 py-1 rounded">
+                                  {o.status === 'Cancelled & Refunded' ? '💸 Cancelled & Refunded' : '❌ Cancelled'}
+                                </span>
+                                {o.refundStatus === 'Processed' && (
+                                  <p className="text-[0.6rem] text-emerald-800 font-mono font-semibold">
+                                    Refund processed to customer
+                                  </p>
+                                )}
+                              </div>
+                            ) : o.status === 'Delivered' ? (
+                              <div className="space-y-1">
+                                <span className="inline-flex items-center gap-1 text-xs font-bold font-mono bg-emerald-50 text-emerald-900 border border-emerald-300 px-2.5 py-1 rounded">
+                                  🎉 Delivered
+                                </span>
+                                <p className="text-[0.62rem] text-emerald-700 font-semibold">
+                                  Fulfillment complete
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="space-y-1">
+                                <select
+                                  value={normalizeAdminFulfillment(o.status)}
+                                  onChange={(e) => updateOrderStatus(o.id || o._id, e.target.value)}
+                                  className="border border-[var(--color-line)] p-2 text-xs bg-[var(--color-bg)] font-bold focus:outline-none focus:border-[var(--color-primary)] w-full rounded"
+                                >
+                                  {FULFILLMENT_OPTIONS.map((opt) => {
+                                    const currentNorm = normalizeAdminFulfillment(o.status)
+                                    const allowedNext = ALLOWED_ADMIN_NEXT_STEPS[currentNorm] || []
+                                    const isCurrent = opt.value === currentNorm
+                                    const isNext = allowedNext.includes(opt.value)
+                                    const isDisabled = !isCurrent && !isNext
 
-                            {/* Refund Actions if requested */}
-                            {o.status === 'Refund Requested' && (
-                              <div className="flex items-center gap-1.5 pt-1">
-                                <button
-                                  onClick={async () => {
-                                    if (confirm('Approve refund for this order?')) {
-                                      const sessionId = localStorage.getItem('lilycharm_admin_session_id') || ''
-                                      await fetch(`${API_URL}/orders/${o._id || o.id}/process-refund`, {
-                                        method: 'POST',
-                                        credentials: 'include',
-                                        headers: {
-                                          'Content-Type': 'application/json',
-                                          ...(sessionId ? { 'x-admin-session-id': sessionId } : {}),
-                                        },
-                                        body: JSON.stringify({ action: 'approve' }),
-                                      })
-                                      window.location.reload()
-                                    }
-                                  }}
-                                  className="bg-emerald-700 text-white text-[0.6rem] font-bold uppercase px-2 py-1"
-                                >
-                                  Approve Refund
-                                </button>
-                                <button
-                                  onClick={async () => {
-                                    if (confirm('Reject refund request?')) {
-                                      const sessionId = localStorage.getItem('lilycharm_admin_session_id') || ''
-                                      await fetch(`${API_URL}/orders/${o._id || o.id}/process-refund`, {
-                                        method: 'POST',
-                                        credentials: 'include',
-                                        headers: {
-                                          'Content-Type': 'application/json',
-                                          ...(sessionId ? { 'x-admin-session-id': sessionId } : {}),
-                                        },
-                                        body: JSON.stringify({ action: 'reject' }),
-                                      })
-                                      window.location.reload()
-                                    }
-                                  }}
-                                  className="bg-rose-700 text-white text-[0.6rem] font-bold uppercase px-2 py-1"
-                                >
-                                  Reject
-                                </button>
+                                    return (
+                                      <option key={opt.value} value={opt.value} disabled={isDisabled}>
+                                        {opt.label} {isNext ? '→ (Next Stage)' : isDisabled && !isCurrent ? '(Locked)' : ''}
+                                      </option>
+                                    )
+                                  })}
+                                </select>
+                              </div>
+                            )}
+
+                            {/* Refund Actions if requested by customer */}
+                            {(o.status === 'Refund Requested' || o.refundStatus === 'Pending Approval') && (
+                              <div className="bg-amber-50 border border-amber-300 p-2 rounded space-y-1.5 mt-2">
+                                <p className="text-[0.65rem] font-bold text-amber-950 uppercase">⚠️ Refund Requested</p>
+                                {o.refundReason && (
+                                  <p className="text-[0.6rem] text-amber-900 italic">"{o.refundReason}"</p>
+                                )}
+                                <div className="flex items-center gap-1.5 pt-1">
+                                  <button
+                                    onClick={async () => {
+                                      if (confirm('Approve refund for this order?')) {
+                                        const sessionId = localStorage.getItem('lilycharm_admin_session_id') || ''
+                                        await fetch(`${API_URL}/orders/${o._id || o.id}/process-refund`, {
+                                          method: 'POST',
+                                          credentials: 'include',
+                                          headers: {
+                                            'Content-Type': 'application/json',
+                                            ...(sessionId ? { 'x-admin-session-id': sessionId } : {}),
+                                          },
+                                          body: JSON.stringify({ action: 'approve' }),
+                                        })
+                                        window.location.reload()
+                                      }
+                                    }}
+                                    className="bg-emerald-700 hover:bg-emerald-800 text-white text-[0.6rem] font-bold uppercase px-2 py-1 rounded"
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      if (confirm('Reject refund request?')) {
+                                        const sessionId = localStorage.getItem('lilycharm_admin_session_id') || ''
+                                        await fetch(`${API_URL}/orders/${o._id || o.id}/process-refund`, {
+                                          method: 'POST',
+                                          credentials: 'include',
+                                          headers: {
+                                            'Content-Type': 'application/json',
+                                            ...(sessionId ? { 'x-admin-session-id': sessionId } : {}),
+                                          },
+                                          body: JSON.stringify({ action: 'reject' }),
+                                        })
+                                        window.location.reload()
+                                      }
+                                    }}
+                                    className="bg-rose-700 hover:bg-rose-800 text-white text-[0.6rem] font-bold uppercase px-2 py-1 rounded"
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
                               </div>
                             )}
                           </td>
 
-                          <td className="p-4 text-right align-top">
+                          {/* Separate Actions Column */}
+                          <td className="p-4 text-right align-top space-y-2">
                             <button
                               onClick={() => deleteOrder(o)}
                               className="text-rose-600 hover:text-rose-800 text-xs font-bold flex items-center gap-1 ml-auto hover:underline"
@@ -1545,33 +1642,67 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                             </button>
 
                             {o.status !== 'Cancelled' && o.status !== 'Cancelled & Refunded' && (
-                              <button
-                                onClick={async () => {
-                                  const reason = prompt('Enter cancellation & refund reason for customer:', 'Cancelled by studio admin')
-                                  if (reason !== null) {
-                                    try {
-                                      const sessionId = localStorage.getItem('lilycharm_admin_session_id') || ''
-                                      const res = await fetch(`${API_URL}/orders/${o._id || o.id}/cancel`, {
-                                        method: 'PATCH',
-                                        credentials: 'include',
-                                        headers: {
-                                          'Content-Type': 'application/json',
-                                          ...(sessionId ? { 'x-admin-session-id': sessionId } : {}),
-                                        },
-                                        body: JSON.stringify({ reason, isAdmin: true }),
-                                      })
-                                      const data = await res.json()
-                                      alert(data.message || 'Order cancelled & refund processed!')
-                                      window.location.reload()
-                                    } catch {
-                                      alert('Failed to process refund.')
-                                    }
-                                  }
-                                }}
-                                className="text-rose-700 hover:text-rose-900 text-[0.68rem] font-bold uppercase flex items-center gap-1 ml-auto hover:underline mt-1.5"
-                              >
-                                <XCircle size={12} /> Cancel & Auto Refund
-                              </button>
+                              <div>
+                                {o.status === 'Pending Payment' || o.paymentStatus === 'Pending' || o.status === 'Payment Failed' ? (
+                                  <button
+                                    onClick={async () => {
+                                      const reason = prompt('Enter reason for cancelling this unpaid order:', 'Cancelled unpaid order')
+                                      if (reason !== null) {
+                                        try {
+                                          const sessionId = localStorage.getItem('lilycharm_admin_session_id') || ''
+                                          const res = await fetch(`${API_URL}/orders/${o._id || o.id}/cancel`, {
+                                            method: 'PATCH',
+                                            credentials: 'include',
+                                            headers: {
+                                              'Content-Type': 'application/json',
+                                              ...(sessionId ? { 'x-admin-session-id': sessionId } : {}),
+                                            },
+                                            body: JSON.stringify({ reason: reason || 'Cancelled by admin', isAdmin: true }),
+                                          })
+                                          const data = await res.json()
+                                          alert(data.message || 'Order cancelled successfully (No refund required).')
+                                          window.location.reload()
+                                        } catch {
+                                          alert('Failed to cancel order.')
+                                        }
+                                      }
+                                    }}
+                                    className="text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-[0.65rem] font-bold uppercase px-2 py-1 rounded flex items-center gap-1 ml-auto transition-colors mt-1.5"
+                                    title="Cancel unpaid order without refund"
+                                  >
+                                    <XCircle size={12} /> Cancel Order
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={async () => {
+                                      const reason = prompt('Enter cancellation reason for customer (100% full refund will be initiated):', 'Cancelled by studio admin')
+                                      if (reason !== null) {
+                                        try {
+                                          const sessionId = localStorage.getItem('lilycharm_admin_session_id') || ''
+                                          const res = await fetch(`${API_URL}/orders/${o._id || o.id}/cancel`, {
+                                            method: 'PATCH',
+                                            credentials: 'include',
+                                            headers: {
+                                              'Content-Type': 'application/json',
+                                              ...(sessionId ? { 'x-admin-session-id': sessionId } : {}),
+                                            },
+                                            body: JSON.stringify({ reason: reason || 'Cancelled by admin', isAdmin: true }),
+                                          })
+                                          const data = await res.json()
+                                          alert(data.message || 'Order cancelled & refund processed!')
+                                          window.location.reload()
+                                        } catch {
+                                          alert('Failed to process refund.')
+                                        }
+                                      }
+                                    }}
+                                    className="text-rose-700 hover:text-rose-900 text-[0.68rem] font-bold uppercase flex items-center gap-1 ml-auto hover:underline mt-1.5"
+                                    title="Cancel paid order and issue full refund"
+                                  >
+                                    <XCircle size={12} /> Cancel & Auto Refund
+                                  </button>
+                                )}
+                              </div>
                             )}
 
                             {o.razorpayRefundId && (

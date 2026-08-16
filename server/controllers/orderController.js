@@ -829,6 +829,31 @@ export async function listAllOrders(req, res, next) {
   }
 }
 
+const ALLOWED_FULFILLMENT_TRANSITIONS = {
+  'Order Confirmed': ['Handcrafting in Studio'],
+  'Confirmed': ['Handcrafting in Studio'],
+  'Handcrafting in Studio': ['Studio Processing'],
+  'Handcrafting': ['Studio Processing'],
+  'Studio Processing': ['Packed & Sealed'],
+  'Processing': ['Packed & Sealed'],
+  'Packed & Sealed': ['Packed & Dispatched'],
+  'Packed': ['Packed & Dispatched'],
+  'Packed & Dispatched': ['Shipped'],
+  'Shipped': ['Out For Delivery'],
+  'Out For Delivery': ['Delivered'],
+  'Delivered': [],
+}
+
+function normalizeFulfillmentStatus(st) {
+  if (!st) return 'Order Confirmed'
+  const trimmed = st.trim()
+  if (trimmed === 'Confirmed') return 'Order Confirmed'
+  if (trimmed === 'Handcrafting') return 'Handcrafting in Studio'
+  if (trimmed === 'Processing') return 'Studio Processing'
+  if (trimmed === 'Packed') return 'Packed & Sealed'
+  return trimmed
+}
+
 // PATCH /api/orders/:id/status — Admin Update Status
 export async function updateOrderStatus(req, res, next) {
   try {
@@ -842,20 +867,68 @@ export async function updateOrderStatus(req, res, next) {
     const order = await Order.findOne(filter)
     if (!order) return res.status(404).json({ message: 'Order not found' })
 
-    if (status) order.status = status
+    const currentNormalized = normalizeFulfillmentStatus(order.status)
+
+    // 1. If order is unpaid / Pending Payment, reject fulfillment status modification
+    if (order.status === 'Pending Payment' || order.paymentStatus === 'Pending' || order.status === 'Payment Failed') {
+      return res.status(400).json({
+        message: "Cannot update fulfillment status for Pending Payment orders. Order must be paid and confirmed before fulfillment begins.",
+      })
+    }
+
+    // 2. If order is Cancelled / Cancelled & Refunded, reject fulfillment status modification
+    if (order.status === 'Cancelled' || order.status === 'Cancelled & Refunded') {
+      return res.status(400).json({
+        message: "Cannot update fulfillment status of a cancelled order.",
+      })
+    }
+
+    // 3. If order is already Delivered
+    if (currentNormalized === 'Delivered' && status && normalizeFulfillmentStatus(status) !== 'Delivered') {
+      return res.status(400).json({
+        message: "Order is already marked Delivered. Fulfillment lifecycle is complete.",
+      })
+    }
+
+    let statusChanged = false
+    if (status) {
+      const targetNormalized = normalizeFulfillmentStatus(status)
+
+      // If status is changing, validate transition against allowed lifecycle
+      if (targetNormalized !== currentNormalized) {
+        const allowedNext = ALLOWED_FULFILLMENT_TRANSITIONS[currentNormalized] || []
+        const isAllowed = allowedNext.some((s) => normalizeFulfillmentStatus(s) === targetNormalized)
+
+        if (!isAllowed) {
+          return res.status(400).json({
+            message: `Invalid fulfillment status transition from '${order.status}' to '${status}'. Allowed next step is: ${allowedNext.join(', ') || 'None (Delivered)'}.`,
+          })
+        }
+
+        order.status = targetNormalized
+        statusChanged = true
+        order.statusHistory.push({
+          status: targetNormalized,
+          note: note || `Fulfillment status updated to ${targetNormalized}`,
+        })
+      }
+    }
+
     if (trackingNumber !== undefined) order.trackingNumber = trackingNumber
     if (carrier !== undefined) order.carrier = carrier
-    if (note !== undefined) order.notes = note
-
-    order.statusHistory.push({
-      status: status || order.status,
-      note: note || `Order status updated to ${status || order.status}`,
-    })
+    if (note !== undefined && !statusChanged) {
+      order.notes = note
+    }
 
     await order.save()
 
-    // Send status update email notification
-    sendOrderStatusEmail(order, status || order.status, note)
+    // Send status update email notification if status changed
+    if (statusChanged) {
+      sendOrderStatusEmail(order, order.status, note).catch((e) =>
+        console.warn('[STATUS EMAIL NOTICE]:', e.message)
+      )
+    }
+
     emitOrderUpdated(order)
 
     res.json(order)

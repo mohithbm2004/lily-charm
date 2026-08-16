@@ -2,15 +2,17 @@ import { CheckCircle2, Clock, Package, Truck, Home, AlertTriangle, RefreshCw } f
 
 const STAGES = [
   { key: 'Pending Payment', label: 'Order Placed', icon: Clock },
-  { key: 'Confirmed', label: 'Payment Confirmed', icon: CheckCircle2 },
-  { key: 'Processing', label: 'Studio Processing', icon: Package },
-  { key: 'Packed', label: 'Packed & Sealed', icon: Package },
+  { key: 'Order Confirmed', label: 'Payment Confirmed', icon: CheckCircle2 },
+  { key: 'Handcrafting in Studio', label: 'Handcrafting', icon: Package },
+  { key: 'Studio Processing', label: 'Processing', icon: Package },
+  { key: 'Packed & Sealed', label: 'Packed & Sealed', icon: Package },
+  { key: 'Packed & Dispatched', label: 'Dispatched', icon: Truck },
   { key: 'Shipped', label: 'Shipped', icon: Truck },
   { key: 'Out For Delivery', label: 'Out for Delivery', icon: Truck },
   { key: 'Delivered', label: 'Delivered', icon: Home },
 ]
 
-export default function OrderTimeline({ status = 'Confirmed', history = [], notes = '', refundId = '', cancellationFee = 0, refundAmount = 0 }) {
+export default function OrderTimeline({ status = 'Order Confirmed', history = [], notes = '', refundId = '', cancellationFee = 0, refundAmount = 0 }) {
   if (['Cancelled', 'Cancelled & Refunded', 'Refund Requested', 'Refund Approved', 'Refund Rejected', 'Returned', 'Payment Failed'].includes(status)) {
     const cancelEntry = (history || []).slice().reverse().find(h => h.status?.includes('Cancel') || h.note)
     const rawReason = cancelEntry?.note || notes || ''
@@ -55,20 +57,29 @@ export default function OrderTimeline({ status = 'Confirmed', history = [], note
   const getStageIndex = (st) => {
     switch (st) {
       case 'Pending Payment':
+      case 'Pending':
         return 0
       case 'Paid':
       case 'Confirmed':
+      case 'Order Confirmed':
         return 1
-      case 'Processing':
+      case 'Handcrafting':
+      case 'Handcrafting in Studio':
         return 2
-      case 'Packed':
+      case 'Processing':
+      case 'Studio Processing':
         return 3
-      case 'Shipped':
+      case 'Packed':
+      case 'Packed & Sealed':
         return 4
-      case 'Out For Delivery':
+      case 'Packed & Dispatched':
         return 5
-      case 'Delivered':
+      case 'Shipped':
         return 6
+      case 'Out For Delivery':
+        return 7
+      case 'Delivered':
+        return 8
       default:
         return 1
     }
