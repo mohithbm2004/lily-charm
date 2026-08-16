@@ -22,7 +22,7 @@ import cartRoutes from './routes/cartRoutes.js'
 import healthRouter from './routes/healthRouter.js'
 import { createRazorpayOrder, verifyPayment } from './controllers/orderController.js'
 import { handleRazorpayWebhook } from './controllers/paymentController.js'
-import { protect } from './middleware/auth.js'
+import { protect, authenticateUserOrAdmin } from './middleware/auth.js'
 import { startAutomaticDbCleanup } from './utils/dbCleanup.js'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
 
@@ -97,8 +97,8 @@ const apiLimiter = rateLimit({
 
 app.use('/api/', apiLimiter)
 
-app.post('/api/create-order', protect, createRazorpayOrder)
-app.post('/api/verify-payment', protect, verifyPayment)
+app.post('/api/create-order', authenticateUserOrAdmin, createRazorpayOrder)
+app.post('/api/verify-payment', authenticateUserOrAdmin, verifyPayment)
 
 // Primary Routes
 app.use('/api/admin', adminRoutes)

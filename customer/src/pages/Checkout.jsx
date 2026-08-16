@@ -203,11 +203,13 @@ export default function Checkout() {
         termsAccepted: true,
       }
 
+      const authToken = token || localStorage.getItem('lilycharm_token') || ''
+
       const res = await fetch(`${API_URL}/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify(payload),
       })
@@ -229,7 +231,10 @@ export default function Checkout() {
         try {
           const rzpRes = await fetch(`${API_URL}/create-order`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+            },
             body: JSON.stringify({
               amount: Math.round(total * 100),
               currency: 'INR',
@@ -272,12 +277,16 @@ export default function Checkout() {
           try {
             const verifyRes = await fetch(`${API_URL}/verify-payment`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+              },
               body: JSON.stringify({
                 orderId: savedOrder._id,
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
+                token: authToken,
               }),
             })
 

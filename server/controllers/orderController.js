@@ -309,22 +309,40 @@ export async function verifyPayment(req, res, next) {
       })
     }
 
-    const ownershipFilter = {
-      user: req.user._id,
-      razorpayOrderId: razorpay_order_id,
+    let ownedOrder = null
+    if (orderId && mongoose.Types.ObjectId.isValid(orderId)) {
+      ownedOrder = await Order.findById(orderId)
     }
-    if (orderId) ownershipFilter._id = orderId
+    if (!ownedOrder && razorpay_order_id) {
+      ownedOrder = await Order.findOne({ razorpayOrderId: razorpay_order_id })
+    }
+    if (!ownedOrder && orderId) {
+      ownedOrder = await Order.findOne({ orderNumber: orderId })
+    }
 
-    const ownedOrder = await Order.findOne(ownershipFilter)
     if (!ownedOrder) {
       return res.status(404).json({
         success: false,
-        message: 'Order not found or payment does not belong to this account.',
+        message: 'Order not found.',
       })
     }
 
+    if (req.user) {
+      if (!ownedOrder.user) {
+        ownedOrder.user = req.user._id
+      } else if (String(ownedOrder.user) !== String(req.user._id) && req.user.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Payment does not belong to this account.',
+        })
+      }
+    }
+
     // Idempotency: if already Confirmed / Paid, return cleanly without duplicate state transitions
-    if (ownedOrder.status === 'Confirmed' && ownedOrder.paymentStatus === 'Paid') {
+    if (
+      (ownedOrder.status === 'Order Confirmed' || ownedOrder.status === 'Confirmed') &&
+      ownedOrder.paymentStatus === 'Paid'
+    ) {
       return res.status(200).json({
         success: true,
         message: 'Payment already processed and order confirmed.',
@@ -332,11 +350,20 @@ export async function verifyPayment(req, res, next) {
       })
     }
 
-    ownedOrder.status = 'Confirmed'
+    ownedOrder.status = 'Order Confirmed'
     ownedOrder.paymentStatus = 'Paid'
     ownedOrder.razorpayPaymentId = razorpay_payment_id
     ownedOrder.razorpaySignature = razorpay_signature
-    ownedOrder.statusHistory.push({ status: 'Confirmed', note: 'Payment verified successfully via Razorpay.' })
+
+    const alreadyHasConfirmedHistory = ownedOrder.statusHistory.some(
+      (h) => h.status === 'Order Confirmed' || h.status === 'Confirmed'
+    )
+    if (!alreadyHasConfirmedHistory) {
+      ownedOrder.statusHistory.push({
+        status: 'Order Confirmed',
+        note: 'Payment verified successfully via Razorpay.',
+      })
+    }
     await ownedOrder.save()
 
     // Update Payment Record
