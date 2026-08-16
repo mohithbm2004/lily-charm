@@ -11,7 +11,13 @@ const initialOrders = []
 export function StudioProvider({ children }) {
   const [products, setProducts] = useState(() => {
     const saved = localStorage.getItem('lilycharm_products')
-    return saved !== null ? JSON.parse(saved) : initialProducts
+    if (saved !== null) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) return parsed
+      } catch {}
+    }
+    return []
   })
 
   const [collections, setCollections] = useState(() => {

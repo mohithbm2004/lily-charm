@@ -12,7 +12,13 @@ import { API_URL } from '../config/api'
 export default function Product() {
   const { products } = useStudio()
   const { id } = useParams()
-  const product = products.find((p) => p.id === id) || products[0]
+  const product = products.find(
+    (p) =>
+      String(p.id) === String(id) ||
+      String(p.slug) === String(id) ||
+      String(p._id) === String(id) ||
+      String(p.mongoId) === String(id)
+  )
   const [qty, setQty] = useState(1)
   const [tab, setTab] = useState('description')
   const [showReviewModal, setShowReviewModal] = useState(false)
@@ -20,6 +26,7 @@ export default function Product() {
   const { addItem, openCart } = useCart()
 
   const fetchProductReviews = async () => {
+    if (!product) return
     try {
       const res = await fetch(`${API_URL}/reviews`)
       if (res.ok) {
@@ -30,15 +37,27 @@ export default function Product() {
               (r.product && r.product === (product._id || product.id)) ||
               (r.productTitle && r.productTitle.toLowerCase().includes(product.title.toLowerCase()))
           )
-          setProductReviews(matched.length > 0 ? matched : data.slice(0, 3))
+          setProductReviews(matched)
         }
       }
     } catch {}
   }
 
   useEffect(() => {
-    fetchProductReviews()
+    if (product) fetchProductReviews()
   }, [product?.id, product?._id, product?.title])
+
+  if (!product) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-32 pb-24 text-center">
+        <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-display)]">Creation Not Found</h1>
+        <p className="text-sm text-[var(--color-ink-soft)] mt-3">This floral artwork is not available in our studio catalog.</p>
+        <Link to="/shop" className="btn-primary inline-block mt-6 rounded-full">
+          Return to Catalog
+        </Link>
+      </div>
+    )
+  }
 
   const related = products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4)
 

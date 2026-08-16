@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { categories } from '../data/products'
 import { useStudio } from '../context/StudioContext'
 import ProductCard from '../components/ProductCard'
 import Reveal from '../components/Reveal'
@@ -13,7 +12,7 @@ const sortOptions = [
 ]
 
 export default function Shop() {
-  const { products } = useStudio()
+  const { products, collections = [] } = useStudio()
   const [params, setParams] = useSearchParams()
   const activeCategory = params.get('category') || 'all'
   const [sort, setSort] = useState('featured')
@@ -22,7 +21,7 @@ export default function Shop() {
   const [filtersOpen, setFiltersOpen] = useState(false)
 
   const filtered = useMemo(() => {
-    let list = products.filter((p) => (activeCategory === 'all' ? true : p.category === activeCategory))
+    let list = products.filter((p) => (activeCategory === 'all' ? true : (p.category === activeCategory || p.category === activeCategory.toLowerCase())))
     list = list.filter((p) => p.price <= maxPrice)
     if (inStockOnly) list = list.filter((_, i) => i % 5 !== 4) // mock availability
     if (sort === 'price-asc') list = [...list].sort((a, b) => a.price - b.price)
@@ -41,15 +40,18 @@ export default function Shop() {
           >
             All Pieces
           </button>
-          {categories.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => { setParams({ category: c.id }); setFiltersOpen(false); }}
-              className={`block text-xs sm:text-sm text-left ${activeCategory === c.id ? 'text-[var(--color-primary)] font-bold' : 'text-[var(--color-ink-soft)]'}`}
-            >
-              {c.title}
-            </button>
-          ))}
+          {collections.map((c) => {
+            const catId = c.slug || c.id || c._id
+            return (
+              <button
+                key={catId}
+                onClick={() => { setParams({ category: catId }); setFiltersOpen(false); }}
+                className={`block text-xs sm:text-sm text-left ${activeCategory === catId ? 'text-[var(--color-primary)] font-bold' : 'text-[var(--color-ink-soft)]'}`}
+              >
+                {c.title}
+              </button>
+            )
+          })}
         </div>
       </div>
       <div>
