@@ -70,12 +70,21 @@ export default function Dashboard() {
   })
 
   useEffect(() => {
-    if (user && typeof user === 'object' && token) {
-      setUserProfile((prev) => ({ ...defaultProfile, ...(prev || {}), ...user }))
-      setAvatarPreview(user.profileImage || '')
+    const currentToken = token || localStorage.getItem('lilycharm_token')
+    let storedUser = user
+    if (!storedUser) {
+      try {
+        const raw = localStorage.getItem('lilycharm_user')
+        if (raw) storedUser = JSON.parse(raw)
+      } catch {}
+    }
+
+    if (storedUser && typeof storedUser === 'object' && currentToken) {
+      setUserProfile((prev) => ({ ...defaultProfile, ...(prev || {}), ...storedUser }))
+      setAvatarPreview(storedUser.profileImage || '')
       fetchProfileFromApi()
       fetchUserOrdersAndRequests()
-    } else if (!user) {
+    } else if (!storedUser && !currentToken) {
       setUserProfile(null)
       setUserOrders([])
       setUserCustomRequests([])
@@ -99,7 +108,7 @@ export default function Dashboard() {
 
   const fetchProfileFromApi = async () => {
     const currentToken = token || localStorage.getItem('lilycharm_token')
-    if (!currentToken || !user) return
+    if (!currentToken) return
     try {
       const res = await fetch(`${API_URL}/auth/profile`, {
         headers: {
@@ -123,7 +132,7 @@ export default function Dashboard() {
 
   const fetchUserOrdersAndRequests = async () => {
     const currentToken = token || localStorage.getItem('lilycharm_token')
-    if (!currentToken || !user) return
+    if (!currentToken) return
     try {
       const [ordRes, reqRes] = await Promise.all([
         fetch(`${API_URL}/orders/mine`, {

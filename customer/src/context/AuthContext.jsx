@@ -55,9 +55,10 @@ export function AuthProvider({ children }) {
 
             if (res.ok) {
               const data = await res.json()
-              if (data.user && isMounted) {
-                setUser(data.user)
-                localStorage.setItem('lilycharm_user', JSON.stringify(data.user))
+              const resolvedUser = data?.user || (data?._id || data?.id || data?.email ? data : null)
+              if (resolvedUser && isMounted) {
+                setUser(resolvedUser)
+                localStorage.setItem('lilycharm_user', JSON.stringify(resolvedUser))
               }
             } else if (res.status === 401) {
               // Token has expired or is invalid

@@ -403,7 +403,7 @@ export async function verifyPayment(req, res, next) {
   }
 }
 
-// GET /api/orders/my-orders or /api/orders/mine — Customer order history (Strictly by Authenticated User ID)
+// GET /api/orders/my-orders or /api/orders/mine — Customer order history (Strictly by Authenticated User ID or matching email)
 export async function getMyOrders(req, res, next) {
   try {
     const userId = req.user?._id || (req.user?.role === 'admin' ? req.query.userId : null)
@@ -411,8 +411,15 @@ export async function getMyOrders(req, res, next) {
       return res.status(401).json({ message: 'Authentication required to view order history.' })
     }
 
-    // Source of Truth: query ONLY by authenticated user ID
-    const orders = await Order.find({ user: userId }).sort({ createdAt: -1 })
+    const userEmail = req.user?.email ? req.user.email.toLowerCase().trim() : null
+    const query = {
+      $or: [
+        { user: userId },
+        ...(userEmail ? [{ 'shippingAddress.email': userEmail }, { 'billingAddress.email': userEmail }] : []),
+      ],
+    }
+
+    const orders = await Order.find(query).sort({ createdAt: -1 })
     res.json(orders)
   } catch (err) {
     next(err)

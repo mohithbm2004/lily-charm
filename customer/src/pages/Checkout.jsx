@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { formatPrice } from '../lib/format'
 import Reveal from '../components/Reveal'
 import AuthModal from '../components/AuthModal'
-import { CheckCircle2, ShoppingBag, AlertTriangle, LogIn, UserPlus } from 'lucide-react'
+import { CheckCircle2, ShoppingBag, AlertTriangle, LogIn, UserPlus, Package } from 'lucide-react'
 
 import { useStudio } from '../context/StudioContext'
 import { API_URL, RAZORPAY_KEY_ID } from '../config/api'
@@ -352,10 +352,16 @@ export default function Checkout() {
             <span className="text-[var(--color-primary)]">{formatPrice(orderConfirmed.grandTotal ?? orderConfirmed.total ?? total)}</span>
           </div>
         </div>
-        <div className="pt-4">
+        <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={() => navigate('/dashboard?tab=My Orders&order=confirmed')}
+            className="btn-primary px-8 py-3 text-xs uppercase tracking-widest font-bold flex items-center gap-2 shadow-sm"
+          >
+            <Package size={14} /> View in My Orders
+          </button>
           <button
             onClick={() => navigate('/shop')}
-            className="btn-primary px-8 py-3 text-xs uppercase tracking-widest font-bold"
+            className="btn-outline px-8 py-3 text-xs uppercase tracking-widest font-bold"
           >
             Continue Shopping
           </button>
