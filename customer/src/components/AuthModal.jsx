@@ -13,7 +13,7 @@ export default function AuthModal({
   onSuccess,
   customNotice,
 }) {
-  const { updateUserProfile, loginWithGoogle } = useAuth()
+  const { updateUserProfile, setAuthSession, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
 
   const [mode, setMode] = useState(initialMode) // 'login' | 'register' | 'forgot' | 'otp'
@@ -141,13 +141,8 @@ export default function AuthModal({
       }
 
       if (res.ok) {
-        updateUserProfile(data.user)
-        if (data.token) localStorage.setItem('lilycharm_token', data.token)
         setSuccessMessage('🎉 Verified! Welcome to Lily Charm.')
-        setTimeout(() => {
-          onClose()
-          navigate('/dashboard')
-        }, 800)
+        handleAuthSuccess(data.user, data.token)
       } else if (res.status === 400) {
         setErrorMessage(data.message || 'Invalid verification code. Please try again.')
       } else if (res.status === 429) {
@@ -206,8 +201,12 @@ export default function AuthModal({
     }
   }
 
-  const handleAuthSuccess = (authenticatedUser) => {
-    updateUserProfile(authenticatedUser)
+  const handleAuthSuccess = (authenticatedUser, authenticatedToken = null) => {
+    if (authenticatedToken) {
+      setAuthSession(authenticatedUser, authenticatedToken)
+    } else {
+      updateUserProfile(authenticatedUser)
+    }
     setTimeout(() => {
       onClose()
       if (typeof onSuccess === 'function') {
@@ -226,7 +225,7 @@ export default function AuthModal({
       const result = await loginWithGoogle(tokenOrCredential)
       if (result.ok) {
         setSuccessMessage('🎉 Signed in successfully!')
-        handleAuthSuccess(result.user)
+        handleAuthSuccess(result.user, result.token)
       } else {
         setErrorMessage(result.error || 'Could not sign in with Google. Please try again.')
       }
@@ -247,7 +246,7 @@ export default function AuthModal({
         const result = await loginWithGoogle(tokenOrCode)
         if (result.ok) {
           setSuccessMessage('🎉 Signed in successfully!')
-          handleAuthSuccess(result.user)
+          handleAuthSuccess(result.user, result.token)
         } else {
           setErrorMessage(result.error || 'Could not sign in with Google. Please try again.')
         }
@@ -318,9 +317,8 @@ export default function AuthModal({
         }
 
         if (res.ok) {
-          if (data.token) localStorage.setItem('lilycharm_token', data.token)
           setSuccessMessage('🎉 Welcome back! Signed in successfully.')
-          handleAuthSuccess(data.user)
+          handleAuthSuccess(data.user, data.token)
         } else if (res.status === 403 && data.requiresOtp) {
           setMode('otp')
         } else if (res.status === 401) {
@@ -356,9 +354,8 @@ export default function AuthModal({
         if (res.ok && data.requiresOtp) {
           setMode('otp')
         } else if (res.ok) {
-          if (data.token) localStorage.setItem('lilycharm_token', data.token)
           setSuccessMessage('✨ Account created successfully!')
-          handleAuthSuccess(data.user)
+          handleAuthSuccess(data.user, data.token)
         } else if (res.status === 400) {
           setErrorMessage(data.message || 'Registration details are invalid. Please check and try again.')
         } else if (res.status === 429) {

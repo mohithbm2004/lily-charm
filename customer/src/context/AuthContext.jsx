@@ -5,29 +5,104 @@ const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('lilycharm_user')
-    return saved ? JSON.parse(saved) : null
+    try {
+      const saved = localStorage.getItem('lilycharm_user')
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
   })
 
   const [token, setToken] = useState(() => {
-    return localStorage.getItem('lilycharm_token') || ''
+    try {
+      return localStorage.getItem('lilycharm_token') || ''
+    } catch {
+      return ''
+    }
   })
 
+  const [loading, setLoading] = useState(true)
+
+  // Verify and hydrate user session from localStorage and backend
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('lilycharm_user', JSON.stringify(user))
+    let isMounted = true
+
+    const restoreSession = async () => {
+      try {
+        const storedToken = localStorage.getItem('lilycharm_token') || ''
+        const storedUserStr = localStorage.getItem('lilycharm_user')
+        let storedUser = null
+
+        if (storedUserStr) {
+          try {
+            storedUser = JSON.parse(storedUserStr)
+          } catch {}
+        }
+
+        if (storedToken) {
+          if (isMounted) {
+            setToken(storedToken)
+            if (storedUser) setUser(storedUser)
+          }
+
+          // Verify token validity with backend
+          try {
+            const res = await fetch(`${API_URL}/auth/me`, {
+              headers: {
+                Authorization: `Bearer ${storedToken}`,
+              },
+            })
+
+            if (res.ok) {
+              const data = await res.json()
+              if (data.user && isMounted) {
+                setUser(data.user)
+                localStorage.setItem('lilycharm_user', JSON.stringify(data.user))
+              }
+            } else if (res.status === 401) {
+              // Token has expired or is invalid
+              if (isMounted) {
+                setUser(null)
+                setToken('')
+                localStorage.removeItem('lilycharm_user')
+                localStorage.removeItem('lilycharm_token')
+                localStorage.removeItem('lilycharm_user_profile')
+              }
+            }
+          } catch (netErr) {
+            console.warn('[AUTH SESSION RESTORE NOTICE]: Offline or backend unreachable, keeping local session.', netErr)
+          }
+        }
+      } catch (err) {
+        console.error('[AUTH RESTORE ERROR]:', err)
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    restoreSession()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const setAuthSession = (newUser, newToken) => {
+    setUser(newUser || null)
+    setToken(newToken || '')
+    if (newUser) {
+      localStorage.setItem('lilycharm_user', JSON.stringify(newUser))
     } else {
       localStorage.removeItem('lilycharm_user')
     }
-  }, [user])
-
-  useEffect(() => {
-    if (token) {
-      localStorage.setItem('lilycharm_token', token)
+    if (newToken) {
+      localStorage.setItem('lilycharm_token', newToken)
     } else {
       localStorage.removeItem('lilycharm_token')
     }
-  }, [token])
+  }
 
   const login = async (email, password) => {
     try {
@@ -45,8 +120,7 @@ export function AuthProvider({ children }) {
       }
 
       if (res.ok) {
-        setUser(data.user)
-        setToken(data.token)
+        setAuthSession(data.user, data.token)
         return { ok: true, user: data.user, token: data.token }
       } else if (res.status === 401) {
         return { ok: false, error: data.message || 'Invalid email or password.' }
@@ -83,8 +157,9 @@ export function AuthProvider({ children }) {
       }
 
       if (res.ok) {
-        if (data.user) setUser(data.user)
-        if (data.token) setToken(data.token)
+        if (data.token) {
+          setAuthSession(data.user, data.token)
+        }
         return { ok: true, user: data.user, token: data.token, requiresOtp: data.requiresOtp }
       } else if (res.status === 400) {
         return { ok: false, error: data.message || 'Please check your registration details.' }
@@ -117,8 +192,7 @@ export function AuthProvider({ children }) {
       }
 
       if (res.ok) {
-        setUser(data.user)
-        setToken(data.token)
+        setAuthSession(data.user, data.token)
         return { ok: true, user: data.user, token: data.token }
       } else if (res.status === 400) {
         return { ok: false, error: data.message || 'Invalid Google authentication request.' }
@@ -136,20 +210,36 @@ export function AuthProvider({ children }) {
   }
 
   const logout = () => {
-    setUser(null)
-    setToken('')
-    localStorage.removeItem('lilycharm_user')
-    localStorage.removeItem('lilycharm_token')
+    setAuthSession(null, '')
     localStorage.removeItem('lilycharm_user_profile')
   }
 
-  const updateUserProfile = (updatedUser) => {
+  const updateUserProfile = (updatedUser, updatedToken = null) => {
     setUser(updatedUser)
-    localStorage.setItem('lilycharm_user', JSON.stringify(updatedUser))
+    if (updatedToken) {
+      setToken(updatedToken)
+      localStorage.setItem('lilycharm_token', updatedToken)
+    }
+    if (updatedUser) {
+      localStorage.setItem('lilycharm_user', JSON.stringify(updatedUser))
+    }
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, loginWithGoogle, logout, updateUserProfile }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        isAuthenticated: Boolean(user && token),
+        login,
+        register,
+        loginWithGoogle,
+        logout,
+        updateUserProfile,
+        setAuthSession,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

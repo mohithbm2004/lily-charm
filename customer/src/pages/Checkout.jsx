@@ -12,7 +12,7 @@ import { API_URL, RAZORPAY_KEY_ID } from '../config/api'
 
 export default function Checkout() {
   const { items, subtotal, coupon: activeCoupon, discountAmount, applyCoupon, removeCoupon, clearCart } = useCart()
-  const { user, token } = useAuth()
+  const { user, token, loading: authLoading, isAuthenticated } = useAuth()
   const { shippingSettings } = useStudio()
   const navigate = useNavigate()
   const [processing, setProcessing] = useState(false)
@@ -373,7 +373,7 @@ export default function Checkout() {
       <Reveal>
         <h1 className="text-2xl sm:text-3xl mb-4 sm:mb-6 font-[var(--font-display)] font-bold uppercase">Checkout</h1>
 
-        {!user && (
+        {!authLoading && (!user || !token) && (
           <div className="bg-amber-50/90 border border-amber-300 rounded-2xl p-4 sm:p-5 mb-6 text-xs text-[var(--color-ink)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
             <div className="space-y-1">
               <p className="font-bold text-sm text-amber-950 flex items-center gap-1.5">
