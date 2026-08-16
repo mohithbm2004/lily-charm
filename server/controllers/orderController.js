@@ -339,7 +339,7 @@ export async function verifyPayment(req, res, next) {
     ownedOrder.statusHistory.push({ status: 'Confirmed', note: 'Payment verified successfully via Razorpay.' })
     await ownedOrder.save()
 
-    // Update Payment Audit Record
+    // Update Payment Record
     await Payment.findOneAndUpdate(
       { razorpayOrderId: razorpay_order_id },
       {

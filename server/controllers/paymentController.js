@@ -173,7 +173,7 @@ export async function handleRazorpayWebhook(req, res, next) {
 
         emitOrderUpdated(order)
       } else {
-        // Record orphan payment in ledger for admin audit
+        // Record orphan payment in payment ledger
         await Payment.findOneAndUpdate(
           { razorpayOrderId },
           {

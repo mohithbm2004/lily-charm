@@ -101,14 +101,6 @@ export default function App() {
           </ProtectedAdminRoute>
         }
       />
-      <Route
-        path="/admin/audit-logs"
-        element={
-          <ProtectedAdminRoute>
-            <AdminDashboard activeTabName="Audit Logs" />
-          </ProtectedAdminRoute>
-        }
-      />
       <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
       <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />

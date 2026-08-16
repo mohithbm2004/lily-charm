@@ -2,7 +2,6 @@ import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import AdminUser from '../models/AdminUser.js'
 import AdminSession from '../models/AdminSession.js'
-import { logAdminAction } from '../utils/auditLogger.js'
 import { getAdminEmail, getOrCreateAdminUser, validatePasswordStrength } from '../utils/adminUserHelper.js'
 import { generate6DigitOtp, hashToken, sendOtpEmail } from '../services/otp.service.js'
 import { ENV } from '../config/env.js'
@@ -51,7 +50,6 @@ export async function adminSetup(req, res) {
 
     // Optional setupKey check if configured in env
     if (process.env.SETUP_SECRET && setupKey !== process.env.SETUP_SECRET) {
-      await logAdminAction('ADMIN_SETUP_FAILED', email || expectedEmail, { reason: 'Invalid setup secret' }, req)
       return res.status(403).json({ success: false, message: 'Unauthorized setup request.' })
     }
 
@@ -79,8 +77,6 @@ export async function adminSetup(req, res) {
     admin.lastPasswordChange = new Date()
     await admin.save()
 
-    await logAdminAction('ADMIN_SETUP_COMPLETED', expectedEmail, { message: 'Initial admin account setup successfully' }, req)
-
     return res.status(200).json({
       success: true,
       message: 'Admin account password setup completed successfully. Please sign in.',
@@ -107,13 +103,11 @@ export async function adminLogin(req, res) {
     const trimmedEmail = String(email).toLowerCase().trim()
 
     if (trimmedEmail !== expectedEmail) {
-      await logAdminAction('ADMIN_LOGIN_FAILED_EMAIL', trimmedEmail, { reason: 'Email mismatch' }, req)
       return res.status(401).json({ success: false, message: 'Invalid admin credentials.' })
     }
 
     const isMatch = await bcrypt.compare(password, admin.passwordHash)
     if (!isMatch) {
-      await logAdminAction('ADMIN_LOGIN_FAILED_PASSWORD', trimmedEmail, { reason: 'Password mismatch' }, req)
       return res.status(401).json({ success: false, message: 'Invalid admin credentials.' })
     }
 
@@ -134,8 +128,6 @@ export async function adminLogin(req, res) {
     })
 
     res.cookie('lily_admin_session', sessionId, COOKIE_OPTIONS)
-
-    await logAdminAction('ADMIN_LOGIN_SUCCESS', expectedEmail, { message: 'Authenticated with password' }, req)
 
     return res.status(200).json({
       success: true,
@@ -196,8 +188,6 @@ export async function adminForgotPassword(req, res) {
     // Send OTP via ZeptoMail infrastructure
     await sendOtpEmail(expectedEmail, 'Studio Admin', otp, true)
 
-    await logAdminAction('PASSWORD_RESET_REQUESTED', expectedEmail, { message: 'OTP sent via ZeptoMail' }, req)
-
     return res.status(200).json(genericResponse)
   } catch (err) {
     console.error('adminForgotPassword Error:', err)
@@ -236,7 +226,6 @@ export async function adminVerifyOtp(req, res) {
       admin.resetOtpHash = null
       admin.resetOtpExpires = null
       await admin.save()
-      await logAdminAction('FAILED_PASSWORD_RESET_ATTEMPT', expectedEmail, { reason: 'Max OTP attempts exceeded' }, req)
       return res.status(400).json({ success: false, message: 'Maximum OTP verification attempts exceeded. Please request a new code.' })
     }
 
@@ -244,7 +233,6 @@ export async function adminVerifyOtp(req, res) {
     if (inputHash !== admin.resetOtpHash) {
       admin.resetOtpAttempts += 1
       await admin.save()
-      await logAdminAction('FAILED_PASSWORD_RESET_ATTEMPT', expectedEmail, { reason: 'Incorrect OTP code', attempt: admin.resetOtpAttempts }, req)
       return res.status(400).json({ success: false, message: 'Invalid OTP code. Please try again.' })
     }
 
@@ -298,7 +286,6 @@ export async function adminResetPassword(req, res) {
       admin.resetTokenHash !== tokenHash ||
       new Date() > new Date(admin.resetTokenExpires)
     ) {
-      await logAdminAction('FAILED_PASSWORD_RESET_ATTEMPT', expectedEmail, { reason: 'Invalid or expired reset token' }, req)
       return res.status(400).json({ success: false, message: 'Invalid or expired password reset session. Please start over.' })
     }
 
@@ -318,8 +305,6 @@ export async function adminResetPassword(req, res) {
     // Invalidate ALL existing admin sessions upon password reset
     await AdminSession.deleteMany({ adminEmail: expectedEmail })
     res.clearCookie('lily_admin_session', COOKIE_OPTIONS)
-
-    await logAdminAction('PASSWORD_RESET_COMPLETED', expectedEmail, { message: 'Password reset completed and all sessions invalidated' }, req)
 
     return res.status(200).json({
       success: true,
@@ -351,7 +336,6 @@ export async function adminChangePassword(req, res) {
 
     const isMatch = await bcrypt.compare(currentPassword, admin.passwordHash)
     if (!isMatch) {
-      await logAdminAction('FAILED_PASSWORD_CHANGE_ATTEMPT', expectedEmail, { reason: 'Incorrect current password' }, req)
       return res.status(401).json({ success: false, message: 'Incorrect current password.' })
     }
 
@@ -368,8 +352,6 @@ export async function adminChangePassword(req, res) {
     // Terminate all sessions except current one (or all sessions)
     await AdminSession.deleteMany({ adminEmail: expectedEmail })
     res.clearCookie('lily_admin_session', COOKIE_OPTIONS)
-
-    await logAdminAction('PASSWORD_CHANGED', expectedEmail, { message: 'Admin password changed from security settings' }, req)
 
     return res.status(200).json({
       success: true,
@@ -389,8 +371,6 @@ export async function adminLogoutAll(req, res) {
     const expectedEmail = req.admin.email || getAdminEmail()
     await AdminSession.deleteMany({ adminEmail: expectedEmail })
     res.clearCookie('lily_admin_session', COOKIE_OPTIONS)
-
-    await logAdminAction('ADMIN_LOGOUT_ALL_SESSIONS', expectedEmail, { message: 'All admin sessions terminated' }, req)
 
     return res.status(200).json({ success: true, message: 'All active admin sessions have been logged out.' })
   } catch (err) {
@@ -429,8 +409,6 @@ export async function adminLogout(req, res) {
     }
 
     res.clearCookie('lily_admin_session', COOKIE_OPTIONS)
-
-    await logAdminAction('ADMIN_LOGOUT', req.admin?.email || getAdminEmail(), { message: 'Admin logged out' }, req)
 
     return res.status(200).json({ success: true, message: 'Logged out successfully.' })
   } catch (err) {

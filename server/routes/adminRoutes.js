@@ -13,9 +13,8 @@ import {
   adminLogout,
 } from '../controllers/adminAuthController.js'
 import { protectAdmin } from '../middleware/adminAuth.js'
-import { logAdminAction } from '../utils/auditLogger.js'
 
-// Import existing business controllers
+// Business controllers
 import {
   listProducts,
   getProduct,
@@ -67,7 +66,6 @@ import {
 
 import { getSettings, updateSettings } from '../controllers/settingController.js'
 import { uploadAnyImages } from '../middleware/upload.js'
-import AuditLog from '../models/AuditLog.js'
 import Product from '../models/Product.js'
 
 const router = Router()
@@ -111,33 +109,12 @@ router.post('/auth/logout', protectAdmin, adminLogout)
 router.use(protectAdmin)
 
 // ==========================================
-// 3. AUDIT LOGS ENDPOINT
-// ==========================================
-router.get('/audit-logs', async (req, res) => {
-  try {
-    const limit = Math.min(Number(req.query.limit) || 100, 500)
-    const logs = await AuditLog.find().sort({ createdAt: -1 }).limit(limit)
-    res.status(200).json({ success: true, count: logs.length, logs })
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch audit logs.' })
-  }
-})
-
-// ==========================================
-// 4. PRODUCTS MANAGEMENT
+// 3. PRODUCTS MANAGEMENT
 // ==========================================
 router.get('/products', listProducts)
 router.get('/products/:id', getProduct)
-
-router.post('/products', uploadAnyImages, async (req, res, next) => {
-  await logAdminAction('PRODUCT_CREATED', req.admin.email, { title: req.body?.title }, req)
-  return createProduct(req, res, next)
-})
-
-router.put('/products/:id', uploadAnyImages, async (req, res, next) => {
-  await logAdminAction('PRODUCT_UPDATED', req.admin.email, { productId: req.params.id, title: req.body?.title }, req)
-  return updateProduct(req, res, next)
-})
+router.post('/products', uploadAnyImages, createProduct)
+router.put('/products/:id', uploadAnyImages, updateProduct)
 
 router.patch('/products/:id/archive', async (req, res) => {
   try {
@@ -145,89 +122,48 @@ router.patch('/products/:id/archive', async (req, res) => {
     if (!product) return res.status(404).json({ success: false, message: 'Product not found' })
     product.archived = !product.archived
     await product.save()
-    await logAdminAction('PRODUCT_ARCHIVED_TOGGLED', req.admin.email, { productId: req.params.id, archived: product.archived }, req)
     res.status(200).json({ success: true, message: `Product ${product.archived ? 'archived' : 'unarchived'}`, product })
   } catch (err) {
     res.status(500).json({ success: false, message: err.message })
   }
 })
 
-router.delete('/products/:id', async (req, res, next) => {
-  await logAdminAction('PRODUCT_DELETED_PERMANENT', req.admin.email, { productId: req.params.id }, req)
-  return deleteProduct(req, res, next)
-})
-
-router.delete('/products', async (req, res, next) => {
-  await logAdminAction('PRODUCTS_BULK_DELETED', req.admin.email, { scope: 'all' }, req)
-  return deleteAllProducts(req, res, next)
-})
+router.delete('/products/:id', deleteProduct)
+router.delete('/products', deleteAllProducts)
 
 // ==========================================
-// 5. ORDERS MANAGEMENT & REFUNDS
+// 4. ORDERS MANAGEMENT & REFUNDS
 // ==========================================
 router.get('/orders', listAllOrders)
 router.get('/orders/:id', getOrderById)
-
-router.patch('/orders/:id/status', async (req, res, next) => {
-  await logAdminAction('ORDER_STATUS_UPDATED', req.admin.email, { orderId: req.params.id, status: req.body?.status }, req)
-  return updateOrderStatus(req, res, next)
-})
-
-router.post('/orders/:id/refund', async (req, res, next) => {
-  await logAdminAction('REFUND_PROCESSED', req.admin.email, { orderId: req.params.id, amount: req.body?.amount }, req)
-  return processRefund(req, res, next)
-})
-
-router.delete('/orders/:id', async (req, res, next) => {
-  await logAdminAction('ORDER_DELETED', req.admin.email, { orderId: req.params.id }, req)
-  return deleteOrder(req, res, next)
-})
-
-router.delete('/orders', async (req, res, next) => {
-  await logAdminAction('ORDERS_BULK_DELETED', req.admin.email, { scope: 'all' }, req)
-  return deleteAllOrders(req, res, next)
-})
+router.patch('/orders/:id/status', updateOrderStatus)
+router.post('/orders/:id/refund', processRefund)
+router.delete('/orders/:id', deleteOrder)
+router.delete('/orders', deleteAllOrders)
 
 // ==========================================
-// 6. CUSTOMERS MANAGEMENT
+// 5. CUSTOMERS MANAGEMENT
 // ==========================================
 router.get('/customers', listUsers)
 
 // ==========================================
-// 7. CUSTOM DESIGNS / REQUESTS MANAGEMENT
+// 6. CUSTOM DESIGNS / REQUESTS MANAGEMENT
 // ==========================================
 router.get('/custom-requests', listCustomRequests)
-
-router.patch('/custom-requests/:id/quote', async (req, res, next) => {
-  await logAdminAction('CUSTOM_REQUEST_QUOTED', req.admin.email, { requestId: req.params.id, price: req.body?.quotedPrice }, req)
-  return quotePrice(req, res, next)
-})
-
-router.patch('/custom-requests/:id/status', async (req, res, next) => {
-  await logAdminAction('CUSTOM_REQUEST_STATUS_UPDATED', req.admin.email, { requestId: req.params.id, status: req.body?.status }, req)
-  return updateCustomRequestStatus(req, res, next)
-})
-
-router.delete('/custom-requests/:id', async (req, res, next) => {
-  await logAdminAction('CUSTOM_REQUEST_DELETED', req.admin.email, { requestId: req.params.id }, req)
-  return deleteCustomRequest(req, res, next)
-})
+router.patch('/custom-requests/:id/quote', quotePrice)
+router.patch('/custom-requests/:id/status', updateCustomRequestStatus)
+router.delete('/custom-requests/:id', deleteCustomRequest)
 
 // ==========================================
-// 8. REVIEWS MANAGEMENT
+// 7. REVIEWS MANAGEMENT
 // ==========================================
 router.get('/reviews', listReviews)
-
-router.patch('/reviews/:id/display', async (req, res, next) => {
-  await logAdminAction('REVIEW_DISPLAY_TOGGLED', req.admin.email, { reviewId: req.params.id }, req)
-  return toggleReviewDisplay(req, res, next)
-})
-
+router.patch('/reviews/:id/display', toggleReviewDisplay)
 router.put('/reviews/:id', updateReview)
 router.delete('/reviews/:id', deleteReview)
 
 // ==========================================
-// 9. COLLECTIONS MANAGEMENT
+// 8. COLLECTIONS MANAGEMENT
 // ==========================================
 router.get('/collections', listCollections)
 router.post('/collections', uploadAnyImages, createCollection)
@@ -236,23 +172,17 @@ router.delete('/collections/:id', deleteCollection)
 router.delete('/collections', deleteAllCollections)
 
 // ==========================================
-// 10. COUPONS MANAGEMENT
+// 9. COUPONS MANAGEMENT
 // ==========================================
 router.get('/coupons', getCoupons)
-router.post('/coupons', async (req, res, next) => {
-  await logAdminAction('COUPON_CREATED', req.admin.email, { code: req.body?.code }, req)
-  return createCoupon(req, res, next)
-})
+router.post('/coupons', createCoupon)
 router.put('/coupons/:id', updateCoupon)
 router.delete('/coupons/:id', deleteCoupon)
 
 // ==========================================
-// 11. SETTINGS MANAGEMENT
+// 10. SETTINGS MANAGEMENT
 // ==========================================
 router.get('/settings', getSettings)
-router.put('/settings', async (req, res, next) => {
-  await logAdminAction('SETTINGS_UPDATED', req.admin.email, { type: 'general' }, req)
-  return updateSettings(req, res, next)
-})
+router.put('/settings', updateSettings)
 
 export default router

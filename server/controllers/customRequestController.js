@@ -413,7 +413,7 @@ export async function processCustomQuotePaymentSuccess({
   customRequest.totalAmount = total
   await customRequest.save()
 
-  // Update Payment Audit Record
+  // Update Payment Record
   try {
     await Payment.findOneAndUpdate(
       { razorpayOrderId: razorpayOrderId || customRequest.razorpayOrderId },
@@ -428,7 +428,7 @@ export async function processCustomQuotePaymentSuccess({
       { upsert: true }
     )
   } catch (e) {
-    console.warn('[PAYMENT AUDIT RECORD WARNING]:', e.message)
+    console.warn('[PAYMENT RECORD WARNING]:', e.message)
   }
 
   // Send Confirmation Email to customer's registered account & Admin Notification

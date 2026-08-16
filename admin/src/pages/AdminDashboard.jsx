@@ -133,7 +133,6 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     if (p.includes('/admin/refunds')) return 'refunds'
     if (p.includes('/admin/coupons')) return 'coupons'
     if (p.includes('/admin/settings')) return 'offers'
-    if (p.includes('/admin/audit-logs')) return 'audit-logs'
     if (p.includes('/admin/dashboard')) return 'dashboard'
     return activeTabName ? activeTabName.toLowerCase().replace(/\s+/g, '-') : 'products'
   })
@@ -148,7 +147,6 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     else if (p.includes('/admin/refunds')) setActiveTab('refunds')
     else if (p.includes('/admin/coupons')) setActiveTab('coupons')
     else if (p.includes('/admin/settings')) setActiveTab('offers')
-    else if (p.includes('/admin/audit-logs')) setActiveTab('audit-logs')
     else if (p.includes('/admin/dashboard')) setActiveTab('dashboard')
     else if (p.includes('/admin/products')) setActiveTab('products')
   }, [location.pathname])
@@ -157,35 +155,6 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     setActiveTab(tabKey)
     if (routePath) navigate(routePath)
   }
-
-  // Audit Logs State
-  const [auditLogs, setAuditLogs] = useState([])
-  const [loadingAuditLogs, setLoadingAuditLogs] = useState(false)
-
-  const fetchAuditLogs = useCallback(async () => {
-    setLoadingAuditLogs(true)
-    try {
-      const sessionId = localStorage.getItem('lilycharm_admin_session_id') || ''
-      const res = await fetch(`${API_URL}/admin/audit-logs`, {
-        headers: sessionId ? { 'x-admin-session-id': sessionId } : {},
-        credentials: 'include',
-      })
-      if (res.ok) {
-        const data = await res.json()
-        if (data.success) setAuditLogs(data.logs || [])
-      }
-    } catch (err) {
-      console.error('Fetch audit logs error:', err)
-    } finally {
-      setLoadingAuditLogs(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (activeTab === 'audit-logs') {
-      fetchAuditLogs()
-    }
-  }, [activeTab, fetchAuditLogs])
 
   // Step-Up MFA Modal State for High-Risk Actions
   const [stepUpModal, setStepUpModal] = useState({
@@ -1009,7 +978,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               Welcome back, Keerthana!
             </h1>
             <p className="text-xs text-[var(--color-ink-soft)] mt-1">
-              Manage your handcrafted flower catalog, collections, update offers, edit prices, track orders, and view security audit logs.
+              Manage your handcrafted flower catalog, collections, update offers, edit prices, and track orders.
             </p>
           </div>
           <button
@@ -1134,17 +1103,6 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
             }`}
           >
             <Tag size={15} /> Coupons ({coupons.length})
-          </button>
-
-          <button
-            onClick={() => handleTabChange('audit-logs', '/admin/audit-logs')}
-            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
-              activeTab === 'audit-logs'
-                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
-                : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
-            }`}
-          >
-            <ShieldCheck size={15} /> Audit Logs
           </button>
         </div>
 
@@ -2657,68 +2615,6 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                         <Trash2 size={13} />
                       </button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        {/* TAB: AUDIT LOGS */}
-        {activeTab === 'audit-logs' && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[var(--color-line)] pb-4">
-              <div>
-                <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
-                  <ShieldCheck size={20} className="text-[var(--color-primary)]" /> Security & Administrative Audit Trail
-                </h2>
-                <p className="text-xs text-[var(--color-ink-soft)] mt-0.5">
-                  Real-time security log tracking admin logins, product changes, order status updates, refunds, and settings updates.
-                </p>
-              </div>
-              <button
-                onClick={fetchAuditLogs}
-                className="btn-outline text-xs px-4 py-2 font-bold uppercase rounded-full flex items-center gap-1.5 shadow-sm"
-              >
-                <RefreshCw size={13} /> Refresh Audit Trail
-              </button>
-            </div>
-
-            {loadingAuditLogs ? (
-              <div className="p-8 text-center text-xs font-bold animate-pulse text-[var(--color-ink-soft)]">
-                Loading real-time security audit logs...
-              </div>
-            ) : auditLogs.length === 0 ? (
-              <div className="p-8 border border-dashed border-[var(--color-line)] rounded-3xl text-center text-xs text-[var(--color-ink-soft)] space-y-2 bg-[var(--color-card-bg)]/40">
-                <p className="font-bold uppercase text-sm">No Audit Log Entries Found</p>
-                <p>Security events will populate automatically as administrative actions occur.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {auditLogs.map((log) => (
-                  <div key={log._id} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-4 sm:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs shadow-sm hover:shadow-md transition-shadow">
-                    <div className="space-y-1.5 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono font-bold text-[0.68rem] uppercase px-3 py-1 rounded-full bg-[var(--color-primary)] text-white shadow-sm">
-                          {log.action}
-                        </span>
-                        <span className="font-mono text-[0.68rem] text-[var(--color-ink-soft)] bg-[var(--color-bg)] px-2.5 py-0.5 rounded-full border border-[var(--color-line)]">
-                          {new Date(log.createdAt).toLocaleString('en-IN')}
-                        </span>
-                      </div>
-                      <p className="text-xs font-semibold text-[var(--color-ink)] pt-0.5">
-                        Admin: <span className="font-mono text-[var(--color-primary)] font-bold">{log.adminEmail}</span>
-                      </p>
-                      {log.ipAddress && (
-                        <p className="text-[0.65rem] font-mono text-[var(--color-ink-soft)]">
-                          IP Address: {log.ipAddress}
-                        </p>
-                      )}
-                    </div>
-                    {log.details && Object.keys(log.details).length > 0 && (
-                      <pre className="bg-[var(--color-bg)] border border-[var(--color-line)] p-3 rounded-2xl font-mono text-[0.68rem] text-[var(--color-ink)] max-w-full overflow-x-auto shrink-0 leading-relaxed shadow-inner">
-                        {JSON.stringify(log.details, null, 2)}
-                      </pre>
-                    )}
                   </div>
                 ))}
               </div>
