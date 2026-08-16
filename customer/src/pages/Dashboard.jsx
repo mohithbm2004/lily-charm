@@ -7,19 +7,35 @@ import { useAlert } from '../context/AlertContext'
 import { useStudio } from '../context/StudioContext'
 import OrderDetailsModal from '../components/OrderDetailsModal'
 import OrderTimeline from '../components/OrderTimeline'
+import AuthModal from '../components/AuthModal'
 import { API_URL, RAZORPAY_KEY_ID } from '../config/api'
 import { getSocket } from '../services/socket'
 
 const tabs = ['My Orders', 'Profile Details', 'Custom Price Quotes', 'Saved Addresses']
 
 export default function Dashboard() {
-  const { user, token, logout, updateUserProfile } = useAuth()
+  const { user, token, loading: authLoading, logout, updateUserProfile } = useAuth()
   const { showAlert, showConfirm } = useAlert()
   const { shippingSettings } = useStudio()
   const navigate = useNavigate()
-  const [tab, setTab] = useState('Profile Details')
   const [params] = useSearchParams()
+  const requestedTab = params.get('tab')
+  const [tab, setTab] = useState(() => {
+    if (requestedTab) {
+      const match = tabs.find((t) => t.toLowerCase() === requestedTab.toLowerCase() || t.toLowerCase().includes(requestedTab.toLowerCase()))
+      if (match) return match
+    }
+    return 'My Orders'
+  })
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const justOrdered = params.get('order') === 'confirmed'
+
+  useEffect(() => {
+    if (requestedTab) {
+      const match = tabs.find((t) => t.toLowerCase() === requestedTab.toLowerCase() || t.toLowerCase().includes(requestedTab.toLowerCase()))
+      if (match) setTab(match)
+    }
+  }, [requestedTab])
 
   const isShippingEnabled = shippingSettings?.shippingFeeEnabled ?? true
   const standardShippingFee = shippingSettings?.standardShippingFee ?? 100
@@ -54,12 +70,12 @@ export default function Dashboard() {
   })
 
   useEffect(() => {
-    if (user && typeof user === 'object') {
+    if (user && typeof user === 'object' && token) {
       setUserProfile((prev) => ({ ...defaultProfile, ...(prev || {}), ...user }))
       setAvatarPreview(user.profileImage || '')
-      fetchProfileFromApi(user.email)
+      fetchProfileFromApi()
       fetchUserOrdersAndRequests()
-    } else {
+    } else if (!user) {
       setUserProfile(null)
       setUserOrders([])
       setUserCustomRequests([])
@@ -81,9 +97,9 @@ export default function Dashboard() {
   const [quoteSearchEmail, setQuoteSearchEmail] = useState('')
   const [confirmedCustomOrder, setConfirmedCustomOrder] = useState(null)
 
-  const fetchProfileFromApi = async (email) => {
+  const fetchProfileFromApi = async () => {
     const currentToken = token || localStorage.getItem('lilycharm_token')
-    if (!currentToken) return
+    if (!currentToken || !user) return
     try {
       const res = await fetch(`${API_URL}/auth/profile`, {
         headers: {
@@ -97,6 +113,8 @@ export default function Dashboard() {
           setAvatarPreview(data.profileImage || '')
           localStorage.setItem('lilycharm_user_profile', JSON.stringify(data))
         }
+      } else if (res.status === 401) {
+        logout()
       }
     } catch {
       // offline fallback
@@ -119,6 +137,8 @@ export default function Dashboard() {
         const ordData = await ordRes.json()
         const rawOrders = Array.isArray(ordData) ? ordData : ordData.orders || []
         setUserOrders(rawOrders)
+      } else if (ordRes.status === 401) {
+        logout()
       }
       if (reqRes.ok) {
         const reqs = await reqRes.json()
@@ -131,9 +151,6 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    fetchProfileFromApi(currentEmail)
-    fetchUserOrdersAndRequests()
-
     if (!user) return
 
     const socket = getSocket()
@@ -466,10 +483,19 @@ export default function Dashboard() {
     )
   }
 
+  if (authLoading) {
+    return (
+      <div className="max-w-xl mx-auto px-6 pt-40 pb-28 text-center space-y-4 text-[var(--color-ink)]">
+        <div className="w-10 h-10 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-xs uppercase tracking-widest font-mono text-[var(--color-ink-soft)]">Loading your studio account & orders...</p>
+      </div>
+    )
+  }
+
   // If customer is signed out, render a clean login prompt screen with zero previous user details
   if (!user) {
     return (
-      <div className="max-w-xl mx-auto px-6 pt-40 pb-28 text-center space-y-6 text-[var(--color-ink)]">
+      <div className="max-w-xl mx-auto px-6 pt-36 sm:pt-40 pb-28 text-center space-y-6 text-[var(--color-ink)]">
         <div className="w-20 h-20 rounded-full bg-[var(--color-card-bg)] border border-[var(--color-line)] flex items-center justify-center mx-auto text-[var(--color-primary)] shadow-sm">
           <User size={36} />
         </div>
@@ -477,21 +503,33 @@ export default function Dashboard() {
           <span className="text-[0.68rem] tracking-[0.2em] uppercase font-bold text-[var(--color-primary)] font-mono">
             Lily Charm Customer Portal
           </span>
-          <h1 className="text-3xl font-bold font-[var(--font-display)] uppercase">
-            Account Signed Out
+          <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-display)] uppercase">
+            Sign In to View Orders
           </h1>
           <p className="text-xs text-[var(--color-ink-soft)] max-w-md mx-auto leading-relaxed">
-            You have been securely signed out of your account. Sign in to view your orders, saved delivery addresses, and custom design quotes.
+            Sign in to your registered customer account to track your orders, live handcrafting updates, invoices, and custom floral design quotes.
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           <button
+            onClick={() => setIsAuthModalOpen(true)}
+            className="btn-primary px-8 py-3 text-xs uppercase tracking-widest font-bold flex items-center gap-2 shadow-md cursor-pointer"
+          >
+            <User size={14} /> Sign In / Register
+          </button>
+          <button
             onClick={() => navigate('/')}
-            className="btn-primary px-8 py-3 text-xs uppercase tracking-widest font-bold flex items-center gap-2"
+            className="btn-outline px-6 py-3 text-xs uppercase tracking-widest font-bold"
           >
             Return to Storefront
           </button>
         </div>
+
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          initialMode="login"
+        />
       </div>
     )
   }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShoppingBag, Menu, X, Sparkles, User as UserIcon, LogOut } from 'lucide-react'
+import { ShoppingBag, Menu, X, Sparkles, User as UserIcon, LogOut, Package } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useStudio } from '../context/StudioContext'
 import { useAuth } from '../context/AuthContext'
@@ -39,7 +39,7 @@ export default function Navbar() {
 
   const handleAccountClick = () => {
     if (user) {
-      navigate('/dashboard')
+      navigate('/dashboard?tab=My Orders')
     } else {
       setAuthMode('login')
       setIsAuthModalOpen(true)
@@ -105,8 +105,14 @@ export default function Navbar() {
               {user ? (
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => navigate('/dashboard?tab=My Orders')}
                     className="text-[0.68rem] tracking-[0.14em] uppercase font-bold text-[var(--color-primary)] hover:underline flex items-center gap-1 bg-[var(--color-card-bg)] px-2.5 py-1 border border-[var(--color-line)] whitespace-nowrap"
+                  >
+                    <Package size={13} /> My Orders
+                  </button>
+                  <button
+                    onClick={() => navigate('/dashboard?tab=Profile Details')}
+                    className="text-[0.68rem] tracking-[0.14em] uppercase font-bold text-[var(--color-ink)] hover:text-[var(--color-primary)] flex items-center gap-1 bg-[var(--color-card-bg)] px-2.5 py-1 border border-[var(--color-line)] whitespace-nowrap"
                   >
                     <UserIcon size={13} /> {user.name?.split(' ')[0] || 'Account'}
                   </button>
@@ -206,28 +212,39 @@ export default function Navbar() {
                   <Sparkles size={16} /> REQUEST CUSTOM DESIGN
                 </button>
 
-                <div className="pt-3 border-t border-[var(--color-line)]">
+                <div className="pt-3 border-t border-[var(--color-line)] space-y-2">
                   {user ? (
-                    <div className="flex items-center justify-between gap-3">
+                    <>
+                      <div className="flex items-center justify-between gap-3">
+                        <button
+                          onClick={() => {
+                            navigate('/dashboard?tab=My Orders')
+                            setMenuOpen(false)
+                          }}
+                          className="text-xs sm:text-sm tracking-[0.16em] uppercase font-bold text-[var(--color-primary)] flex items-center gap-2"
+                        >
+                          <Package size={16} className="shrink-0" /> <span>MY PLACED ORDERS</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            logout()
+                            setMenuOpen(false)
+                          }}
+                          className="text-xs text-rose-600 font-bold uppercase shrink-0 p-1 hover:underline"
+                        >
+                          Sign Out
+                        </button>
+                      </div>
                       <button
                         onClick={() => {
-                          navigate('/dashboard')
+                          navigate('/dashboard?tab=Profile Details')
                           setMenuOpen(false)
                         }}
-                        className="text-xs sm:text-sm tracking-[0.16em] uppercase font-bold text-[var(--color-primary)] flex items-center gap-2 truncate"
+                        className="text-xs sm:text-sm tracking-[0.16em] uppercase font-bold text-[var(--color-ink)] flex items-center gap-2 truncate"
                       >
-                        <UserIcon size={16} className="shrink-0" /> <span className="truncate">ACCOUNT ({user.name?.split(' ')[0] || 'User'})</span>
+                        <UserIcon size={16} className="shrink-0" /> <span className="truncate">ACCOUNT PROFILE ({user.name?.split(' ')[0] || 'User'})</span>
                       </button>
-                      <button
-                        onClick={() => {
-                          logout()
-                          setMenuOpen(false)
-                        }}
-                        className="text-xs text-rose-600 font-bold uppercase shrink-0 p-1 hover:underline"
-                      >
-                        Sign Out
-                      </button>
-                    </div>
+                    </>
                   ) : (
                     <button
                       onClick={() => {
