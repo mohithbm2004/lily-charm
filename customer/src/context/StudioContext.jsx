@@ -8,33 +8,19 @@ const StudioContext = createContext(null)
 
 const initialOrders = []
 
+// Purge any stale client-side entity caches from previous sessions
+if (typeof window !== 'undefined') {
+  try {
+    localStorage.removeItem('lilycharm_products')
+    localStorage.removeItem('lilycharm_collections')
+    localStorage.removeItem('lilycharm_orders')
+  } catch {}
+}
+
 export function StudioProvider({ children }) {
-  const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem('lilycharm_products')
-    if (saved !== null) {
-      try {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed)) return parsed
-      } catch {}
-    }
-    return []
-  })
-
-  const [collections, setCollections] = useState(() => {
-    const saved = localStorage.getItem('lilycharm_collections')
-    if (saved !== null) {
-      try {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed)) return parsed
-      } catch {}
-    }
-    return []
-  })
-
-  const [orders, setOrders] = useState(() => {
-    const saved = localStorage.getItem('lilycharm_orders')
-    return saved !== null ? JSON.parse(saved) : initialOrders
-  })
+  const [products, setProducts] = useState([])
+  const [collections, setCollections] = useState([])
+  const [orders, setOrders] = useState([])
 
   const [marqueeText, setMarqueeText] = useState(() => {
     const saved = localStorage.getItem('lilycharm_marquee')
@@ -89,20 +75,28 @@ export function StudioProvider({ children }) {
   const refreshProductsFromApi = async () => {
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 3000)
+      const timeoutId = setTimeout(() => controller.abort(), 6000)
       const res = await fetch(`${API_URL}/products`, { signal: controller.signal })
       clearTimeout(timeoutId)
       if (res.ok) {
         const data = await res.json()
         if (Array.isArray(data)) {
-          const mapped = data.map((p) => ({
-            ...p,
-            id: p._id || p.id,
-            mongoId: p._id,
-            image: p.image || p.images?.[0]?.url || '',
-          }))
+          const mapped = data
+            .filter((p) => !p.isArchived && !p.archived)
+            .map((p) => ({
+              ...p,
+              id: p._id || p.id,
+              mongoId: p._id,
+              image:
+                p.image ||
+                (Array.isArray(p.images)
+                  ? typeof p.images[0] === 'object'
+                    ? p.images[0]?.url
+                    : p.images[0]
+                  : '') ||
+                '',
+            }))
           setProducts(mapped)
-          localStorage.setItem('lilycharm_products', JSON.stringify(mapped))
         }
       }
     } catch {
@@ -113,7 +107,7 @@ export function StudioProvider({ children }) {
   const refreshCollectionsFromApi = async () => {
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 3000)
+      const timeoutId = setTimeout(() => controller.abort(), 6000)
       const res = await fetch(`${API_URL}/collections`, { signal: controller.signal })
       clearTimeout(timeoutId)
       if (res.ok) {
@@ -125,7 +119,6 @@ export function StudioProvider({ children }) {
             mongoId: c._id,
           }))
           setCollections(mapped)
-          localStorage.setItem('lilycharm_collections', JSON.stringify(mapped))
         }
       }
     } catch {
@@ -244,17 +237,7 @@ export function StudioProvider({ children }) {
     }
   }, [])
 
-  useEffect(() => {
-    localStorage.setItem('lilycharm_products', JSON.stringify(products))
-  }, [products])
 
-  useEffect(() => {
-    localStorage.setItem('lilycharm_collections', JSON.stringify(collections))
-  }, [collections])
-
-  useEffect(() => {
-    localStorage.setItem('lilycharm_orders', JSON.stringify(orders))
-  }, [orders])
 
   useEffect(() => {
     localStorage.setItem('lilycharm_marquee', marqueeText)

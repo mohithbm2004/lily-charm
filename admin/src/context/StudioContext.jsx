@@ -14,35 +14,24 @@ const getAdminHeaders = (extraHeaders = {}) => {
   return headers
 }
 
+// Purge any stale client-side entity caches from previous sessions
+if (typeof window !== 'undefined') {
+  try {
+    localStorage.removeItem('lilycharm_products')
+    localStorage.removeItem('lilycharm_collections')
+    localStorage.removeItem('lilycharm_orders')
+    localStorage.removeItem('lilycharm_users')
+  } catch {}
+}
+
 const initialOrders = []
 
 export function StudioProvider({ children }) {
-  const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem('lilycharm_products')
-    return saved !== null ? JSON.parse(saved) : initialProducts
-  })
-
-  const [collections, setCollections] = useState(() => {
-    const saved = localStorage.getItem('lilycharm_collections')
-    if (saved !== null) {
-      try {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed)) return parsed
-      } catch {}
-    }
-    return []
-  })
-
-  const [orders, setOrders] = useState(() => {
-    const saved = localStorage.getItem('lilycharm_orders')
-    return saved !== null ? JSON.parse(saved) : initialOrders
-  })
-
+  const [products, setProducts] = useState([])
+  const [collections, setCollections] = useState([])
+  const [orders, setOrders] = useState([])
   const [customRequests, setCustomRequests] = useState([])
-  const [users, setUsers] = useState(() => {
-    const saved = localStorage.getItem('lilycharm_users')
-    return saved ? JSON.parse(saved) : []
-  })
+  const [users, setUsers] = useState([])
 
   const refreshUsersFromApi = async () => {
     try {
@@ -58,7 +47,6 @@ export function StudioProvider({ children }) {
         const data = await res.json()
         if (Array.isArray(data)) {
           setUsers(data)
-          localStorage.setItem('lilycharm_users', JSON.stringify(data))
         }
       }
     } catch (e) {
@@ -84,7 +72,7 @@ export function StudioProvider({ children }) {
   const refreshProductsFromApi = async () => {
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 3000)
+      const timeoutId = setTimeout(() => controller.abort(), 6000)
       const res = await fetch(`${API_URL}/products?includeArchived=true`, {
         signal: controller.signal,
         headers: getAdminHeaders(),
@@ -98,10 +86,16 @@ export function StudioProvider({ children }) {
             ...p,
             id: p._id || p.id,
             mongoId: p._id,
-            image: p.image || p.images?.[0]?.url || '',
+            image:
+              p.image ||
+              (Array.isArray(p.images)
+                ? typeof p.images[0] === 'object'
+                  ? p.images[0]?.url
+                  : p.images[0]
+                : '') ||
+              '',
           }))
           setProducts(mapped)
-          localStorage.setItem('lilycharm_products', JSON.stringify(mapped))
         }
       }
     } catch {
@@ -487,17 +481,7 @@ export function StudioProvider({ children }) {
     }
   }, [])
 
-  useEffect(() => {
-    localStorage.setItem('lilycharm_products', JSON.stringify(products))
-  }, [products])
 
-  useEffect(() => {
-    localStorage.setItem('lilycharm_collections', JSON.stringify(collections))
-  }, [collections])
-
-  useEffect(() => {
-    localStorage.setItem('lilycharm_orders', JSON.stringify(orders))
-  }, [orders])
 
   useEffect(() => {
     localStorage.setItem('lilycharm_marquee', marqueeText)
