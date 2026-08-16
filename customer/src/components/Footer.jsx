@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useStudio } from '../context/StudioContext'
 
 const IconInstagram = (props) => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
@@ -9,6 +10,8 @@ const IconInstagram = (props) => (
 )
 
 export default function Footer() {
+  const { collections = [] } = useStudio()
+
   return (
     <footer className="bg-[#212B1C] text-[#FAF7F2] border-t border-white/10 w-full max-w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-12 sm:py-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-12">
@@ -43,10 +46,26 @@ export default function Footer() {
         <div>
           <p className="text-[#F5E8D0] font-bold text-xs tracking-[0.24em] uppercase mb-3 sm:mb-4 font-[var(--font-button)]">Collections</p>
           <ul className="space-y-2 sm:space-y-2.5 text-xs sm:text-sm text-[#FAF7F2]">
-            <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Velvet Lilies</Link></li>
-            <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Velvet Tulips</Link></li>
-            <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Golden Sunflowers</Link></li>
-            <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Heart Bouquets</Link></li>
+            {collections && collections.length > 0 ? (
+              collections.map((col) => (
+                <li key={col.id || col._id || col.slug}>
+                  <Link
+                    to={`/collections#${col.slug || col.id}`}
+                    className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors"
+                  >
+                    {col.title}
+                  </Link>
+                </li>
+              ))
+            ) : (
+              <>
+                <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Velvet Lilies</Link></li>
+                <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Velvet Tulips</Link></li>
+                <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Golden Sunflowers</Link></li>
+                <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Heart Bouquets</Link></li>
+                <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Studio Baskets</Link></li>
+              </>
+            )}
           </ul>
         </div>
         <div>

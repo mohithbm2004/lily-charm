@@ -8,32 +8,37 @@ import { useStudio } from '../context/StudioContext'
 import OrderDetailsModal from '../components/OrderDetailsModal'
 import OrderTimeline from '../components/OrderTimeline'
 import AuthModal from '../components/AuthModal'
+import { formatPrice } from '../lib/format'
 import { API_URL, RAZORPAY_KEY_ID } from '../config/api'
 import { getSocket } from '../services/socket'
 
-const tabs = ['My Orders', 'Profile Details', 'Custom Price Quotes', 'Saved Addresses']
+const tabs = ['Profile Details', 'My Orders', 'Custom Price Quotes', 'Saved Addresses']
 
 export default function Dashboard() {
   const { user, token, loading: authLoading, logout, updateUserProfile } = useAuth()
   const { showAlert, showConfirm } = useAlert()
   const { shippingSettings } = useStudio()
   const navigate = useNavigate()
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const requestedTab = params.get('tab')
-  const [tab, setTab] = useState(() => {
-    if (requestedTab) {
-      const match = tabs.find((t) => t.toLowerCase() === requestedTab.toLowerCase() || t.toLowerCase().includes(requestedTab.toLowerCase()))
-      if (match) return match
-    }
-    return 'My Orders'
-  })
+
+  const resolveTab = (param) => {
+    if (!param) return 'Profile Details'
+    const lower = param.toLowerCase()
+    if (lower.includes('order')) return 'My Orders'
+    if (lower.includes('profile')) return 'Profile Details'
+    if (lower.includes('quote')) return 'Custom Price Quotes'
+    if (lower.includes('address')) return 'Saved Addresses'
+    return 'Profile Details'
+  }
+
+  const [tab, setTab] = useState(() => resolveTab(requestedTab))
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const justOrdered = params.get('order') === 'confirmed'
 
   useEffect(() => {
     if (requestedTab) {
-      const match = tabs.find((t) => t.toLowerCase() === requestedTab.toLowerCase() || t.toLowerCase().includes(requestedTab.toLowerCase()))
-      if (match) setTab(match)
+      setTab(resolveTab(requestedTab))
     }
   }, [requestedTab])
 
@@ -58,15 +63,18 @@ export default function Dashboard() {
 
   // User profile state strictly tied to authenticated user session
   const [userProfile, setUserProfile] = useState(() => {
-    if (!user) return null
+    let base = { ...defaultProfile }
+    if (user && typeof user === 'object') {
+      base = { ...base, ...user }
+    }
     try {
       const saved = localStorage.getItem('lilycharm_user_profile')
       if (saved) {
         const parsed = JSON.parse(saved)
-        if (parsed && typeof parsed === 'object') return { ...defaultProfile, ...parsed }
+        if (parsed && typeof parsed === 'object') return { ...base, ...parsed }
       }
     } catch {}
-    return user ? { ...defaultProfile, ...user } : null
+    return base
   })
 
   useEffect(() => {
@@ -85,7 +93,7 @@ export default function Dashboard() {
       fetchProfileFromApi()
       fetchUserOrdersAndRequests()
     } else if (!storedUser && !currentToken) {
-      setUserProfile(null)
+      setUserProfile({ ...defaultProfile })
       setUserOrders([])
       setUserCustomRequests([])
       setAvatarPreview('')
@@ -597,8 +605,11 @@ export default function Dashboard() {
           {tabs.map((t) => (
             <button
               key={t}
-              onClick={() => setTab(t)}
-              className={`shrink-0 text-left text-xs font-bold uppercase tracking-wider px-4 py-3 rounded-full whitespace-nowrap transition-colors border ${
+              onClick={() => {
+                setTab(t)
+                setParams({ tab: t })
+              }}
+              className={`shrink-0 text-left text-xs font-bold uppercase tracking-wider px-4 py-3 rounded-full whitespace-nowrap transition-colors border cursor-pointer ${
                 tab === t
                   ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm'
                   : 'text-[var(--color-ink-soft)] bg-[var(--color-card-bg)]/60 hover:bg-[var(--color-card-bg)] border-[var(--color-line)]'
@@ -793,72 +804,72 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <button
-                  onClick={() => fetchUserOrdersAndRequests(userProfile.email)}
+                  onClick={() => fetchUserOrdersAndRequests()}
                   className="px-3 py-1.5 border border-[var(--color-line)] bg-[var(--color-card-bg)] hover:bg-black/5 rounded-full flex items-center gap-1 font-bold text-[0.65rem] uppercase shadow-sm"
                 >
                   <RefreshCw size={12} /> Refresh
                 </button>
               </div>
 
-              {userOrders.length === 0 ? (
+              {(!Array.isArray(userOrders) || userOrders.length === 0) ? (
                 <div className="border border-dashed border-[var(--color-line)] rounded-3xl p-8 text-center text-[var(--color-ink-soft)] space-y-3 bg-[var(--color-card-bg)]/40">
-                  <p className="font-bold uppercase text-sm">No Orders Found for {userProfile.email}</p>
+                  <p className="font-bold uppercase text-sm">No Orders Found</p>
                   <p className="text-[0.7rem]">Place an order at checkout to track delivery status live right here!</p>
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {userOrders.map((o) => (
-                    <div key={o._id} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow">
+                  {(userOrders || []).map((o, orderIdx) => (
+                    <div key={o?._id || o?.orderNumber || orderIdx} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow">
                       {/* Order Header */}
                       <div className="flex flex-wrap justify-between items-start border-b border-[var(--color-line)] pb-3 gap-2">
                         <div>
-                          <p className="font-mono font-bold text-sm text-[var(--color-primary)]">{o.orderNumber || o._id}</p>
-                          <p className="text-[0.68rem] text-[var(--color-ink-soft)]">Placed on: {o.createdAt && !isNaN(new Date(o.createdAt)) ? new Date(o.createdAt).toLocaleDateString('en-IN') : 'Recently Placed'}</p>
+                          <p className="font-mono font-bold text-sm text-[var(--color-primary)]">{o?.orderNumber || o?._id || 'Order'}</p>
+                          <p className="text-[0.68rem] text-[var(--color-ink-soft)]">Placed on: {o?.createdAt && !isNaN(new Date(o.createdAt)) ? new Date(o.createdAt).toLocaleDateString('en-IN') : 'Recently Placed'}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <span
                             className={`font-mono font-bold uppercase px-3 py-1 text-[0.65rem] rounded-full tracking-wider shadow-sm border ${
-                              o.status === 'Cancelled'
+                              o?.status === 'Cancelled'
                                 ? 'bg-rose-800 text-white border-rose-950'
-                                : o.status === 'Delivered'
+                                : o?.status === 'Delivered'
                                 ? 'bg-emerald-800 text-white border-emerald-950'
-                                : o.status === 'Shipped' || o.status === 'Out For Delivery'
+                                : o?.status === 'Shipped' || o?.status === 'Out For Delivery'
                                 ? 'bg-blue-800 text-white border-blue-950'
                                 : 'bg-[#212B1C] text-[#F5E8D0] border-[#141A11]'
                             }`}
                           >
-                            {o.status || 'Confirmed'}
+                            {o?.status || 'Confirmed'}
                           </span>
 
                           <span
                             className={`font-mono font-bold uppercase px-3 py-1 text-[0.65rem] rounded-full tracking-wider shadow-sm border ${
-                              o.paymentStatus === 'Failed'
+                              o?.paymentStatus === 'Failed'
                                 ? 'bg-rose-800 text-white border-rose-950'
                                 : 'bg-emerald-800 text-white border-emerald-950'
                             }`}
                           >
-                            {o.paymentStatus || 'Paid'}
+                            {o?.paymentStatus || 'Paid'}
                           </span>
                         </div>
                       </div>
 
                       {/* Timeline Preview */}
                       <div className="bg-[var(--color-bg)] p-3 border border-[var(--color-line)] rounded-2xl">
-                        <OrderTimeline status={o.status} history={o.statusHistory} notes={o.notes} refundId={o.razorpayRefundId} cancellationFee={o.cancellationFee} refundAmount={o.refundAmount} />
+                        <OrderTimeline status={o?.status || 'Order Confirmed'} history={o?.statusHistory || []} notes={o?.notes || ''} refundId={o?.razorpayRefundId || ''} cancellationFee={o?.cancellationFee || 0} refundAmount={o?.refundAmount || 0} />
                       </div>
 
                       {/* Items Preview */}
                       <div className="space-y-2">
-                        {o.items?.map((it, idx) => (
+                        {(o?.items || []).map((it, idx) => (
                           <div key={idx} className="flex items-center justify-between gap-3 p-2 bg-[var(--color-bg)] border border-[var(--color-line)] rounded-2xl">
                             <div className="flex items-center gap-3">
-                              <img src={it.image || '/images/products/flower-1-1.jpg'} alt={it.title} className="w-10 h-12 object-cover border border-[var(--color-line)] rounded-xl" />
+                              <img src={it?.image || '/images/products/flower-1-1.jpg'} alt={it?.title || 'Botanical Artwork'} className="w-10 h-12 object-cover border border-[var(--color-line)] rounded-xl" />
                               <div>
-                                <p className="font-bold text-xs">{it.title}</p>
-                                <p className="text-[0.65rem] text-[var(--color-ink-soft)]">Qty: {it.qty || 1} × {formatPrice(it.price)}</p>
+                                <p className="font-bold text-xs">{it?.title || 'Handcrafted Artwork'}</p>
+                                <p className="text-[0.65rem] text-[var(--color-ink-soft)]">Qty: {it?.qty || 1} × {formatPrice(it?.price || 0)}</p>
                               </div>
                             </div>
-                            <span className="font-bold font-mono text-[var(--color-primary)]">{formatPrice(it.price * (it.qty || 1))}</span>
+                            <span className="font-bold font-mono text-[var(--color-primary)]">{formatPrice((it?.price || 0) * (it?.qty || 1))}</span>
                           </div>
                         ))}
                       </div>
@@ -867,7 +878,7 @@ export default function Dashboard() {
                       <div className="pt-3 border-t border-[var(--color-line)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 w-full">
                         <div>
                           <span className="text-[0.65rem] sm:text-[0.68rem] text-[var(--color-ink-soft)] uppercase font-bold">Total Amount Paid</span>
-                          <p className="text-emerald-800 text-sm sm:text-base font-mono font-bold">{formatPrice(o.grandTotal || o.total)}</p>
+                          <p className="text-emerald-800 text-sm sm:text-base font-mono font-bold">{formatPrice(o?.grandTotal || o?.total || 0)}</p>
                         </div>
 
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
@@ -881,52 +892,56 @@ export default function Dashboard() {
                           <button
                             onClick={() => {
                               const authToken = token || localStorage.getItem('lilycharm_token') || ''
-                              window.open(`${API_URL}/orders/${o._id}/invoice?token=${encodeURIComponent(authToken)}`, '_blank')
+                              window.open(`${API_URL}/orders/${o?._id}/invoice?token=${encodeURIComponent(authToken)}`, '_blank')
                             }}
                             className="btn-outline py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center rounded-full"
                           >
                             <Download size={12} /> Invoice PDF
                           </button>
 
-                          {['Pending Payment', 'Paid', 'Confirmed', 'Pending'].includes(o.status) && (
+                          {['Pending Payment', 'Pending', 'Order Confirmed', 'Confirmed', 'Paid'].includes(o?.status) && (
                             <button
                               onClick={() => {
-                                const isPaidOrder = o.paymentStatus === 'Paid'
-                                const orderTotal = o.grandTotal ?? o.total ?? 0
+                                const isPaidOrder = o?.paymentStatus === 'Paid' || o?.status === 'Order Confirmed' || o?.status === 'Confirmed' || o?.status === 'Paid'
+                                const orderTotal = o?.grandTotal ?? o?.total ?? 0
                                 const processingFee = Math.round(orderTotal * 0.03)
                                 const netRefund = Math.max(0, orderTotal - processingFee)
                                 const authToken = token || localStorage.getItem('lilycharm_token') || ''
 
                                 if (isPaidOrder) {
+                                  const customReason = prompt('Please specify reason for cancellation (97% automatic refund will be processed):', 'Order cancelled by customer')
+                                  if (customReason === null) return // cancelled prompt
+
                                   showConfirm({
-                                    title: 'Cancel Order Confirmation',
+                                    title: 'Cancel Order & Initiate Refund',
                                     type: 'warning',
-                                    message: `Are you sure you want to cancel paid order "${o.orderNumber || o._id}"? Automatic refund will be processed back to your original payment method.`,
+                                    message: `Are you sure you want to cancel paid order "${o?.orderNumber || o?._id}"? Reason: "${customReason}". Automatic refund will be processed back to your original payment method.`,
                                     details: [
-                                      { label: 'Order Number', value: o.orderNumber || o._id },
+                                      { label: 'Order Number', value: o?.orderNumber || o?._id },
                                       { label: 'Original Order Total', value: formatPrice(orderTotal) },
                                       { label: 'Processing Fee (3%)', value: `- ${formatPrice(processingFee)}`, color: 'text-rose-700 font-bold' },
                                       { label: 'Net Refund to Customer (97%)', value: formatPrice(netRefund), color: 'text-emerald-800 font-bold text-sm', isTotal: true },
+                                      { label: 'Cancellation Reason', value: customReason },
                                     ],
                                     disclaimer: 'Customer self-cancellation incurs a 3% payment processing fee. The net 97% refund is automatically credited back to your original payment method within 5–7 banking days. (Note: 100% full refund applies if cancelled by Studio).',
                                     confirmText: `Confirm Cancellation (${formatPrice(netRefund)} Refund)`,
                                     cancelText: 'Keep Order',
                                     onConfirm: async () => {
                                       try {
-                                        const res = await fetch(`${API_URL}/orders/${o._id}/cancel`, {
+                                        const res = await fetch(`${API_URL}/orders/${o?._id}/cancel`, {
                                           method: 'PATCH',
                                           headers: {
                                             'Content-Type': 'application/json',
                                             ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
                                           },
-                                          body: JSON.stringify({ reason: 'Cancelled by customer via dashboard' }),
+                                          body: JSON.stringify({ reason: customReason || 'Cancelled by customer via dashboard' }),
                                         })
                                         const data = await res.json()
                                         if (res.ok) {
                                           showAlert({
                                             title: 'Order Cancelled & Refund Initiated',
                                             type: 'success',
-                                            message: `✨ Order ${o.orderNumber || o._id} has been cancelled. Net refund of ${formatPrice(netRefund)} (97%) has been sent to your original payment method.`,
+                                            message: `✨ Order ${o?.orderNumber || o?._id} has been cancelled. Net refund of ${formatPrice(netRefund)} (97%) has been sent to your original payment method.`,
                                           })
                                           fetchUserOrdersAndRequests()
                                         } else {
@@ -946,34 +961,38 @@ export default function Dashboard() {
                                     },
                                   })
                                 } else {
+                                  const customReason = prompt('Please specify reason for cancelling unpaid order:', 'Cancelled before payment')
+                                  if (customReason === null) return
+
                                   showConfirm({
                                     title: 'Cancel Unpaid Order',
                                     type: 'warning',
-                                    message: `Are you sure you want to cancel order "${o.orderNumber || o._id}"? Because this order is unpaid, no payment has been charged and no refund will be issued.`,
+                                    message: `Are you sure you want to cancel order "${o?.orderNumber || o?._id}"? Because this order is unpaid, no payment has been charged and no refund will be issued.`,
                                     details: [
-                                      { label: 'Order Number', value: o.orderNumber || o._id },
+                                      { label: 'Order Number', value: o?.orderNumber || o?._id },
                                       { label: 'Order Total', value: formatPrice(orderTotal) },
                                       { label: 'Payment Status', value: 'Unpaid / Pending' },
+                                      { label: 'Cancellation Reason', value: customReason },
                                     ],
                                     disclaimer: 'This order will be cancelled immediately. No charges were made to your account.',
                                     confirmText: 'Confirm Order Cancellation',
                                     cancelText: 'Keep Order',
                                     onConfirm: async () => {
                                       try {
-                                        const res = await fetch(`${API_URL}/orders/${o._id}/cancel`, {
+                                        const res = await fetch(`${API_URL}/orders/${o?._id}/cancel`, {
                                           method: 'PATCH',
                                           headers: {
                                             'Content-Type': 'application/json',
                                             ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
                                           },
-                                          body: JSON.stringify({ reason: 'Cancelled by customer before payment' }),
+                                          body: JSON.stringify({ reason: customReason || 'Cancelled by customer before payment' }),
                                         })
                                         const data = await res.json()
                                         if (res.ok) {
                                           showAlert({
                                             title: 'Order Cancelled',
                                             type: 'success',
-                                            message: `✨ Order ${o.orderNumber || o._id} has been cancelled. No payment was charged.`,
+                                            message: `✨ Order ${o?.orderNumber || o?._id} has been cancelled. No payment was charged.`,
                                           })
                                           fetchUserOrdersAndRequests()
                                         } else {
@@ -1000,13 +1019,13 @@ export default function Dashboard() {
                             </button>
                           )}
 
-                          {['Handcrafting', 'Processing', 'Packed', 'Packed & Dispatched', 'Shipped', 'Out For Delivery'].includes(o.status) && (
+                          {['Handcrafting', 'Handcrafting in Studio', 'Processing', 'Studio Processing', 'Packed', 'Packed & Sealed', 'Packed & Dispatched', 'Shipped', 'Out For Delivery'].includes(o?.status) && (
                             <span className="text-[0.62rem] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-300 px-2.5 py-1.5 rounded flex items-center gap-1">
                               🎨 Handcrafting/Dispatch Started — Cannot Cancel Online
                             </span>
                           )}
 
-                          {o.razorpayRefundId && (
+                          {o?.razorpayRefundId && (
                             <span className="text-[0.62rem] font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-300 px-2.5 py-1.5 rounded flex items-center gap-1">
                               ✨ Refund Ref: {o.razorpayRefundId}
                             </span>
@@ -1029,11 +1048,11 @@ export default function Dashboard() {
                     <Sparkles size={18} className="text-[var(--color-primary)]" /> Custom Design Price Quotes
                   </h2>
                   <p className="text-xs text-[var(--color-ink-soft)]">
-                    Price quotes from lead artisan for your bespoke design requests ({userProfile.name}).
+                    Price quotes from lead artisan for your bespoke design requests ({userProfile?.name || 'Valued Collector'}).
                   </p>
                 </div>
                 <button
-                  onClick={() => fetchUserOrdersAndRequests(userProfile.email)}
+                  onClick={() => fetchUserOrdersAndRequests()}
                   className="p-2 border border-[var(--color-line)] bg-[var(--color-card-bg)] hover:bg-black/5 flex items-center gap-1 font-bold text-[0.65rem] uppercase"
                 >
                   <RefreshCw size={12} /> Refresh Quotes
@@ -1101,7 +1120,7 @@ export default function Dashboard() {
                                   onClick={async () => {
                                     try {
                                       await fetch(`${API_URL}/custom-requests/${req._id}/decline`, { method: 'PATCH' })
-                                      fetchUserOrdersAndRequests(userProfile.email)
+                                      fetchUserOrdersAndRequests()
                                     } catch (e) {
                                       console.error('Error declining quote:', e)
                                     }
@@ -1139,10 +1158,10 @@ export default function Dashboard() {
               <div className="flex items-center gap-2 font-bold uppercase text-sm border-b border-[var(--color-line)] pb-2">
                 <MapPin size={16} className="text-[var(--color-primary)]" /> Primary Shipping Address
               </div>
-              <p className="font-bold text-sm">{userProfile.name}</p>
-              <p className="text-[var(--color-ink-soft)]">{userProfile.address}</p>
-              <p className="text-[var(--color-ink-soft)]">{userProfile.city} - {userProfile.pincode}</p>
-              <p className="text-[var(--color-primary)] font-mono">{userProfile.phone}</p>
+              <p className="font-bold text-sm">{userProfile?.name || 'Valued Customer'}</p>
+              <p className="text-[var(--color-ink-soft)]">{userProfile?.address || '123 Atelier Studio Street'}</p>
+              <p className="text-[var(--color-ink-soft)]">{userProfile?.city || 'Bengaluru'} - {userProfile?.pincode || '560001'}</p>
+              <p className="text-[var(--color-primary)] font-mono">{userProfile?.phone || '+91 98765 43210'}</p>
             </div>
           )}
         </div>
@@ -1153,7 +1172,7 @@ export default function Dashboard() {
         order={selectedOrder}
         isOpen={Boolean(selectedOrder)}
         onClose={() => setSelectedOrder(null)}
-        onRefresh={() => fetchUserOrdersAndRequests(userProfile.email)}
+        onRefresh={() => fetchUserOrdersAndRequests()}
       />
     </div>
   )

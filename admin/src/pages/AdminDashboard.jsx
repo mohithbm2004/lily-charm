@@ -54,21 +54,6 @@ const FULFILLMENT_OPTIONS = [
   { value: 'Delivered', label: '🎉 Delivered' },
 ]
 
-const ALLOWED_ADMIN_NEXT_STEPS = {
-  'Order Confirmed': ['Handcrafting in Studio'],
-  'Confirmed': ['Handcrafting in Studio'],
-  'Handcrafting in Studio': ['Studio Processing'],
-  'Handcrafting': ['Studio Processing'],
-  'Studio Processing': ['Packed & Sealed'],
-  'Processing': ['Packed & Sealed'],
-  'Packed & Sealed': ['Packed & Dispatched'],
-  'Packed': ['Packed & Dispatched'],
-  'Packed & Dispatched': ['Shipped'],
-  'Shipped': ['Out For Delivery'],
-  'Out For Delivery': ['Delivered'],
-  'Delivered': [],
-}
-
 function normalizeAdminFulfillment(st) {
   if (!st) return 'Order Confirmed'
   const trimmed = st.trim()
@@ -358,9 +343,13 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     return (customRequests || []).filter(
       (r) =>
         r.status === 'Accepted & Order Created' ||
+        r.status === 'Paid & Order Placed' ||
+        r.status === 'Paid & Confirmed' ||
+        r.status === 'Accepted' ||
         r.status === 'Approved' ||
         r.status === 'Completed' ||
-        r.isAccepted === true
+        r.isAccepted === true ||
+        Boolean(r.convertedOrderId)
     )
   }, [customRequests])
 
@@ -375,17 +364,25 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
   }, [customRequests])
 
   const pendingRequests = useMemo(() => {
-    return (customRequests || []).filter(
-      (r) =>
-        r.status !== 'Accepted & Order Created' &&
-        r.status !== 'Approved' &&
-        r.status !== 'Completed' &&
-        r.status !== 'Rejected' &&
-        r.status !== 'Quote Declined' &&
-        r.status !== 'Declined' &&
-        !r.isAccepted &&
-        !r.isDeclined
-    )
+    return (customRequests || []).filter((r) => {
+      const isAccepted =
+        r.status === 'Accepted & Order Created' ||
+        r.status === 'Paid & Order Placed' ||
+        r.status === 'Paid & Confirmed' ||
+        r.status === 'Accepted' ||
+        r.status === 'Approved' ||
+        r.status === 'Completed' ||
+        r.isAccepted === true ||
+        Boolean(r.convertedOrderId)
+
+      const isRejected =
+        r.status === 'Rejected' ||
+        r.status === 'Quote Declined' ||
+        r.status === 'Declined' ||
+        r.isDeclined === true
+
+      return !isAccepted && !isRejected
+    })
   }, [customRequests])
 
   const renderRequestCard = (req) => {
@@ -393,6 +390,16 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
       ? req.images
       : (req.image ? [req.image] : [])
     const mainPhoto = req.image || reqImages[0] || ''
+
+    const isPaidOrAccepted =
+      req.status === 'Accepted & Order Created' ||
+      req.status === 'Paid & Order Placed' ||
+      req.status === 'Paid & Confirmed' ||
+      req.status === 'Accepted' ||
+      req.status === 'Approved' ||
+      req.status === 'Completed' ||
+      req.isAccepted === true ||
+      Boolean(req.convertedOrderId)
 
     return (
       <div
@@ -410,13 +417,11 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               </p>
             </div>
             <span className={`text-[0.62rem] font-bold uppercase tracking-wider px-2.5 py-1 rounded border ${
-              req.status === 'Completed' || req.status === 'Accepted & Order Created'
+              isPaidOrAccepted
                 ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                : req.status === 'Approved'
-                ? 'bg-blue-100 text-blue-800 border-blue-300'
                 : req.status === 'In Review'
-                ? 'bg-amber-100 text-amber-800 border-amber-300'
-                : req.status === 'Rejected' || req.status === 'Quote Declined'
+                ? 'bg-blue-100 text-blue-800 border-blue-300'
+                : req.status === 'Rejected' || req.status === 'Quote Declined' || req.status === 'Declined'
                 ? 'bg-rose-100 text-rose-800 border-rose-300'
                 : 'bg-amber-100 text-amber-800 border-amber-300'
             }`}>
@@ -481,51 +486,94 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
           )}
         </div>
 
-        {/* Admin Quoted Price Form */}
-        <div className="pt-3 border-t border-[var(--color-line)] bg-[var(--color-bg)] p-3 space-y-2">
-          <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-primary)]">Admin Price Quote (₹ INR)</span>
-          {req.quotedPrice ? (
-            <div className="space-y-1">
-              <p className="text-sm font-bold text-emerald-800">{formatPrice(req.quotedPrice)}</p>
-              {req.adminNotes && <p className="text-[0.68rem] text-[var(--color-ink-soft)] italic">Note: {req.adminNotes}</p>}
+        {/* Admin Quoted Price / Converted Order Information */}
+        {isPaidOrAccepted ? (
+          <div className="pt-3 border-t border-[var(--color-line)] bg-emerald-50/70 border-emerald-200 p-3 space-y-2 rounded">
+            <div className="flex items-center justify-between">
+              <span className="eyebrow text-[0.65rem] font-bold text-emerald-900 uppercase">✨ Accepted & Paid</span>
+              <span className="text-[0.62rem] font-mono font-bold bg-emerald-200 text-emerald-950 px-2 py-0.5 rounded border border-emerald-300">
+                Paid Online
+              </span>
             </div>
-          ) : (
-            <p className="text-[0.68rem] text-rose-600 font-bold">⚠️ Quote Pending from Admin</p>
-          )}
+            <div>
+              <p className="text-base font-bold text-emerald-900 font-mono">
+                {formatPrice(req.totalAmount || req.quotedPrice)}
+              </p>
+              {req.shippingCharge > 0 && (
+                <p className="text-[0.62rem] text-emerald-800 font-mono">
+                  (Quoted: {formatPrice(req.quotedPrice)} + Shipping: {formatPrice(req.shippingCharge)})
+                </p>
+              )}
+            </div>
+            {req.convertedOrderId && (
+              <div className="pt-1.5 border-t border-emerald-200/60 flex items-center justify-between gap-2">
+                <span className="text-[0.65rem] font-mono font-bold text-emerald-950 truncate">
+                  📦 Order: {req.convertedOrderId}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('orders')
+                    setOrderSearch(req.convertedOrderId)
+                  }}
+                  className="text-[0.62rem] font-bold uppercase text-emerald-900 hover:underline shrink-0 flex items-center gap-0.5"
+                >
+                  View in Orders ➔
+                </button>
+              </div>
+            )}
+            {req.razorpayPaymentId && (
+              <p className="text-[0.58rem] font-mono text-emerald-800 truncate" title={req.razorpayPaymentId}>
+                Payment ID: {req.razorpayPaymentId}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="pt-3 border-t border-[var(--color-line)] bg-[var(--color-bg)] p-3 space-y-2">
+            <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-primary)]">Admin Price Quote (₹ INR)</span>
+            {req.quotedPrice ? (
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-emerald-800 font-mono">{formatPrice(req.quotedPrice)}</p>
+                {req.adminNotes && <p className="text-[0.68rem] text-[var(--color-ink-soft)] italic">Note: {req.adminNotes}</p>}
+              </div>
+            ) : (
+              <p className="text-[0.68rem] text-rose-600 font-bold">⚠️ Quote Pending from Admin</p>
+            )}
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              const priceVal = e.target.priceInput.value
-              const notesVal = e.target.notesInput.value
-              if (priceVal && Number(priceVal) > 0) {
-                quoteCustomPrice(req._id, Number(priceVal), notesVal)
-              }
-            }}
-            className="space-y-2 pt-1"
-          >
-            <div className="flex gap-2">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                const priceVal = e.target.priceInput.value
+                const notesVal = e.target.notesInput.value
+                if (priceVal && Number(priceVal) > 0) {
+                  quoteCustomPrice(req._id, Number(priceVal), notesVal)
+                }
+              }}
+              className="space-y-2 pt-1"
+            >
+              <div className="flex gap-2">
+                <input
+                  name="priceInput"
+                  type="number"
+                  placeholder="e.g. 4999"
+                  defaultValue={req.quotedPrice || ''}
+                  required
+                  className="border border-[var(--color-line)] p-1.5 text-xs bg-[var(--color-bg)] font-bold text-emerald-900 w-full"
+                />
+                <button type="submit" className="btn-primary px-3 py-1.5 text-[0.65rem] uppercase font-bold shrink-0">
+                  Quote Price
+                </button>
+              </div>
               <input
-                name="priceInput"
-                type="number"
-                placeholder="e.g. 4999"
-                defaultValue={req.quotedPrice || ''}
-                required
-                className="border border-[var(--color-line)] p-1.5 text-xs bg-[var(--color-bg)] font-bold text-emerald-900 w-full"
+                name="notesInput"
+                type="text"
+                placeholder="Optional quote details or breakdown..."
+                defaultValue={req.adminNotes || ''}
+                className="border border-[var(--color-line)] p-1.5 text-[0.68rem] bg-[var(--color-bg)] w-full"
               />
-              <button type="submit" className="btn-primary px-3 py-1.5 text-[0.65rem] uppercase font-bold shrink-0">
-                Quote Price
-              </button>
-            </div>
-            <input
-              name="notesInput"
-              type="text"
-              placeholder="Optional quote details or breakdown..."
-              defaultValue={req.adminNotes || ''}
-              className="border border-[var(--color-line)] p-1.5 text-[0.68rem] bg-[var(--color-bg)] w-full"
-            />
-          </form>
-        </div>
+            </form>
+          </div>
+        )}
 
         {/* Card Actions Footer */}
         <div className="pt-3 border-t border-[var(--color-line)] space-y-2.5">
@@ -550,7 +598,9 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
             >
               <option value="Quote Pending">Quote Pending</option>
               <option value="Quoted">Quoted</option>
+              <option value="Paid & Order Placed">Paid & Order Placed</option>
               <option value="Accepted & Order Created">Accepted & Order Created</option>
+              <option value="Paid & Confirmed">Paid & Confirmed</option>
               <option value="Quote Declined">Quote Declined</option>
               <option value="Completed">Completed</option>
               <option value="Rejected">Rejected</option>
@@ -1401,7 +1451,8 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                     <thead>
                       <tr className="border-b border-[var(--color-line)] text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[var(--color-ink-soft)] bg-[var(--color-bg)]">
                         <th className="p-4">Order ID & Timestamp</th>
-                        <th className="p-4">Customer & Address</th>
+                        <th className="p-4">Account Owner</th>
+                        <th className="p-4">Shipping Details</th>
                         <th className="p-4">Items Ordered</th>
                         <th className="p-4">Amount & Payment</th>
                         <th className="p-4">Courier Tracking</th>
@@ -1424,16 +1475,65 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                               📄 Download Invoice
                             </button>
                           </td>
+                          {/* Account Owner Column */}
+                          <td className="p-4 space-y-1.5 align-top">
+                            {(() => {
+                              const ownerId = (o.user?._id || o.user)?.toString()
+                              const ownerUser = (typeof o.user === 'object' && o.user?._id && o.user?.email)
+                                ? o.user
+                                : (users || []).find((u) => u._id && u._id.toString() === ownerId)
+
+                              return (
+                                <div className="space-y-1">
+                                  <p className="font-bold text-sm text-[var(--color-ink)]">
+                                    {ownerUser?.name || (typeof o.user === 'object' && o.user?.name) || 'Registered Account'}
+                                  </p>
+                                  <p className="text-[0.68rem] text-[var(--color-primary)] font-bold truncate max-w-[170px]" title={ownerUser?.email || o.email}>
+                                    ✉️ {ownerUser?.email || (typeof o.user === 'object' && o.user?.email) || o.email || 'No email recorded'}
+                                  </p>
+                                  {ownerUser?.phone && (
+                                    <p className="text-[0.65rem] text-[var(--color-ink-soft)] font-mono">
+                                      📞 {ownerUser.phone}
+                                    </p>
+                                  )}
+                                  <div className="pt-0.5">
+                                    {ownerUser?.provider === 'google' || ownerUser?.googleId ? (
+                                      <span className="inline-flex items-center gap-1 text-[0.58rem] font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 rounded">
+                                        Google OAuth
+                                      </span>
+                                    ) : ownerUser?.isVerified ? (
+                                      <span className="inline-flex items-center gap-1 text-[0.58rem] font-bold text-blue-800 bg-blue-50 border border-blue-300 px-1.5 py-0.5 rounded">
+                                        Verified Account
+                                      </span>
+                                    ) : ownerUser ? (
+                                      <span className="inline-flex items-center gap-1 text-[0.58rem] font-bold text-amber-800 bg-amber-50 border border-amber-300 px-1.5 py-0.5 rounded">
+                                        Registered User
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center text-[0.58rem] text-[var(--color-ink-soft)] italic">
+                                        Account Linked
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )
+                            })()}
+                          </td>
+                          {/* Shipping Details Column */}
                           <td className="p-4 space-y-1 align-top">
-                            <p className="font-bold text-sm">{o.customerName || o.shippingAddress?.name || 'Customer'}</p>
-                            {(o.email || o.shippingAddress?.email) && (
-                              <p className="text-[0.68rem] text-[var(--color-primary)] font-semibold">{o.email || o.shippingAddress?.email}</p>
+                            <p className="font-bold text-sm text-[var(--color-ink)]">{o.shippingAddress?.name || o.customerName || 'N/A'}</p>
+                            {(o.shippingAddress?.email || o.email) && (
+                              <p className="text-[0.68rem] text-[var(--color-ink-soft)] font-mono truncate max-w-[170px]" title={o.shippingAddress?.email || o.email}>
+                                ✉️ {o.shippingAddress?.email || o.email}
+                              </p>
                             )}
-                            {(o.phone || o.shippingAddress?.phone) && (
-                              <p className="text-[0.68rem] text-[var(--color-ink-soft)] font-mono">{o.phone || o.shippingAddress?.phone}</p>
+                            {(o.shippingAddress?.phone || o.phone) && (
+                              <p className="text-[0.68rem] text-[var(--color-ink-soft)] font-mono">
+                                📞 {o.shippingAddress?.phone || o.phone}
+                              </p>
                             )}
-                            <p className="text-[0.68rem] text-[var(--color-ink-soft)] max-w-xs leading-relaxed">
-                              {o.address || o.shippingAddress?.address || o.shippingAddress?.line1}, {o.city || o.shippingAddress?.city} - {o.pincode || o.shippingAddress?.pincode}
+                            <p className="text-[0.68rem] text-[var(--color-ink-soft)] max-w-xs leading-relaxed pt-0.5">
+                              📍 {o.shippingAddress?.address || o.shippingAddress?.line1 || o.address || 'Address not provided'}{o.shippingAddress?.city || o.city ? `, ${o.shippingAddress?.city || o.city}` : ''}{o.shippingAddress?.pincode || o.pincode ? ` - ${o.shippingAddress?.pincode || o.pincode}` : ''}
                             </p>
                           </td>
                           <td className="p-4 space-y-2 align-top">
@@ -1540,9 +1640,14 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                                 <span className="inline-flex items-center gap-1 text-xs font-bold font-mono bg-rose-50 text-rose-900 border border-rose-300 px-2.5 py-1 rounded">
                                   {o.status === 'Cancelled & Refunded' ? '💸 Cancelled & Refunded' : '❌ Cancelled'}
                                 </span>
+                                {o.notes && (
+                                  <p className="text-[0.62rem] text-rose-900 font-medium break-words max-w-[200px]" title={o.notes}>
+                                    {o.notes}
+                                  </p>
+                                )}
                                 {o.refundStatus === 'Processed' && (
                                   <p className="text-[0.6rem] text-emerald-800 font-mono font-semibold">
-                                    Refund processed to customer
+                                    Refund Ref: {o.razorpayRefundId || 'Processed'} ({o.refundAmount ? `₹${o.refundAmount}` : '100%'})
                                   </p>
                                 )}
                               </div>
@@ -1562,19 +1667,11 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                                   onChange={(e) => updateOrderStatus(o.id || o._id, e.target.value)}
                                   className="border border-[var(--color-line)] p-2 text-xs bg-[var(--color-bg)] font-bold focus:outline-none focus:border-[var(--color-primary)] w-full rounded"
                                 >
-                                  {FULFILLMENT_OPTIONS.map((opt) => {
-                                    const currentNorm = normalizeAdminFulfillment(o.status)
-                                    const allowedNext = ALLOWED_ADMIN_NEXT_STEPS[currentNorm] || []
-                                    const isCurrent = opt.value === currentNorm
-                                    const isNext = allowedNext.includes(opt.value)
-                                    const isDisabled = !isCurrent && !isNext
-
-                                    return (
-                                      <option key={opt.value} value={opt.value} disabled={isDisabled}>
-                                        {opt.label} {isNext ? '→ (Next Stage)' : isDisabled && !isCurrent ? '(Locked)' : ''}
-                                      </option>
-                                    )
-                                  })}
+                                  {FULFILLMENT_OPTIONS.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </option>
+                                  ))}
                                 </select>
                               </div>
                             )}
@@ -2439,27 +2536,18 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredUsers.map((u) => {
-                  const uEmail = u.email?.toLowerCase().trim()
                   const uIdStr = u._id ? u._id.toString() : ''
 
                   const userOrdersList = (orders || []).filter((o) => {
                     const oUserId = (o.user?._id || o.user)?.toString()
-                    const oEmail = (o.email || o.shippingAddress?.email)?.toLowerCase().trim()
-                    if (uIdStr && oUserId && oUserId === uIdStr) return true
-                    if (uEmail && oEmail && oEmail === uEmail) return true
-                    if (Array.isArray(u.alternateEmails) && oEmail && u.alternateEmails.some((alt) => alt.toLowerCase().trim() === oEmail)) return true
-                    return false
+                    return Boolean(uIdStr && oUserId && oUserId === uIdStr)
                   })
 
                   const totalSpent = userOrdersList.reduce((sum, o) => sum + (o.grandTotal || o.total || 0), 0)
 
                   const userRequestsList = (customRequests || []).filter((r) => {
                     const rUserId = (r.user?._id || r.user)?.toString()
-                    const rEmail = r.email?.toLowerCase().trim()
-                    if (uIdStr && rUserId && rUserId === uIdStr) return true
-                    if (uEmail && rEmail && rEmail === uEmail) return true
-                    if (Array.isArray(u.alternateEmails) && rEmail && u.alternateEmails.some((alt) => alt.toLowerCase().trim() === rEmail)) return true
-                    return false
+                    return Boolean(uIdStr && rUserId && rUserId === uIdStr)
                   })
 
                   return (

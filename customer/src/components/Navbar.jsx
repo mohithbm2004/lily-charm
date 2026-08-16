@@ -39,7 +39,7 @@ export default function Navbar() {
 
   const handleAccountClick = () => {
     if (user) {
-      navigate('/dashboard?tab=My Orders')
+      navigate('/dashboard?tab=Profile Details')
     } else {
       setAuthMode('login')
       setIsAuthModalOpen(true)
@@ -105,7 +105,7 @@ export default function Navbar() {
               {user ? (
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => navigate('/dashboard?tab=Profile Details')}
                     className="text-[0.68rem] tracking-[0.14em] uppercase font-bold text-[var(--color-primary)] hover:underline flex items-center gap-1.5 bg-[var(--color-card-bg)] px-3 py-1.5 border border-[var(--color-line)] whitespace-nowrap rounded"
                   >
                     <UserIcon size={13} /> {user.name?.split(' ')[0] || 'Account'}

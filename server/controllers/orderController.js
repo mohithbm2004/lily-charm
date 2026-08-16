@@ -403,7 +403,7 @@ export async function verifyPayment(req, res, next) {
   }
 }
 
-// GET /api/orders/my-orders or /api/orders/mine — Customer order history (Strictly by Authenticated User ID or matching email)
+// GET /api/orders/my-orders or /api/orders/mine — Customer order history (Strictly by Authenticated User ID)
 export async function getMyOrders(req, res, next) {
   try {
     const userId = req.user?._id || (req.user?.role === 'admin' ? req.query.userId : null)
@@ -411,15 +411,8 @@ export async function getMyOrders(req, res, next) {
       return res.status(401).json({ message: 'Authentication required to view order history.' })
     }
 
-    const userEmail = req.user?.email ? req.user.email.toLowerCase().trim() : null
-    const query = {
-      $or: [
-        { user: userId },
-        ...(userEmail ? [{ 'shippingAddress.email': userEmail }, { 'billingAddress.email': userEmail }] : []),
-      ],
-    }
-
-    const orders = await Order.find(query).sort({ createdAt: -1 })
+    // Source of Truth: query strictly by authenticated user ID only
+    const orders = await Order.find({ user: userId }).sort({ createdAt: -1 })
     res.json(orders)
   } catch (err) {
     next(err)
@@ -489,8 +482,11 @@ export async function cancelOrder(req, res, next) {
 
     const restrictedStatuses = [
       'Handcrafting',
+      'Handcrafting in Studio',
       'Processing',
+      'Studio Processing',
       'Packed',
+      'Packed & Sealed',
       'Packed & Dispatched',
       'Shipped',
       'Out For Delivery',
@@ -500,7 +496,7 @@ export async function cancelOrder(req, res, next) {
     // Restrict customer self-cancellation if handcrafting or processing has started
     if (!isAdmin && restrictedStatuses.includes(order.status)) {
       return res.status(400).json({
-        message: `Order cannot be cancelled online once handcrafting or dispatch has started ('${order.status}'). Please contact studio support.`,
+        message: `Order cannot be cancelled online once handcrafting or processing has started ('${order.status}'). Please contact studio support.`,
       })
     }
 
@@ -525,7 +521,10 @@ export async function cancelOrder(req, res, next) {
 
     // 3. Determine if payment was actually captured / paid
     const isPaid =
-      (order.paymentStatus === 'Paid' || order.status === 'Confirmed' || order.status === 'Paid') &&
+      (order.paymentStatus === 'Paid' ||
+        order.status === 'Confirmed' ||
+        order.status === 'Order Confirmed' ||
+        order.status === 'Paid') &&
       Boolean(rzpPaymentId && rzpPaymentId.startsWith('pay_'))
 
     // =========================================================================
@@ -537,7 +536,7 @@ export async function cancelOrder(req, res, next) {
       order.refundAmount = 0
       order.refundStatus = 'None'
       order.paymentStatus = order.paymentStatus === 'Failed' ? 'Failed' : 'Pending'
-      order.notes = `Cancellation Reason: ${reason} (Unpaid order - No payment captured, no refund required)`
+      order.notes = `Cancellation Reason: ${reason} (${isAdmin ? 'Admin' : 'Customer'} cancellation — Unpaid order, no payment captured)`
       order.statusHistory.push({
         status: 'Cancelled',
         note: `${reason} — Unpaid order cancelled. No payment was charged.`,
@@ -844,6 +843,7 @@ export async function listAllOrders(req, res, next) {
     const totalOrders = await Order.countDocuments(query)
     const skip = (Number(page) - 1) * Number(limit)
     const orders = await Order.find(query)
+      .populate('user', 'name email phone profileImage isVerified provider googleId')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit))
@@ -861,21 +861,6 @@ export async function listAllOrders(req, res, next) {
   } catch (err) {
     next(err)
   }
-}
-
-const ALLOWED_FULFILLMENT_TRANSITIONS = {
-  'Order Confirmed': ['Handcrafting in Studio'],
-  'Confirmed': ['Handcrafting in Studio'],
-  'Handcrafting in Studio': ['Studio Processing'],
-  'Handcrafting': ['Studio Processing'],
-  'Studio Processing': ['Packed & Sealed'],
-  'Processing': ['Packed & Sealed'],
-  'Packed & Sealed': ['Packed & Dispatched'],
-  'Packed': ['Packed & Dispatched'],
-  'Packed & Dispatched': ['Shipped'],
-  'Shipped': ['Out For Delivery'],
-  'Out For Delivery': ['Delivered'],
-  'Delivered': [],
 }
 
 function normalizeFulfillmentStatus(st) {
@@ -917,28 +902,12 @@ export async function updateOrderStatus(req, res, next) {
       })
     }
 
-    // 3. If order is already Delivered
-    if (currentNormalized === 'Delivered' && status && normalizeFulfillmentStatus(status) !== 'Delivered') {
-      return res.status(400).json({
-        message: "Order is already marked Delivered. Fulfillment lifecycle is complete.",
-      })
-    }
-
     let statusChanged = false
     if (status) {
       const targetNormalized = normalizeFulfillmentStatus(status)
 
-      // If status is changing, validate transition against allowed lifecycle
+      // Allow admin full freedom to change fulfillment status to any stage after order confirmation
       if (targetNormalized !== currentNormalized) {
-        const allowedNext = ALLOWED_FULFILLMENT_TRANSITIONS[currentNormalized] || []
-        const isAllowed = allowedNext.some((s) => normalizeFulfillmentStatus(s) === targetNormalized)
-
-        if (!isAllowed) {
-          return res.status(400).json({
-            message: `Invalid fulfillment status transition from '${order.status}' to '${status}'. Allowed next step is: ${allowedNext.join(', ') || 'None (Delivered)'}.`,
-          })
-        }
-
         order.status = targetNormalized
         statusChanged = true
         order.statusHistory.push({

@@ -188,7 +188,7 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
           </button>
 
           <div className="flex items-center gap-3">
-            {['Pending Payment', 'Paid', 'Confirmed', 'Processing'].includes(order.status) && (
+            {['Pending Payment', 'Pending', 'Order Confirmed', 'Confirmed', 'Paid'].includes(order.status) && (
               <button
                 onClick={() => setShowCancelInput((v) => !v)}
                 className="text-xs font-bold text-rose-700 hover:underline uppercase"
@@ -212,6 +212,15 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
         {showCancelInput && (
           <form onSubmit={handleCancelOrder} className="p-4 bg-rose-50 border border-rose-200 space-y-3">
             <h4 className="font-bold text-xs text-rose-900 uppercase">Confirm Order Cancellation</h4>
+            {order.paymentStatus === 'Paid' || order.status === 'Order Confirmed' || order.status === 'Confirmed' || order.status === 'Paid' ? (
+              <p className="text-[0.7rem] text-rose-800">
+                Customer cancellation incurs a 3% payment processing fee. The net 97% refund ({formatPrice(Math.max(0, (order.grandTotal || order.total || 0) - Math.round((order.grandTotal || order.total || 0) * 0.03)))}) will be automatically credited back to your payment method within 5–7 banking days.
+              </p>
+            ) : (
+              <p className="text-[0.7rem] text-rose-800">
+                This order is unpaid. Cancellation is immediate and no payment will be charged.
+              </p>
+            )}
             <input
               type="text"
               required

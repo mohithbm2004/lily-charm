@@ -102,27 +102,18 @@ export function exportUsersToCSV(users = [], orders = [], customRequests = []) {
   }
 
   const rows = users.map((u) => {
-    const uEmail = u.email?.toLowerCase().trim()
     const uIdStr = u._id ? u._id.toString() : ''
 
     const userOrdersList = (orders || []).filter((o) => {
       const oUserId = (o.user?._id || o.user)?.toString()
-      const oEmail = (o.email || o.shippingAddress?.email)?.toLowerCase().trim()
-      if (uIdStr && oUserId && oUserId === uIdStr) return true
-      if (uEmail && oEmail && oEmail === uEmail) return true
-      if (Array.isArray(u.alternateEmails) && oEmail && u.alternateEmails.some((alt) => alt.toLowerCase().trim() === oEmail)) return true
-      return false
+      return Boolean(uIdStr && oUserId && oUserId === uIdStr)
     })
 
     const totalSpent = userOrdersList.reduce((sum, o) => sum + (o.grandTotal || o.total || 0), 0)
 
     const userRequestsList = (customRequests || []).filter((r) => {
       const rUserId = (r.user?._id || r.user)?.toString()
-      const rEmail = r.email?.toLowerCase().trim()
-      if (uIdStr && rUserId && rUserId === uIdStr) return true
-      if (uEmail && rEmail && rEmail === uEmail) return true
-      if (Array.isArray(u.alternateEmails) && rEmail && u.alternateEmails.some((alt) => alt.toLowerCase().trim() === rEmail)) return true
-      return false
+      return Boolean(uIdStr && rUserId && rUserId === uIdStr)
     })
 
     return {
