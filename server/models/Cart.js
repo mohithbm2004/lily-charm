@@ -22,6 +22,37 @@ const cartSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
+    ownerName: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    ownerEmail: {
+      type: String,
+      default: '',
+      lowercase: true,
+      trim: true,
+    },
+    ownerPhone: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    cartValue: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    totalItems: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    itemCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     items: {
       type: [cartItemSchema],
       default: [],

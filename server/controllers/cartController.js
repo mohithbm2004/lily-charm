@@ -1,8 +1,41 @@
 import Cart from '../models/Cart.js'
 import Product from '../models/Product.js'
+import User from '../models/User.js'
 import { emitCartUpdated } from '../socket.js'
 
 const MAX_QTY_PER_PRODUCT = 4
+
+/**
+ * Helper to resolve user name and contact info for MongoDB Cart document
+ */
+async function resolveOwnerDetails(userId, reqUser) {
+  let name = reqUser?.name || ''
+  let email = reqUser?.email || ''
+  let phone = reqUser?.phone || ''
+
+  if (!name || !email) {
+    try {
+      const u = await User.findById(userId).lean()
+      if (u) {
+        name = u.name || name
+        email = u.email || email
+        phone = u.phone || phone
+      }
+    } catch {}
+  }
+
+  return { ownerName: name, ownerEmail: email, ownerPhone: phone }
+}
+
+/**
+ * Helper to compute total cart monetary value and item counts
+ */
+function calculateCartTotals(items = []) {
+  const cartValue = items.reduce((sum, i) => sum + (Number(i.price) || 0) * (Number(i.qty) || 1), 0)
+  const totalItems = items.reduce((sum, i) => sum + (Number(i.qty) || 1), 0)
+  const itemCount = items.length
+  return { cartValue, totalItems, itemCount }
+}
 
 /**
  * Sanitize cart items against authoritative Product records in database
@@ -59,18 +92,45 @@ export async function getCart(req, res, next) {
     let cart = await Cart.findOne({ user: userId })
 
     if (!cart) {
-      return res.status(200).json({ items: [], coupon: null })
+      return res.status(200).json({ items: [], coupon: null, cartValue: 0, ownerName: req.user?.name || '' })
     }
 
     const sanitizedItems = await sanitizeCartItems(cart.items)
+    const totals = calculateCartTotals(sanitizedItems)
+    const owner = await resolveOwnerDetails(userId, req.user)
+
+    let needSave = false
     if (JSON.stringify(sanitizedItems) !== JSON.stringify(cart.items)) {
       cart.items = sanitizedItems
+      needSave = true
+    }
+
+    if (
+      !cart.ownerName ||
+      !cart.ownerEmail ||
+      cart.cartValue !== totals.cartValue ||
+      cart.totalItems !== totals.totalItems
+    ) {
+      cart.ownerName = owner.ownerName
+      cart.ownerEmail = owner.ownerEmail
+      cart.ownerPhone = owner.ownerPhone
+      cart.cartValue = totals.cartValue
+      cart.totalItems = totals.totalItems
+      cart.itemCount = totals.itemCount
+      needSave = true
+    }
+
+    if (needSave) {
       await cart.save()
     }
 
     res.status(200).json({
       items: cart.items,
       coupon: cart.coupon,
+      ownerName: cart.ownerName,
+      ownerEmail: cart.ownerEmail,
+      cartValue: cart.cartValue,
+      totalItems: cart.totalItems,
       updatedAt: cart.updatedAt,
     })
   } catch (err) {
@@ -85,18 +145,38 @@ export async function saveCart(req, res, next) {
     const { items = [], coupon = null } = req.body
 
     const sanitizedItems = await sanitizeCartItems(items)
+    const totals = calculateCartTotals(sanitizedItems)
+    const owner = await resolveOwnerDetails(userId, req.user)
 
     const cart = await Cart.findOneAndUpdate(
       { user: userId },
-      { items: sanitizedItems, coupon: coupon || null },
+      {
+        items: sanitizedItems,
+        coupon: coupon || null,
+        ownerName: owner.ownerName,
+        ownerEmail: owner.ownerEmail,
+        ownerPhone: owner.ownerPhone,
+        cartValue: totals.cartValue,
+        totalItems: totals.totalItems,
+        itemCount: totals.itemCount,
+      },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     )
 
-    emitCartUpdated(userId, { items: cart.items, coupon: cart.coupon })
+    emitCartUpdated(userId, {
+      items: cart.items,
+      coupon: cart.coupon,
+      ownerName: cart.ownerName,
+      cartValue: cart.cartValue,
+    })
 
     res.status(200).json({
       items: cart.items,
       coupon: cart.coupon,
+      ownerName: cart.ownerName,
+      ownerEmail: cart.ownerEmail,
+      cartValue: cart.cartValue,
+      totalItems: cart.totalItems,
       updatedAt: cart.updatedAt,
     })
   } catch (err) {
@@ -142,19 +222,39 @@ export async function mergeCart(req, res, next) {
 
     const mergedList = Array.from(itemMap.values())
     const sanitizedItems = await sanitizeCartItems(mergedList)
+    const totals = calculateCartTotals(sanitizedItems)
+    const owner = await resolveOwnerDetails(userId, req.user)
     const finalCoupon = guestCoupon || (existingCart ? existingCart.coupon : null)
 
     const cart = await Cart.findOneAndUpdate(
       { user: userId },
-      { items: sanitizedItems, coupon: finalCoupon },
+      {
+        items: sanitizedItems,
+        coupon: finalCoupon,
+        ownerName: owner.ownerName,
+        ownerEmail: owner.ownerEmail,
+        ownerPhone: owner.ownerPhone,
+        cartValue: totals.cartValue,
+        totalItems: totals.totalItems,
+        itemCount: totals.itemCount,
+      },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     )
 
-    emitCartUpdated(userId, { items: cart.items, coupon: cart.coupon })
+    emitCartUpdated(userId, {
+      items: cart.items,
+      coupon: cart.coupon,
+      ownerName: cart.ownerName,
+      cartValue: cart.cartValue,
+    })
 
     res.status(200).json({
       items: cart.items,
       coupon: cart.coupon,
+      ownerName: cart.ownerName,
+      ownerEmail: cart.ownerEmail,
+      cartValue: cart.cartValue,
+      totalItems: cart.totalItems,
       updatedAt: cart.updatedAt,
     })
   } catch (err) {
@@ -166,15 +266,26 @@ export async function mergeCart(req, res, next) {
 export async function clearCart(req, res, next) {
   try {
     const userId = req.user._id
+    const owner = await resolveOwnerDetails(userId, req.user)
+
     const cart = await Cart.findOneAndUpdate(
       { user: userId },
-      { items: [], coupon: null },
+      {
+        items: [],
+        coupon: null,
+        ownerName: owner.ownerName,
+        ownerEmail: owner.ownerEmail,
+        ownerPhone: owner.ownerPhone,
+        cartValue: 0,
+        totalItems: 0,
+        itemCount: 0,
+      },
       { upsert: true, new: true }
     )
 
-    emitCartUpdated(userId, { items: [], coupon: null })
+    emitCartUpdated(userId, { items: [], coupon: null, cartValue: 0, ownerName: owner.ownerName })
 
-    res.status(200).json({ success: true, items: [], coupon: null })
+    res.status(200).json({ success: true, items: [], coupon: null, cartValue: 0 })
   } catch (err) {
     next(err)
   }

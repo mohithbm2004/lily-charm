@@ -79,13 +79,17 @@ function reducer(state, action) {
       return changed ? { ...state, items: updatedItems } : state
     }
     case 'ADD': {
-      const existing = state.items.find((i) => i.id === action.product.id)
-      if (existing) {
-        const newQty = Math.min(MAX_QTY_PER_PRODUCT, existing.qty + action.qty)
+      const pId = String(action.product?.id || action.product?._id || action.product?.slug || '')
+      const existingIndex = state.items.findIndex(
+        (i) => String(i.id) === pId || String(i._id) === pId || (i.slug && i.slug === pId)
+      )
+      if (existingIndex > -1) {
+        const existing = state.items[existingIndex]
+        const newQty = Math.min(MAX_QTY_PER_PRODUCT, existing.qty + (Number(action.qty) || 1))
         return {
           ...state,
-          items: state.items.map((i) =>
-            i.id === action.product.id ? { ...i, qty: newQty } : i
+          items: state.items.map((i, idx) =>
+            idx === existingIndex ? { ...i, qty: newQty } : i
           ),
         }
       }
@@ -93,24 +97,43 @@ function reducer(state, action) {
         ...state,
         items: [
           ...state.items,
-          { ...action.product, qty: Math.min(MAX_QTY_PER_PRODUCT, Math.max(1, action.qty)) },
+          {
+            ...action.product,
+            id: pId || action.product.id,
+            qty: Math.min(MAX_QTY_PER_PRODUCT, Math.max(1, Number(action.qty) || 1)),
+          },
         ],
       }
     }
-    case 'REMOVE':
-      return { ...state, items: state.items.filter((i) => i.id !== action.id) }
-    case 'SET_QTY':
-      if (action.qty <= 0) {
-        return { ...state, items: state.items.filter((i) => i.id !== action.id) }
+    case 'REMOVE': {
+      const targetId = String(action.id)
+      return {
+        ...state,
+        items: state.items.filter(
+          (i) => String(i.id) !== targetId && String(i._id) !== targetId && (i.slug ? i.slug !== targetId : true)
+        ),
+      }
+    }
+    case 'SET_QTY': {
+      const targetId = String(action.id)
+      const newQty = Number(action.qty)
+      if (newQty <= 0) {
+        return {
+          ...state,
+          items: state.items.filter(
+            (i) => String(i.id) !== targetId && String(i._id) !== targetId && (i.slug ? i.slug !== targetId : true)
+          ),
+        }
       }
       return {
         ...state,
         items: state.items.map((i) =>
-          i.id === action.id
-            ? { ...i, qty: Math.min(MAX_QTY_PER_PRODUCT, Math.max(1, action.qty)) }
+          String(i.id) === targetId || String(i._id) === targetId || (i.slug && i.slug === targetId)
+            ? { ...i, qty: Math.min(MAX_QTY_PER_PRODUCT, Math.max(1, newQty)) }
             : i
         ),
       }
+    }
     case 'OPEN':
       return { ...state, open: true }
     case 'CLOSE':
@@ -145,6 +168,7 @@ export function CartProvider({ children }) {
   const [dbCoupons, setDbCoupons] = useState([])
   const { user, token } = useAuth()
   const isInitialSyncDone = useRef(false)
+  const isRemoteUpdate = useRef(false)
 
   // 1. Synchronously persist to localStorage on every items or coupon change
   useEffect(() => {
@@ -169,6 +193,7 @@ export function CartProvider({ children }) {
           try {
             const parsed = JSON.parse(e.newValue)
             if (Array.isArray(parsed.items)) {
+              isRemoteUpdate.current = true
               dispatch({
                 type: 'SET_CART',
                 items: parsed.items,
@@ -177,6 +202,7 @@ export function CartProvider({ children }) {
             }
           } catch {}
         } else {
+          isRemoteUpdate.current = true
           dispatch({ type: 'CLEAR' })
         }
       }
@@ -203,6 +229,7 @@ export function CartProvider({ children }) {
         if (res.ok && isMounted) {
           const data = await res.json()
           if (Array.isArray(data.items)) {
+            isRemoteUpdate.current = true
             dispatch({ type: 'SET_CART', items: data.items, coupon: data.coupon })
           }
           isInitialSyncDone.current = true
@@ -220,9 +247,14 @@ export function CartProvider({ children }) {
     }
   }, [user, token])
 
-  // 4. Debounced Server-Side Save for Logged-In User
+  // 4. Debounced Server-Side Save for Logged-In User (only on local user modifications!)
   useEffect(() => {
     if (!token || !user || !isInitialSyncDone.current) return
+
+    if (isRemoteUpdate.current) {
+      isRemoteUpdate.current = false
+      return
+    }
 
     const timeout = setTimeout(async () => {
       try {
@@ -252,6 +284,7 @@ export function CartProvider({ children }) {
 
     const handleCartUpdated = (payload) => {
       if (payload && Array.isArray(payload.items)) {
+        isRemoteUpdate.current = true
         dispatch({
           type: 'SET_CART',
           items: payload.items,
