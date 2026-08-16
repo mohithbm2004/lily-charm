@@ -20,6 +20,7 @@ import {
   sendOrderConfirmationEmail,
   sendAdminNewOrderNotification,
 } from '../utils/emailService.js'
+import { ENV } from '../config/env.js'
 
 async function processCustomImages(req, folder = 'lily-charm/custom-requests') {
   const rawList = []
@@ -324,7 +325,7 @@ export async function createQuoteRazorpayOrder(req, res, next) {
       quotedPrice: price,
       shippingCharge: shipping,
       totalAmount,
-      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_live_TNkyGJugajutew',
+      key_id: ENV.RAZORPAY.KEY_ID,
     })
   } catch (err) {
     next(err)

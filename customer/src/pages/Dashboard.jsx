@@ -8,7 +8,7 @@ import { useAlert } from '../context/AlertContext'
 import { useStudio } from '../context/StudioContext'
 import OrderDetailsModal from '../components/OrderDetailsModal'
 import OrderTimeline from '../components/OrderTimeline'
-import { API_URL } from '../config/api'
+import { API_URL, RAZORPAY_KEY_ID } from '../config/api'
 import { getSocket } from '../services/socket'
 
 const tabs = ['My Orders', 'Profile Details', 'Custom Price Quotes', 'Saved Addresses']
@@ -300,7 +300,7 @@ export default function Dashboard() {
 
       // 2. Launch Razorpay Standard Checkout Modal
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_TNkyGJugajutew',
+        key: rzpOrderData?.key_id || RAZORPAY_KEY_ID,
         amount: rzpOrderData.amount,
         currency: 'INR',
         name: 'Lily Charm Flower Studio',

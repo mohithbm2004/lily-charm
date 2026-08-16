@@ -11,6 +11,7 @@ import Setting from '../models/Setting.js'
 import { generateInvoicePDF } from '../utils/pdfGenerator.js'
 import { sendOrderConfirmationEmail, sendOrderStatusEmail, sendAdminNewOrderNotification } from '../utils/emailService.js'
 import { emitOrderCreated, emitOrderUpdated, emitOrderCancelled, emitCartUpdated } from '../socket.js'
+import { ENV } from '../config/env.js'
 
 // POST /api/create-order or /api/orders/create-razorpay-order
 export async function createRazorpayOrder(req, res, next) {
@@ -254,7 +255,7 @@ export async function createOrder(req, res, next) {
     res.status(201).json({
       ...order.toObject(),
       razorpayOrderId,
-      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_live_TNkyGJugajutew',
+      key_id: ENV.RAZORPAY.KEY_ID,
     })
   } catch (err) {
     next(err)

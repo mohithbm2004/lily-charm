@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { useAlert } from '../context/AlertContext'
 import { useStudio } from '../context/StudioContext'
 import AuthModal from './AuthModal'
-import { API_URL } from '../config/api'
+import { API_URL, RAZORPAY_KEY_ID } from '../config/api'
 
 export default function CustomDesignModal({ isOpen, onClose }) {
   const { user, token } = useAuth()
@@ -263,7 +263,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
 
       // 2. Open Razorpay Payment Gateway Modal
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_TNkyGJugajutew',
+        key: rzpOrderData.key_id || RAZORPAY_KEY_ID,
         amount: rzpOrderData.amount,
         currency: 'INR',
         name: 'Lily Charm Flower Studio',
