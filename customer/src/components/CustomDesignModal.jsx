@@ -270,9 +270,9 @@ export default function CustomDesignModal({ isOpen, onClose }) {
         description: `Payment for Custom Artwork Quote #${reqDoc._id.slice(-6)}`,
         order_id: razorpayOrderId,
         prefill: {
-          name: reqDoc.name || user?.name || '',
-          email: reqDoc.email || user?.email || '',
-          contact: reqDoc.phone || user?.phone || '',
+          name: user?.name || reqDoc.name || '',
+          email: user?.email || reqDoc.email || '',
+          contact: user?.phone || reqDoc.phone || '',
         },
         theme: { color: '#2B3925' },
         handler: async function (response) {

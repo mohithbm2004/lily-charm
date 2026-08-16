@@ -260,9 +260,9 @@ export default function Checkout() {
         description: 'Handcrafted Velvet Floral Art Order',
         order_id: razorpayOrderId,
         prefill: {
-          name: form.name,
-          email: form.email,
-          contact: form.phone,
+          name: user?.name || form.name || '',
+          email: user?.email || form.email || '',
+          contact: user?.phone || form.phone || '',
         },
         theme: {
           color: '#882233',

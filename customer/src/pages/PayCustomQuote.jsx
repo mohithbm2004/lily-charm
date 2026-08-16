@@ -23,7 +23,7 @@ import { useAuth } from '../context/AuthContext'
 export default function PayCustomQuote() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const authToken = token || localStorage.getItem('lilycharm_token') || ''
 
   const [quote, setQuote] = useState(null)
@@ -119,9 +119,9 @@ export default function PayCustomQuote() {
         description: `Custom Artwork Quote #${quote.id.slice(-6)}`,
         order_id: razorpayOrderId,
         prefill: {
-          name: quote.name || '',
-          email: quote.email || '',
-          contact: quote.phone || '',
+          name: user?.name || quote.name || '',
+          email: user?.email || quote.email || '',
+          contact: user?.phone || quote.phone || '',
         },
         theme: {
           color: '#2B3925',

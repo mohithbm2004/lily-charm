@@ -306,9 +306,9 @@ export default function Dashboard() {
         description: `Payment for Custom Artwork Quote #${req._id.slice(-6)}`,
         order_id: razorpayOrderId,
         prefill: {
-          name: req.name || userProfile.name,
-          email: req.email || userProfile.email,
-          contact: req.phone || userProfile.phone || '',
+          name: user?.name || userProfile?.name || req.name || '',
+          email: user?.email || userProfile?.email || req.email || '',
+          contact: user?.phone || userProfile?.phone || req.phone || '',
         },
         theme: { color: '#2B3925' },
         handler: async function (response) {
