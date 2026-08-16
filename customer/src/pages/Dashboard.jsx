@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { formatPrice } from '../lib/format'
 import Reveal from '../components/Reveal'
-import { User, Package, MapPin, Sparkles, Upload, CheckCircle2, Search, Edit3, LogOut, Download, Eye, Truck, RefreshCw, XCircle } from 'lucide-react'
+import { User, Package, MapPin, Sparkles, Upload, CheckCircle2, Search, Edit3, LogOut, Download, Eye, Truck, RefreshCw, XCircle, Lock } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useAlert } from '../context/AlertContext'
 import { useStudio } from '../context/StudioContext'
@@ -375,7 +374,6 @@ export default function Dashboard() {
 
     const errs = {}
     if (!userProfile?.name?.trim()) errs.name = 'Full name is required.'
-    if (!userProfile?.email?.trim()) errs.email = 'Email address is required.'
     if (userProfile?.pincode && !/^\d{6}$/.test(userProfile.pincode)) {
       errs.pincode = 'Please enter a valid 6-digit numeric PIN code.'
     }
@@ -631,30 +629,31 @@ export default function Dashboard() {
                 </div>
 
                 <div>
-                  <label className="block font-bold uppercase mb-1">
-                    Email Address <span className="text-red-500 font-bold ml-0.5">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    aria-required="true"
-                    value={userProfile?.email || ''}
-                    onChange={(e) => {
-                      setUserProfile({ ...userProfile, email: e.target.value })
-                      if (profileErrors.email) setProfileErrors((prev) => ({ ...prev, email: '' }))
-                    }}
-                    className={`w-full border p-3 font-semibold transition-colors ${
-                      profileErrors.email
-                        ? 'border-red-500 focus:border-red-500 bg-red-50/20'
-                        : 'border-[var(--color-line)] bg-[var(--color-bg)]'
-                    }`}
-                    placeholder="e.g. customer@example.com"
-                  />
-                  {profileErrors.email && (
-                    <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                      ⚠️ {profileErrors.email}
-                    </p>
-                  )}
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold uppercase text-[0.68rem] text-[var(--color-ink)]">
+                      Email Address
+                    </label>
+                    <span className="text-[0.65rem] text-[var(--color-ink-soft)] flex items-center gap-1 font-semibold">
+                      <Lock size={11} className="text-amber-600" /> Non-modifiable
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      readOnly
+                      disabled
+                      value={userProfile?.email || user?.email || ''}
+                      className="w-full border border-[var(--color-line)] bg-zinc-100/90 dark:bg-zinc-800/50 text-[var(--color-ink-soft)] p-3 font-semibold rounded-none cursor-not-allowed select-none opacity-80"
+                      placeholder="customer@example.com"
+                      title="Registered email address cannot be changed after sign up."
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-soft)] pointer-events-none">
+                      <Lock size={14} className="opacity-60" />
+                    </div>
+                  </div>
+                  <p className="text-[0.65rem] text-[var(--color-ink-soft)] mt-1">
+                    Your registered email is permanently linked to your account orders and verification.
+                  </p>
                 </div>
               </div>
 
