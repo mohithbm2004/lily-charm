@@ -133,14 +133,16 @@ export default function Navbar() {
                 </button>
               )}
 
+              {/* Cart Drawer Trigger */}
               <button
                 onClick={openCart}
                 aria-label={`Open cart, ${count} items`}
-                className="relative flex items-center gap-1 text-[var(--color-ink)] hover:text-[var(--color-primary)] transition-colors ml-1 p-1"
+                className="relative flex items-center justify-center p-2 text-[var(--color-ink)] hover:text-[var(--color-primary)] hover:bg-black/5 rounded-full transition-all cursor-pointer group shrink-0 ml-1"
+                title="View Shopping Cart"
               >
-                <ShoppingBag size={18} strokeWidth={1.5} />
+                <ShoppingBag size={22} strokeWidth={1.8} className="transition-transform group-hover:scale-110 text-[var(--color-ink)]" />
                 {count > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-[var(--color-primary)] text-white text-[0.6rem] w-4 h-4 rounded-full flex items-center justify-center font-sans font-bold shadow-sm">
+                  <span className="absolute -top-1 -right-1 bg-[var(--color-primary)] text-white text-[0.62rem] font-bold min-w-[1.2rem] h-[1.2rem] px-1 rounded-full flex items-center justify-center font-sans shadow-md border-2 border-[var(--color-bg)] leading-none">
                     {count}
                   </span>
                 )}
@@ -152,11 +154,12 @@ export default function Navbar() {
               <button
                 onClick={openCart}
                 aria-label={`Open cart, ${count} items`}
-                className="relative p-2 text-[var(--color-ink)] hover:text-[var(--color-primary)] transition-colors"
+                className="relative p-2 text-[var(--color-ink)] hover:text-[var(--color-primary)] transition-colors cursor-pointer"
+                title="View Shopping Cart"
               >
-                <ShoppingBag size={20} sm:size={22} strokeWidth={1.5} />
+                <ShoppingBag size={24} strokeWidth={1.8} className="text-[var(--color-ink)]" />
                 {count > 0 && (
-                  <span className="absolute 0 right-0 bg-[var(--color-primary)] text-white text-[0.58rem] w-4 h-4 rounded-full flex items-center justify-center font-sans font-bold shadow-sm">
+                  <span className="absolute top-0 right-0 bg-[var(--color-primary)] text-white text-[0.6rem] font-bold min-w-[1.15rem] h-[1.15rem] px-1 rounded-full flex items-center justify-center font-sans shadow-sm border-2 border-[var(--color-bg)] leading-none">
                     {count}
                   </span>
                 )}
