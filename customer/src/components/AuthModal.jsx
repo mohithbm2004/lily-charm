@@ -133,7 +133,13 @@ export default function AuthModal({
         body: JSON.stringify({ email: formData.email, otp: code }),
       })
 
-      const data = await res.json()
+      let data = {}
+      try {
+        data = await res.json()
+      } catch {
+        data = {}
+      }
+
       if (res.ok) {
         updateUserProfile(data.user)
         if (data.token) localStorage.setItem('lilycharm_token', data.token)
@@ -142,12 +148,18 @@ export default function AuthModal({
           onClose()
           navigate('/dashboard')
         }, 800)
-      } else {
+      } else if (res.status === 400) {
         setErrorMessage(data.message || 'Invalid verification code. Please try again.')
+      } else if (res.status === 429) {
+        setErrorMessage(data.message || 'Too many attempts. Please try again later.')
+      } else if (res.status >= 500) {
+        setErrorMessage('Something went wrong on the server. Please try again.')
+      } else {
+        setErrorMessage(data.message || 'Verification failed. Please try again.')
       }
     } catch (err) {
-      console.error('OTP Verify error:', err)
-      setErrorMessage('Could not connect. Please try again.')
+      console.error('OTP Verify network error:', err)
+      setErrorMessage('Unable to connect to the server. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -166,19 +178,29 @@ export default function AuthModal({
         body: JSON.stringify({ email: formData.email }),
       })
 
-      const data = await res.json()
+      let data = {}
+      try {
+        data = await res.json()
+      } catch {
+        data = {}
+      }
+
       if (res.ok) {
         setSuccessMessage('✉️ A new 6-digit verification code has been sent!')
         setTimeLeft(300)
         setResendCooldown(60)
         setOtpDigits(['', '', '', '', '', ''])
         setTimeout(() => inputRefs[0]?.current?.focus(), 100)
+      } else if (res.status === 429) {
+        setErrorMessage(data.message || 'Please wait before requesting another verification code.')
+      } else if (res.status >= 500) {
+        setErrorMessage('Something went wrong on the server. Please try again.')
       } else {
         setErrorMessage(data.message || 'Failed to resend verification code.')
       }
     } catch (err) {
-      console.error('Resend OTP error:', err)
-      setErrorMessage('Could not connect. Please try again.')
+      console.error('Resend OTP network error:', err)
+      setErrorMessage('Unable to connect to the server. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -210,7 +232,7 @@ export default function AuthModal({
       }
     } catch (err) {
       console.error('[GOOGLE CREDENTIAL ERROR]:', err)
-      setErrorMessage('Could not connect. Please try again.')
+      setErrorMessage('Unable to connect to the server. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -231,14 +253,14 @@ export default function AuthModal({
         }
       } catch (err) {
         console.error('[GOOGLE SIGNIN ERROR]:', err)
-        setErrorMessage('Could not connect. Please try again.')
+        setErrorMessage('Unable to connect to the server. Please try again.')
       } finally {
         setIsLoading(false)
       }
     },
     onError: (errorResponse) => {
       console.error('[GOOGLE POPUP CLOSED / CANCELLED]:', errorResponse)
-      setErrorMessage('Sign in was cancelled.')
+      setErrorMessage('Sign in with Google was cancelled or closed.')
       setIsLoading(false)
     },
   })
@@ -288,13 +310,27 @@ export default function AuthModal({
           }),
         })
 
-        const data = await res.json()
+        let data = {}
+        try {
+          data = await res.json()
+        } catch {
+          data = {}
+        }
+
         if (res.ok) {
           if (data.token) localStorage.setItem('lilycharm_token', data.token)
           setSuccessMessage('🎉 Welcome back! Signed in successfully.')
           handleAuthSuccess(data.user)
         } else if (res.status === 403 && data.requiresOtp) {
           setMode('otp')
+        } else if (res.status === 401) {
+          setErrorMessage(data.message || 'Invalid email or password.')
+        } else if (res.status === 400) {
+          setErrorMessage(data.message || 'Please enter a valid email and password.')
+        } else if (res.status === 429) {
+          setErrorMessage(data.message || 'Too many attempts. Please try again later.')
+        } else if (res.status >= 500) {
+          setErrorMessage('Something went wrong on the server. Please try again.')
         } else {
           setErrorMessage(data.message || 'Invalid email or password.')
         }
@@ -310,15 +346,27 @@ export default function AuthModal({
           }),
         })
 
-        const data = await res.json()
+        let data = {}
+        try {
+          data = await res.json()
+        } catch {
+          data = {}
+        }
+
         if (res.ok && data.requiresOtp) {
           setMode('otp')
         } else if (res.ok) {
           if (data.token) localStorage.setItem('lilycharm_token', data.token)
           setSuccessMessage('✨ Account created successfully!')
           handleAuthSuccess(data.user)
+        } else if (res.status === 400) {
+          setErrorMessage(data.message || 'Registration details are invalid. Please check and try again.')
+        } else if (res.status === 429) {
+          setErrorMessage(data.message || 'Too many attempts. Please try again later.')
+        } else if (res.status >= 500) {
+          setErrorMessage('Something went wrong on the server. Please try again.')
         } else {
-          setErrorMessage(data.message || 'Registration failed.')
+          setErrorMessage(data.message || 'Registration failed. Please try again.')
         }
       } else if (mode === 'forgot') {
         const res = await fetch(`${API_URL}/auth/forgot-password`, {
@@ -327,9 +375,19 @@ export default function AuthModal({
           body: JSON.stringify({ email: formData.email.trim() }),
         })
 
-        const data = await res.json()
+        let data = {}
+        try {
+          data = await res.json()
+        } catch {
+          data = {}
+        }
+
         if (res.ok) {
           setSuccessMessage(data.message || 'Password reset link sent to your email.')
+        } else if (res.status === 429) {
+          setErrorMessage(data.message || 'Too many requests. Please try again later.')
+        } else if (res.status >= 500) {
+          setErrorMessage('Something went wrong on the server. Please try again.')
         } else {
           setErrorMessage(
             data.message || 'Email address is not registered. Please check your email or create an account.'
@@ -337,8 +395,8 @@ export default function AuthModal({
         }
       }
     } catch (err) {
-      console.error('Auth submit error:', err)
-      setErrorMessage('Something went wrong. Please try again.')
+      console.error('Auth submit network error:', err)
+      setErrorMessage('Unable to connect to the server. Please try again.')
     } finally {
       setIsLoading(false)
     }

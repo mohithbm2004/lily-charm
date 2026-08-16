@@ -104,7 +104,12 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
         body: JSON.stringify({ email, otp: code }),
       })
 
-      const data = await res.json()
+      let data = {}
+      try {
+        data = await res.json()
+      } catch {
+        data = {}
+      }
 
       if (res.ok) {
         setSuccessMessage('🎉 Email verified successfully!')
@@ -112,14 +117,22 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
         setTimeout(() => {
           onClose()
         }, 800)
+      } else if (res.status === 400) {
+        setErrorMessage(data.message || 'Invalid verification code. Please try again.')
+        setOtpDigits(['', '', '', '', '', ''])
+        inputRefs[0].current?.focus()
+      } else if (res.status === 429) {
+        setErrorMessage(data.message || 'Too many attempts. Please try again later.')
+      } else if (res.status >= 500) {
+        setErrorMessage('Something went wrong on the server. Please try again.')
       } else {
         setErrorMessage(data.message || 'Invalid verification code. Please try again.')
         setOtpDigits(['', '', '', '', '', ''])
         inputRefs[0].current?.focus()
       }
     } catch (err) {
-      console.error('OTP verify error:', err)
-      setErrorMessage('Could not connect. Please try again.')
+      console.error('OTP verify network error:', err)
+      setErrorMessage('Unable to connect to the server. Please try again.')
     } finally {
       setIsVerifying(false)
     }
@@ -138,19 +151,29 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
         body: JSON.stringify({ email }),
       })
 
-      const data = await res.json()
+      let data = {}
+      try {
+        data = await res.json()
+      } catch {
+        data = {}
+      }
+
       if (res.ok) {
         setSuccessMessage('✨ A new 6-digit verification code has been sent to your email.')
         setResendCooldown(60)
         setTimeLeft(300)
         setOtpDigits(['', '', '', '', '', ''])
         inputRefs[0].current?.focus()
+      } else if (res.status === 429) {
+        setErrorMessage(data.message || 'Please wait before requesting another code.')
+      } else if (res.status >= 500) {
+        setErrorMessage('Something went wrong on the server. Please try again.')
       } else {
         setErrorMessage(data.message || 'Failed to resend verification code.')
       }
     } catch (err) {
-      console.error('Resend OTP error:', err)
-      setErrorMessage('Could not connect. Please try again.')
+      console.error('Resend OTP network error:', err)
+      setErrorMessage('Unable to connect to the server. Please try again.')
     } finally {
       setIsResending(false)
     }

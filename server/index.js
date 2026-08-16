@@ -53,11 +53,14 @@ app.use(
         allowedOrigins.includes(origin) ||
         origin.endsWith('.vercel.app') ||
         origin.endsWith('.onrender.com') ||
+        origin.endsWith('.netlify.app') ||
+        origin.endsWith('.railway.app') ||
+        origin.endsWith('lilycharm.in') ||
         !ENV.IS_PRODUCTION
       ) {
         return callback(null, true)
       }
-      return callback(new Error('CORS origin denied.'))
+      return callback(null, false)
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

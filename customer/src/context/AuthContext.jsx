@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-
 import { API_URL } from '../config/api'
 
 const AuthContext = createContext(null)
@@ -35,20 +34,36 @@ export function AuthProvider({ children }) {
       const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email?.trim(), password }),
       })
 
-      const data = await res.json()
+      let data = {}
+      try {
+        data = await res.json()
+      } catch {
+        data = {}
+      }
+
       if (res.ok) {
         setUser(data.user)
         setToken(data.token)
-        return { ok: true, user: data.user }
+        return { ok: true, user: data.user, token: data.token }
+      } else if (res.status === 401) {
+        return { ok: false, error: data.message || 'Invalid email or password.' }
+      } else if (res.status === 429) {
+        return { ok: false, error: data.message || 'Too many attempts. Please try again later.' }
+      } else if (res.status === 403 && data.requiresOtp) {
+        return { ok: false, error: data.message || 'Verification required.', requiresOtp: true, email }
+      } else if (res.status === 403) {
+        return { ok: false, error: data.message || 'Access denied. Please contact support.' }
+      } else if (res.status >= 500) {
+        return { ok: false, error: 'Something went wrong on the server. Please try again.' }
       } else {
         return { ok: false, error: data.message || 'Sign in failed. Please check your credentials.' }
       }
     } catch (err) {
-      console.error('Login error:', err)
-      return { ok: false, error: 'Could not connect. Please try again.' }
+      console.error('Login network error:', err)
+      return { ok: false, error: 'Unable to connect to the server. Please try again.' }
     }
   }
 
@@ -57,20 +72,32 @@ export function AuthProvider({ children }) {
       const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, phone }),
+        body: JSON.stringify({ name: name?.trim(), email: email?.trim(), password, phone: phone?.trim() }),
       })
 
-      const data = await res.json()
+      let data = {}
+      try {
+        data = await res.json()
+      } catch {
+        data = {}
+      }
+
       if (res.ok) {
-        setUser(data.user)
-        setToken(data.token)
-        return { ok: true, user: data.user }
+        if (data.user) setUser(data.user)
+        if (data.token) setToken(data.token)
+        return { ok: true, user: data.user, token: data.token, requiresOtp: data.requiresOtp }
+      } else if (res.status === 400) {
+        return { ok: false, error: data.message || 'Please check your registration details.' }
+      } else if (res.status === 429) {
+        return { ok: false, error: data.message || 'Too many attempts. Please try again later.' }
+      } else if (res.status >= 500) {
+        return { ok: false, error: 'Something went wrong on the server. Please try again.' }
       } else {
         return { ok: false, error: data.message || 'Could not create account. Please try again.' }
       }
     } catch (err) {
-      console.error('Register error:', err)
-      return { ok: false, error: 'Could not connect. Please try again.' }
+      console.error('Register network error:', err)
+      return { ok: false, error: 'Unable to connect to the server. Please try again.' }
     }
   }
 
@@ -82,17 +109,29 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({ googleToken: googleTokenOrCredential, credential: googleTokenOrCredential }),
       })
 
-      const data = await res.json()
+      let data = {}
+      try {
+        data = await res.json()
+      } catch {
+        data = {}
+      }
+
       if (res.ok) {
         setUser(data.user)
         setToken(data.token)
         return { ok: true, user: data.user, token: data.token }
+      } else if (res.status === 400) {
+        return { ok: false, error: data.message || 'Invalid Google authentication request.' }
+      } else if (res.status === 429) {
+        return { ok: false, error: data.message || 'Too many attempts. Please try again later.' }
+      } else if (res.status >= 500) {
+        return { ok: false, error: 'Something went wrong on the server. Please try again.' }
       } else {
         return { ok: false, error: data.message || 'Could not sign in with Google. Please try again.' }
       }
     } catch (err) {
-      console.error('Google Auth error:', err)
-      return { ok: false, error: 'Could not connect. Please try again.' }
+      console.error('Google Auth network error:', err)
+      return { ok: false, error: 'Unable to connect to the server. Please try again.' }
     }
   }
 

@@ -45,16 +45,36 @@ export const ENV = {
 
   // Allowed CORS origins generator
   getCorsOrigins() {
-    const list = [
+    const rawUrls = [
       this.CLIENT_URL,
       this.ADMIN_CLIENT_URL,
+      process.env.ALLOWED_ORIGINS,
+      process.env.CORS_ORIGIN,
+      'https://lilycharm.in',
+      'https://www.lilycharm.in',
       'http://localhost:5173',
       'http://localhost:5174',
+      'http://localhost:4173',
       'http://localhost:3000',
       'http://127.0.0.1:5173',
       'http://127.0.0.1:5174',
+      'http://127.0.0.1:4173',
     ]
-    return list.filter(Boolean)
+    const origins = []
+    rawUrls.forEach((u) => {
+      if (!u) return
+      String(u)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach((entry) => {
+          origins.push(entry)
+          if (entry.startsWith('https://') && !entry.startsWith('https://www.')) {
+            origins.push(entry.replace('https://', 'https://www.'))
+          }
+        })
+    })
+    return [...new Set(origins)]
   },
 }
 
