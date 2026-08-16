@@ -14,7 +14,7 @@ export default function Footer() {
 
   return (
     <footer className="bg-[#212B1C] text-[#FAF7F2] border-t border-white/10 w-full max-w-full">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-12 sm:py-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-12">
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-12 sm:py-16 grid grid-cols-1 sm:grid-cols-2 ${collections && collections.length > 0 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-8 sm:gap-12`}>
         <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2.5 sm:gap-3">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-[#F5E8D0]/40 p-0.5 shadow-sm overflow-hidden bg-white shrink-0">
@@ -43,11 +43,11 @@ export default function Footer() {
             <li><Link to="/faq" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Studio FAQ</Link></li>
           </ul>
         </div>
-        <div>
-          <p className="text-[#F5E8D0] font-bold text-xs tracking-[0.24em] uppercase mb-3 sm:mb-4 font-[var(--font-button)]">Collections</p>
-          <ul className="space-y-2 sm:space-y-2.5 text-xs sm:text-sm text-[#FAF7F2]">
-            {collections && collections.length > 0 ? (
-              collections.map((col) => (
+        {collections && collections.length > 0 && (
+          <div>
+            <p className="text-[#F5E8D0] font-bold text-xs tracking-[0.24em] uppercase mb-3 sm:mb-4 font-[var(--font-button)]">Collections</p>
+            <ul className="space-y-2 sm:space-y-2.5 text-xs sm:text-sm text-[#FAF7F2]">
+              {collections.map((col) => (
                 <li key={col.id || col._id || col.slug}>
                   <Link
                     to={`/collections#${col.slug || col.id}`}
@@ -56,18 +56,10 @@ export default function Footer() {
                     {col.title}
                   </Link>
                 </li>
-              ))
-            ) : (
-              <>
-                <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Velvet Lilies</Link></li>
-                <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Velvet Tulips</Link></li>
-                <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Golden Sunflowers</Link></li>
-                <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Heart Bouquets</Link></li>
-                <li><Link to="/collections" className="hover:text-[#F5E8D0] hover:underline underline-offset-4 transition-colors">Studio Baskets</Link></li>
-              </>
-            )}
-          </ul>
-        </div>
+              ))}
+            </ul>
+          </div>
+        )}
         <div>
           <p className="text-[#F5E8D0] font-bold text-xs tracking-[0.24em] uppercase mb-3 sm:mb-4 font-[var(--font-button)]">Connect</p>
           <div className="mb-3 sm:mb-4">

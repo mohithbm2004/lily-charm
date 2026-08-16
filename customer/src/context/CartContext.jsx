@@ -100,6 +100,9 @@ function reducer(state, action) {
     case 'REMOVE':
       return { ...state, items: state.items.filter((i) => i.id !== action.id) }
     case 'SET_QTY':
+      if (action.qty <= 0) {
+        return { ...state, items: state.items.filter((i) => i.id !== action.id) }
+      }
       return {
         ...state,
         items: state.items.map((i) =>
@@ -183,7 +186,7 @@ export function CartProvider({ children }) {
     return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
-  // 3. Logged-In Server Cart Sync & Login Cart Merge
+  // 3. Logged-In Server Cart Sync
   useEffect(() => {
     if (!token || !user) {
       isInitialSyncDone.current = false
@@ -192,46 +195,25 @@ export function CartProvider({ children }) {
 
     let isMounted = true
 
-    const syncServerCart = async () => {
+    const fetchServerCart = async () => {
       try {
-        const local = loadInitialCart()
-        if (local.items.length > 0 && !isInitialSyncDone.current) {
-          // Merge guest local cart with database cart
-          const res = await fetch(`${API_URL}/cart/merge`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              guestItems: local.items,
-              coupon: local.coupon,
-            }),
-          })
-          if (res.ok && isMounted) {
-            const data = await res.json()
+        const res = await fetch(`${API_URL}/cart`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok && isMounted) {
+          const data = await res.json()
+          if (Array.isArray(data.items)) {
             dispatch({ type: 'SET_CART', items: data.items, coupon: data.coupon })
-            isInitialSyncDone.current = true
           }
-        } else if (!isInitialSyncDone.current) {
-          // Fetch existing database cart
-          const res = await fetch(`${API_URL}/cart`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-          if (res.ok && isMounted) {
-            const data = await res.json()
-            if (Array.isArray(data.items) && data.items.length > 0) {
-              dispatch({ type: 'SET_CART', items: data.items, coupon: data.coupon })
-            }
-            isInitialSyncDone.current = true
-          }
+          isInitialSyncDone.current = true
         }
       } catch (err) {
         console.warn('[CART SERVER SYNC NOTICE]:', err.message || err)
+        isInitialSyncDone.current = true
       }
     }
 
-    syncServerCart()
+    fetchServerCart()
 
     return () => {
       isMounted = false

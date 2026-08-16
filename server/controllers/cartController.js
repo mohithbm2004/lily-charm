@@ -126,7 +126,7 @@ export async function mergeCart(req, res, next) {
       const key = String(gItem.id || gItem.productId || gItem.product)
       if (itemMap.has(key)) {
         const current = itemMap.get(key)
-        current.qty = Math.min(MAX_QTY_PER_PRODUCT, current.qty + (Number(gItem.qty) || 1))
+        current.qty = Math.min(MAX_QTY_PER_PRODUCT, Math.max(current.qty, Number(gItem.qty) || 1))
         itemMap.set(key, current)
       } else {
         itemMap.set(key, {
