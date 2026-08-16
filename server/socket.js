@@ -1,23 +1,16 @@
 import { Server } from 'socket.io'
 import jwt from 'jsonwebtoken'
 import AdminSession from './models/AdminSession.js'
+import { ENV } from './config/env.js'
 
 let io = null
-
-const allowedOrigins = [
-  process.env.CLIENT_URL,
-  process.env.ADMIN_CLIENT_URL,
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:5174',
-].filter(Boolean)
 
 /**
  * Initialize Socket.IO with existing HTTP Server
  */
 export function initSocket(httpServer) {
+  const allowedOrigins = ENV.getCorsOrigins()
+
   io = new Server(httpServer, {
     cors: {
       origin: (origin, callback) => {
@@ -26,7 +19,7 @@ export function initSocket(httpServer) {
           allowedOrigins.includes(origin) ||
           origin.endsWith('.vercel.app') ||
           origin.endsWith('.onrender.com') ||
-          process.env.NODE_ENV !== 'production'
+          !ENV.IS_PRODUCTION
         ) {
           return callback(null, true)
         }
@@ -56,9 +49,9 @@ export function initSocket(httpServer) {
       }
 
       // 2. Check Customer JWT Token
-      if (token && process.env.JWT_SECRET) {
+      if (token && ENV.JWT_SECRET) {
         try {
-          const decoded = jwt.verify(token, process.env.JWT_SECRET)
+          const decoded = jwt.verify(token, ENV.JWT_SECRET)
           if (decoded && decoded.id) {
             socket.userId = String(decoded.id)
             socket.userEmail = decoded.email
@@ -76,27 +69,27 @@ export function initSocket(httpServer) {
   })
 
   io.on('connection', (socket) => {
-    if (process.env.NODE_ENV !== 'production') {
+    if (!ENV.IS_PRODUCTION) {
       console.log(`[SOCKET] Client connected: ${socket.id} (Admin: ${Boolean(socket.isAdmin)}, User: ${socket.userId || 'guest'})`)
     }
 
     // Automatically join role-based rooms
     if (socket.isAdmin) {
       socket.join('admin')
-      if (process.env.NODE_ENV !== 'production') console.log(`[SOCKET] ${socket.id} joined room: admin`)
+      if (!ENV.IS_PRODUCTION) console.log(`[SOCKET] ${socket.id} joined room: admin`)
     }
 
     if (socket.userId) {
       socket.join(`user:${socket.userId}`)
-      if (process.env.NODE_ENV !== 'production') console.log(`[SOCKET] ${socket.id} joined room: user:${socket.userId}`)
+      if (!ENV.IS_PRODUCTION) console.log(`[SOCKET] ${socket.id} joined room: user:${socket.userId}`)
     }
 
     // Explicit room join requests (with ownership verification)
     socket.on('join_user', ({ userId, token }) => {
       if (!userId) return
-      if (token && process.env.JWT_SECRET) {
+      if (token && ENV.JWT_SECRET) {
         try {
-          const decoded = jwt.verify(token, process.env.JWT_SECRET)
+          const decoded = jwt.verify(token, ENV.JWT_SECRET)
           if (String(decoded.id) === String(userId)) {
             socket.userId = String(userId)
             socket.join(`user:${userId}`)

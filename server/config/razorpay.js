@@ -1,8 +1,9 @@
 import Razorpay from 'razorpay'
+import { ENV } from './env.js'
 
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_mock1234567890',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || 'mock_razorpay_secret_key',
+  key_id: ENV.RAZORPAY.KEY_ID,
+  key_secret: ENV.RAZORPAY.KEY_SECRET,
 })
 
 export default razorpay

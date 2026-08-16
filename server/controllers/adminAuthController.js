@@ -5,11 +5,12 @@ import AdminSession from '../models/AdminSession.js'
 import { logAdminAction } from '../utils/auditLogger.js'
 import { getAdminEmail, getOrCreateAdminUser, validatePasswordStrength } from '../utils/adminUserHelper.js'
 import { generate6DigitOtp, hashToken, sendOtpEmail } from '../services/otp.service.js'
+import { ENV } from '../config/env.js'
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  secure: process.env.NODE_ENV === 'production',
+  sameSite: ENV.IS_PRODUCTION ? 'none' : 'lax',
+  secure: ENV.IS_PRODUCTION,
   maxAge: 12 * 60 * 60 * 1000, // 12 hours max
 }
 

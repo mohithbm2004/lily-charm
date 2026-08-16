@@ -1,10 +1,9 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { products as initialProducts, categories as initialCategories } from '../data/products'
 import { getSocket } from '../services/socket'
+import { API_URL } from '../config/api'
 
 const StudioContext = createContext(null)
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 const getAdminHeaders = (extraHeaders = {}) => {
   const sessionId = typeof window !== 'undefined' ? localStorage.getItem('lilycharm_admin_session_id') : null

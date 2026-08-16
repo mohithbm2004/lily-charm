@@ -141,7 +141,7 @@ export function StudioProvider({ children }) {
     const socket = getSocket()
 
     const handleProductCreated = (newProd) => {
-      if (!newProd) return
+      if (!newProd || newProd.isArchived || newProd.archived) return
       const formatted = {
         ...newProd,
         id: newProd._id || newProd.id,
@@ -154,6 +154,10 @@ export function StudioProvider({ children }) {
     const handleProductUpdated = (updatedProd) => {
       if (!updatedProd) return
       const targetId = updatedProd._id || updatedProd.id
+      if (updatedProd.isArchived || updatedProd.archived) {
+        setProducts((prev) => prev.filter((p) => p.id !== targetId && p._id !== targetId && p.slug !== updatedProd.slug))
+        return
+      }
       const formatted = {
         ...updatedProd,
         id: targetId,

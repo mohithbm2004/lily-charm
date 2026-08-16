@@ -9,6 +9,8 @@ export const API_URL =
     ? 'https://lily-charm-server.onrender.com/api'
     : 'http://localhost:5000/api'
 
-export const SOCKET_URL = API_URL.replace(/\/api\/?$/, '')
+export const SOCKET_URL = import.meta.env.VITE_WS_URL || API_URL.replace(/\/api\/?$/, '')
+
+export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_TNkyGJugajutew'
 
 export default API_URL

@@ -8,7 +8,7 @@ import AuthModal from '../components/AuthModal'
 import { CheckCircle2, ShoppingBag, AlertTriangle, LogIn, UserPlus } from 'lucide-react'
 
 import { useStudio } from '../context/StudioContext'
-import { API_URL } from '../config/api'
+import { API_URL, RAZORPAY_KEY_ID } from '../config/api'
 
 export default function Checkout() {
   const { items, subtotal, coupon: activeCoupon, discountAmount, applyCoupon, removeCoupon, clearCart } = useCart()
@@ -221,7 +221,7 @@ export default function Checkout() {
       }
 
       const savedOrder = await res.json()
-      const razorpayKey = savedOrder.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_TNkyGJugajutew'
+      const razorpayKey = savedOrder.key_id || RAZORPAY_KEY_ID
       let razorpayOrderId = savedOrder.razorpayOrderId || savedOrder.order_id || savedOrder.id
 
       if (!razorpayOrderId) {

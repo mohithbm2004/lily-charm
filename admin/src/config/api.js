@@ -9,8 +9,9 @@ export const API_URL =
     ? 'https://lily-charm-server.onrender.com/api'
     : 'http://localhost:5000/api'
 
-export const SOCKET_URL = API_URL.replace(/\/api\/?$/, '')
+export const SOCKET_URL = import.meta.env.VITE_WS_URL || API_URL.replace(/\/api\/?$/, '')
 
-export const STOREFRONT_URL = import.meta.env.VITE_STOREFRONT_URL || 'https://lilycharm.in'
+export const STOREFRONT_URL =
+  import.meta.env.VITE_STOREFRONT_URL || (isProduction ? 'https://lilycharm.in' : 'http://localhost:5173')
 
 export default API_URL

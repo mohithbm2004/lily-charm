@@ -1,8 +1,9 @@
 import bcrypt from 'bcryptjs'
 import AdminUser from '../models/AdminUser.js'
+import { ENV } from '../config/env.js'
 
 export const getAdminEmail = () => {
-  return (process.env.ADMIN_EMAIL || 'keerthanabm@lilycharm.in').toLowerCase().trim()
+  return ENV.ADMIN_EMAIL
 }
 
 /**
@@ -18,8 +19,7 @@ export async function getOrCreateAdminUser() {
     let isInitialized = true
 
     if (!hash) {
-      // Default fallback hash for 'Keerthana@2026!' if no env variable or setup has run
-      hash = await bcrypt.hash('Keerthana@2026!', 12)
+      hash = await bcrypt.hash(ENV.ADMIN_PASSWORD, 12)
     }
 
     admin = await AdminUser.create({

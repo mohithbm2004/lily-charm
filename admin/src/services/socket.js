@@ -5,7 +5,10 @@ let socket = null
 
 export function getSocket() {
   if (!socket) {
-    const adminSessionId = typeof window !== 'undefined' ? localStorage.getItem('lily_admin_session_id') : null
+    const adminSessionId =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('lilycharm_admin_session_id') || localStorage.getItem('lily_admin_session_id')
+        : null
 
     socket = io(SOCKET_URL, {
       withCredentials: true,
@@ -25,7 +28,8 @@ export function getSocket() {
         console.log(`[SOCKET] Admin connected to real-time server (ID: ${socket.id})`)
       }
       // Request join admin room
-      const currentSessionId = localStorage.getItem('lily_admin_session_id')
+      const currentSessionId =
+        localStorage.getItem('lilycharm_admin_session_id') || localStorage.getItem('lily_admin_session_id')
       if (currentSessionId) {
         socket.emit('join_admin', { adminSessionId: currentSessionId })
       }
@@ -47,7 +51,8 @@ export function getSocket() {
       if (import.meta.env.DEV) {
         console.log(`[SOCKET] Admin reconnected after ${attemptNumber} attempts`)
       }
-      const currentSessionId = localStorage.getItem('lily_admin_session_id')
+      const currentSessionId =
+        localStorage.getItem('lilycharm_admin_session_id') || localStorage.getItem('lily_admin_session_id')
       if (currentSessionId) {
         socket.emit('join_admin', { adminSessionId: currentSessionId })
       }

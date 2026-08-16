@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { formatPrice } from '../lib/format'
 import Reveal from '../components/Reveal'
-import { API_URL } from '../config/api'
+import { API_URL, RAZORPAY_KEY_ID } from '../config/api'
 import { useAuth } from '../context/AuthContext'
 
 export default function PayCustomQuote() {
@@ -102,7 +102,7 @@ export default function PayCustomQuote() {
 
       const rzpData = await rzpRes.json()
       const razorpayOrderId = rzpData.id || rzpData.order_id
-      const razorpayKey = rzpData.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_TNkyGJugajutew'
+      const razorpayKey = rzpData.key_id || RAZORPAY_KEY_ID
 
       if (!razorpayOrderId) {
         alert('Unable to initialize payment session. Please try again.')

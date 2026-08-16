@@ -5,6 +5,7 @@ import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
 import rateLimit from 'express-rate-limit'
 import { connectDB } from './config/db.js'
+import { ENV } from './config/env.js'
 import authRoutes from './routes/authRoutes.js'
 import adminRoutes from './routes/adminRoutes.js'
 import productRoutes from './routes/productRoutes.js'
@@ -42,15 +43,7 @@ app.use(
 app.use(cookieParser())
 
 // Allowed Origins for CORS
-const allowedOrigins = [
-  process.env.CLIENT_URL,
-  process.env.ADMIN_CLIENT_URL,
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:5174',
-].filter(Boolean)
+const allowedOrigins = ENV.getCorsOrigins()
 
 app.use(
   cors({
@@ -60,7 +53,7 @@ app.use(
         allowedOrigins.includes(origin) ||
         origin.endsWith('.vercel.app') ||
         origin.endsWith('.onrender.com') ||
-        process.env.NODE_ENV !== 'production'
+        !ENV.IS_PRODUCTION
       ) {
         return callback(null, true)
       }
@@ -93,7 +86,7 @@ app.use('/api/health', healthRouter)
 // Global API Rate Limiter
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 1000 : 10000,
+  max: ENV.IS_PRODUCTION ? 1000 : 10000,
   message: { success: false, message: 'Too many requests from this IP, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -125,7 +118,7 @@ import { initSocket } from './socket.js'
 app.use(notFound)
 app.use(errorHandler)
 
-const PORT = process.env.PORT || 5000
+const PORT = ENV.PORT
 
 const server = http.createServer(app)
 initSocket(server)

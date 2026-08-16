@@ -5,6 +5,7 @@ import CustomRequest from '../models/CustomRequest.js'
 import { processCustomQuotePaymentSuccess } from './customRequestController.js'
 import { sendOrderConfirmationEmail, sendAdminNewOrderNotification } from '../utils/emailService.js'
 import { emitOrderUpdated } from '../socket.js'
+import { ENV } from '../config/env.js'
 
 // GET /api/payment/admin/ledger — Payment Revenue & Analytics Dashboard for Admin
 export async function getPaymentLedger(req, res, next) {
@@ -51,7 +52,7 @@ export async function getPaymentLedger(req, res, next) {
 export async function handleRazorpayWebhook(req, res, next) {
   try {
     const signature = req.headers['x-razorpay-signature']
-    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || ENV.RAZORPAY.WEBHOOK_SECRET
 
     if (!webhookSecret || !signature) {
       return res.status(400).json({ success: false, message: 'Missing Razorpay webhook signature configuration.' })
