@@ -5,6 +5,7 @@ import { X, Minus, Plus } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useStudio } from '../context/StudioContext'
 import { formatPrice } from '../lib/format'
+import { useScrollLock } from '../lib/useScrollLock'
 
 export default function CartDrawer() {
   const {
@@ -23,6 +24,8 @@ export default function CartDrawer() {
   const { shippingSettings } = useStudio()
   const [couponInput, setCouponInput] = useState('')
   const [couponMsg, setCouponMsg] = useState(null)
+
+  useScrollLock(open)
 
   const isShippingEnabled = shippingSettings?.shippingFeeEnabled ?? true
   const standardShippingFee = shippingSettings?.standardShippingFee ?? 100

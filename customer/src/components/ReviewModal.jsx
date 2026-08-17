@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react'
 import { Star, X, CheckCircle2, Sparkles, Heart } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { API_URL } from '../config/api'
+import { useScrollLock } from '../lib/useScrollLock'
 
 export default function ReviewModal({ isOpen, onClose, defaultProductTitle = '', onSuccess }) {
   const { user } = useAuth()
+
+  useScrollLock(isOpen)
 
   const [rating, setRating] = useState(5)
   const [hoverRating, setHoverRating] = useState(0)

@@ -3,6 +3,7 @@ import { X, Download, Truck, Package, AlertCircle, RefreshCw } from 'lucide-reac
 import { formatPrice } from '../lib/format'
 import OrderTimeline from './OrderTimeline'
 import { API_URL } from '../config/api'
+import { useScrollLock } from '../lib/useScrollLock'
 
 export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh }) {
   const [cancelReason, setCancelReason] = useState('')
@@ -11,6 +12,8 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
   const [showRefundInput, setShowRefundInput] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+
+  useScrollLock(Boolean(isOpen && order))
 
   if (!isOpen || !order) return null
 

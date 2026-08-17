@@ -38,6 +38,7 @@ import {
 } from 'lucide-react'
 import { useStudio } from '../context/StudioContext'
 import { useAdminAuth } from '../context/AdminAuthContext'
+import { useScrollLock } from '../lib/useScrollLock'
 import StepUpMfaModal from '../components/StepUpMfaModal'
 import { formatPrice, formatDateTime, formatDateOnly } from '../lib/format'
 import { exportOrdersToCSV, exportUsersToCSV, exportCustomRequestsToCSV, exportReviewsToCSV } from '../lib/exportCSV'
@@ -237,7 +238,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
   const [newFlower, setNewFlower] = useState({
     title: '',
     specimen: `Flower ${products.length + 1}`,
-    category: 'velvet-lilies',
+    category: '',
     price: 3499,
     description: '',
     materials: 'Handcrafted velvet pipe cleaners, faux pearls, satin ribbon',
@@ -323,6 +324,21 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
       window.removeEventListener('mouseup', handleMouseUp)
     }
   }, [isDraggingOrderModal])
+
+  // Lock background screen scrolling whenever any modal / floating screen is open
+  const isAnyAdminModalOpen = Boolean(
+    showAddModal ||
+    showEditModal ||
+    showAddColModal ||
+    showEditColModal ||
+    selectedUserModal ||
+    selectedUserOrderDetail ||
+    previewImageModal ||
+    doubleConfirmModal?.isOpen ||
+    stepUpModal?.isOpen
+  )
+
+  useScrollLock(isAnyAdminModalOpen)
 
   const handleStartDragOrderModal = (e) => {
     if (e.button !== 0) return
@@ -827,6 +843,9 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
       : (newFlower.image ? [newFlower.image] : [])
 
     const errors = {}
+    if (!newFlower.category || !newFlower.category.trim() || newFlower.category === '__add_new_category__') {
+      errors.category = 'Collection Category field is empty! Please select a collection.'
+    }
     if (!newFlower.title || !newFlower.title.trim()) errors.title = 'Creation Title field is empty!'
     if (!newFlower.specimen || !newFlower.specimen.trim()) errors.specimen = 'Specimen Code field is empty!'
     if (!newFlower.price || Number(newFlower.price) <= 0) errors.price = 'Price field is empty!'
@@ -844,7 +863,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
       await addProduct({
         ...newFlower,
         id,
-        category: newFlower.category || collections[0]?.slug || collections[0]?.id || 'general',
+        category: newFlower.category.trim(),
         images: pImages,
         image: pImages[0] || '',
       })
@@ -852,7 +871,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
       setNewFlower({
         title: '',
         specimen: `Flower ${products.length + 2}`,
-        category: collections[0]?.slug || collections[0]?.id || 'general',
+        category: '',
         price: 3499,
         description: '',
         materials: 'Handcrafted velvet pipe cleaners, faux pearls, satin ribbon',
@@ -979,6 +998,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
 
   const [reviewFilter, setReviewFilter] = useState('all') // 'all', 'displayed', 'hidden'
   const [reviewSearchQuery, setReviewSearchQuery] = useState('')
+  const [selectedCollectionFilter, setSelectedCollectionFilter] = useState('all')
 
   const filteredReviews = useMemo(() => {
     return reviews.filter((r) => {
@@ -996,12 +1016,63 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     })
   }, [reviews, reviewFilter, reviewSearchQuery])
 
-  const filteredProducts = products.filter(
-    (p) =>
-      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.specimen?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.category.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const isProductInCollection = (product, colIdentifier) => {
+    if (!colIdentifier || colIdentifier === 'all') return true
+    const pCat = (product.category || '').toLowerCase().trim()
+    const target = String(colIdentifier).toLowerCase().trim()
+    if (pCat === target) return true
+
+    const colObj = collections.find(
+      (c) =>
+        String(c.slug || c.id || c._id || '').toLowerCase() === target ||
+        String(c.title || '').toLowerCase() === target
+    )
+    if (colObj) {
+      const colSlug = (colObj.slug || '').toLowerCase()
+      const colId = (colObj.id || colObj._id || '').toString().toLowerCase()
+      const colTitle = (colObj.title || '').toLowerCase()
+      return pCat === colSlug || pCat === colId || pCat === colTitle
+    }
+    return false
+  }
+
+  const getProductCollectionTitle = (p) => {
+    const colObj = collections.find(
+      (c) =>
+        (c.slug && c.slug.toLowerCase() === (p.category || '').toLowerCase()) ||
+        (c.id && String(c.id).toLowerCase() === (p.category || '').toLowerCase()) ||
+        (c._id && String(c._id).toLowerCase() === (p.category || '').toLowerCase()) ||
+        (c.title && c.title.toLowerCase() === (p.category || '').toLowerCase())
+    )
+    return colObj?.title || p.category || 'General'
+  }
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      // 1. Collection / Series Filter
+      if (selectedCollectionFilter !== 'all') {
+        if (selectedCollectionFilter === 'uncategorized') {
+          const matchesAnyCol = collections.some((col) =>
+            isProductInCollection(p, col.slug || col.id || col._id)
+          )
+          if (matchesAnyCol) return false
+        } else if (!isProductInCollection(p, selectedCollectionFilter)) {
+          return false
+        }
+      }
+
+      // 2. Search Query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase()
+        const matchTitle = p.title?.toLowerCase().includes(q)
+        const matchSpecimen = p.specimen?.toLowerCase().includes(q)
+        const matchCat = p.category?.toLowerCase().includes(q)
+        if (!matchTitle && !matchSpecimen && !matchCat) return false
+      }
+
+      return true
+    })
+  }, [products, selectedCollectionFilter, searchQuery, collections])
 
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0)
   const pendingOrdersCount = orders.filter((o) => o.orderStatus !== 'Delivered').length
@@ -1194,79 +1265,194 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
         {/* TAB 1: PRODUCTS MANAGER */}
         {activeTab === 'products' && (
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div className="relative w-full sm:w-80">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-soft)]" />
-                <input
-                  type="text"
-                  placeholder="Search flower title or specimen code..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full border border-[var(--color-line)] pl-9 pr-4 py-2 text-xs bg-[var(--color-card-bg)] focus:outline-none focus:border-[var(--color-primary)]"
-                />
+            {/* Filter Bar: Search + Collection Select + Add Button */}
+            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+                {/* Search Input */}
+                <div className="relative w-full sm:w-72">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-soft)]" />
+                  <input
+                    type="text"
+                    placeholder="Search flower title or specimen code..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full border border-[var(--color-line)] pl-9 pr-4 py-2 text-xs bg-[var(--color-card-bg)] rounded-xl focus:outline-none focus:border-[var(--color-primary)]"
+                  />
+                </div>
+
+                {/* Collection Filter Dropdown */}
+                <div className="relative w-full sm:w-64">
+                  <select
+                    value={selectedCollectionFilter}
+                    onChange={(e) => setSelectedCollectionFilter(e.target.value)}
+                    className="w-full border border-[var(--color-line)] px-3 py-2 text-xs bg-[var(--color-card-bg)] rounded-xl font-medium focus:outline-none focus:border-[var(--color-primary)] cursor-pointer"
+                  >
+                    <option value="all">🌸 All Collections ({products.length})</option>
+                    {collections.map((col) => {
+                      const count = products.filter((p) => isProductInCollection(p, col.slug || col.id || col._id)).length
+                      return (
+                        <option key={col.id || col._id || col.slug} value={col.slug || col.id || col._id}>
+                          📁 {col.title} ({count})
+                        </option>
+                      )
+                    })}
+                    {products.some((p) => !collections.some((col) => isProductInCollection(p, col.slug || col.id || col._id))) && (
+                      <option value="uncategorized">
+                        📂 Uncategorized ({products.filter((p) => !collections.some((col) => isProductInCollection(p, col.slug || col.id || col._id))).length})
+                      </option>
+                    )}
+                  </select>
+                </div>
+
+                {(selectedCollectionFilter !== 'all' || searchQuery) && (
+                  <button
+                    onClick={() => {
+                      setSelectedCollectionFilter('all')
+                      setSearchQuery('')
+                    }}
+                    className="text-xs text-[var(--color-primary)] hover:underline font-semibold flex items-center gap-1 shrink-0 self-center"
+                  >
+                    ✕ Reset Filter
+                  </button>
+                )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="btn-primary py-2.5 px-4 text-xs flex items-center gap-1.5"
+                  className="btn-primary py-2.5 px-4 text-xs flex items-center gap-1.5 rounded-full"
                 >
                   <Plus size={14} /> Add New Flower Creation
                 </button>
               </div>
             </div>
 
-            <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-[var(--color-line)] text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[var(--color-ink-soft)] bg-[var(--color-bg)]">
-                    <th className="p-4">Photo</th>
-                    <th className="p-4">Specimen</th>
-                    <th className="p-4">Creation Title</th>
-                    <th className="p-4">Category</th>
-                    <th className="p-4">Price (₹)</th>
-                    <th className="p-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--color-line)] text-xs">
-                  {filteredProducts.map((p) => (
-                    <tr key={p.id} className="hover:bg-[var(--color-bg)]/60 transition-colors">
-                      <td className="p-4">
-                        {p.image ? (
-                          <img src={p.image} alt={p.title} className="w-12 h-12 object-cover border border-[var(--color-line)]" />
-                        ) : (
-                          <div className="w-12 h-12 bg-stone-200 flex items-center justify-center text-[10px]">No Pic</div>
-                        )}
-                      </td>
-                      <td className="p-4 font-mono font-medium">{p.specimen}</td>
-                      <td className="p-4 font-bold font-[var(--font-display)] text-sm">{p.title}</td>
-                      <td className="p-4 uppercase tracking-wider text-[0.68rem] font-medium text-[var(--color-ink-soft)]">
-                        <span className="bg-[var(--color-bg)] px-2 py-1 border border-[var(--color-line)]">
-                          {p.category}
-                        </span>
-                      </td>
-                      <td className="p-4 font-semibold text-emerald-800">{formatPrice(p.price)}</td>
-                      <td className="p-4 text-right space-x-2">
-                        <button
-                          onClick={() => handleStartEdit(p)}
-                          className="p-1.5 border border-[var(--color-line)] hover:bg-[var(--color-bg)] transition-colors inline-flex items-center gap-1 text-xs"
-                          title="Edit Creation"
-                        >
-                          <Edit2 size={14} /> Edit
-                        </button>
-                        <button
-                          onClick={() => deleteProduct(p)}
-                          className="p-1.5 border border-red-300 text-red-600 hover:bg-red-50 transition-colors inline-flex items-center gap-1 text-xs"
-                          title="Delete Creation"
-                        >
-                          <Trash2 size={14} /> Delete
-                        </button>
-                      </td>
+            {/* Quick Collection Filter Pills */}
+            {collections.length > 0 && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCollectionFilter('all')}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all shrink-0 flex items-center gap-1.5 ${
+                    selectedCollectionFilter === 'all'
+                      ? 'bg-[var(--color-primary)] text-white shadow-sm font-bold'
+                      : 'border border-[var(--color-line)] bg-[var(--color-card-bg)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] hover:border-[var(--color-primary)]'
+                  }`}
+                >
+                  <span>All</span>
+                  <span className={`text-[0.62rem] px-1.5 py-0.2 rounded-full ${selectedCollectionFilter === 'all' ? 'bg-white/20 text-white' : 'bg-black/5 text-[var(--color-ink-soft)]'}`}>
+                    {products.length}
+                  </span>
+                </button>
+
+                {collections.map((col) => {
+                  const val = col.slug || col.id || col._id
+                  const isSelected = selectedCollectionFilter === val
+                  const count = products.filter((p) => isProductInCollection(p, val)).length
+                  return (
+                    <button
+                      key={col.id || col._id || col.slug}
+                      type="button"
+                      onClick={() => setSelectedCollectionFilter(isSelected ? 'all' : val)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold tracking-wider transition-all shrink-0 flex items-center gap-1.5 ${
+                        isSelected
+                          ? 'bg-[var(--color-primary)] text-white shadow-sm font-bold'
+                          : 'border border-[var(--color-line)] bg-[var(--color-card-bg)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] hover:border-[var(--color-primary)]'
+                      }`}
+                    >
+                      <span>{col.title}</span>
+                      <span className={`text-[0.62rem] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-black/5 text-[var(--color-ink-soft)]'}`}>
+                        {count}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Products Table */}
+            {filteredProducts.length === 0 ? (
+              <div className="border border-dashed border-[var(--color-line)] bg-[var(--color-card-bg)] p-12 text-center space-y-3 rounded-2xl">
+                <Package size={32} className="mx-auto text-[var(--color-ink-soft)]" />
+                <p className="font-bold uppercase text-sm">No Flower Creations Found</p>
+                <p className="text-xs text-[var(--color-ink-soft)]">
+                  {selectedCollectionFilter !== 'all'
+                    ? `No products match the selected collection filter.`
+                    : `No products match "${searchQuery}".`}
+                </p>
+                {(selectedCollectionFilter !== 'all' || searchQuery) && (
+                  <button
+                    onClick={() => {
+                      setSelectedCollectionFilter('all')
+                      setSearchQuery('')
+                    }}
+                    className="btn-outline text-xs px-4 py-1.5 rounded-full"
+                  >
+                    Clear All Filters
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] overflow-x-auto shadow-sm rounded-2xl">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-[var(--color-line)] text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[var(--color-ink-soft)] bg-[var(--color-bg)]">
+                      <th className="p-4">Photo</th>
+                      <th className="p-4">Specimen</th>
+                      <th className="p-4">Creation Title</th>
+                      <th className="p-4">Collection / Category</th>
+                      <th className="p-4">Price (₹)</th>
+                      <th className="p-4 text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--color-line)] text-xs">
+                    {filteredProducts.map((p) => (
+                      <tr key={p.id || p._id} className="hover:bg-[var(--color-bg)]/60 transition-colors">
+                        <td className="p-4">
+                          {p.image ? (
+                            <img src={p.image} alt={p.title} className="w-12 h-12 object-cover border border-[var(--color-line)] rounded-xl" />
+                          ) : (
+                            <div className="w-12 h-12 bg-stone-200 flex items-center justify-center text-[10px] rounded-xl">No Pic</div>
+                          )}
+                        </td>
+                        <td className="p-4 font-mono font-medium">{p.specimen}</td>
+                        <td className="p-4 font-bold font-[var(--font-display)] text-sm">{p.title}</td>
+                        <td className="p-4">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const matchCol = collections.find((c) => isProductInCollection(p, c.slug || c.id || c._id))
+                              if (matchCol) setSelectedCollectionFilter(matchCol.slug || matchCol.id || matchCol._id)
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[0.68rem] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-900 border border-emerald-300 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
+                            title="Click to filter by this collection"
+                          >
+                            📁 {getProductCollectionTitle(p)}
+                          </button>
+                        </td>
+                        <td className="p-4 font-semibold text-emerald-800">{formatPrice(p.price)}</td>
+                        <td className="p-4 text-right space-x-2">
+                          <button
+                            onClick={() => handleStartEdit(p)}
+                            className="p-1.5 border border-[var(--color-line)] hover:bg-[var(--color-bg)] transition-colors inline-flex items-center gap-1 text-xs rounded-lg"
+                            title="Edit Creation"
+                          >
+                            <Edit2 size={14} /> Edit
+                          </button>
+                          <button
+                            onClick={() => deleteProduct(p)}
+                            className="p-1.5 border border-red-300 text-red-600 hover:bg-red-50 transition-colors inline-flex items-center gap-1 text-xs rounded-lg"
+                            title="Delete Creation"
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
@@ -3338,6 +3524,51 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               {/* Left Column — Form Fields */}
               <div className="space-y-4">
                 <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold uppercase">
+                      Collection Category <span className="text-red-500 font-bold ml-0.5">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddColModal(true)}
+                      className="text-[0.68rem] text-[var(--color-primary)] font-bold hover:underline flex items-center gap-1"
+                      title="Create a new collection series"
+                    >
+                      <Plus size={12} /> Add Category
+                    </button>
+                  </div>
+                  <select
+                    required
+                    value={newFlower.category || ''}
+                    onChange={(e) => {
+                      if (e.target.value === '__add_new_category__') {
+                        setShowAddColModal(true)
+                      } else {
+                        setNewFlower({ ...newFlower, category: e.target.value })
+                        if (e.target.value) setAddFlowerErrors((prev) => ({ ...prev, category: null }))
+                      }
+                    }}
+                    className={`w-full border p-2.5 bg-[var(--color-bg)] font-semibold text-xs rounded-lg transition-colors cursor-pointer ${
+                      addFlowerErrors.category ? 'border-rose-500 bg-rose-50/20 text-rose-900 focus:border-rose-600' : 'border-[var(--color-line)]'
+                    }`}
+                  >
+                    <option value="">(Select Collection Category)</option>
+                    {collections.map((c) => (
+                      <option key={c.id || c.slug || c._id} value={c.slug || c.id || c._id}>
+                        {c.title} ({c.slug || c.id})
+                      </option>
+                    ))}
+                    <option value="__add_new_category__" className="font-bold text-[var(--color-primary)]">
+                      ➕ + Add New Collection Category...
+                    </option>
+                  </select>
+                  {addFlowerErrors.category && (
+                    <p className="text-[0.68rem] text-rose-600 font-bold mt-1 flex items-center gap-1">
+                      ⚠️ Please select a Collection Category before publishing!
+                    </p>
+                  )}
+                </div>
+                <div>
                   <label className="block font-bold uppercase mb-1">
                     Creation Title <span className="text-red-500 font-bold ml-0.5">*</span>
                   </label>
@@ -3383,22 +3614,6 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                       ⚠️ Specimen Code field is empty! Please enter a code.
                     </p>
                   )}
-                </div>
-                <div>
-                  <label className="block font-bold uppercase mb-1">
-                    Collection Category <span className="text-red-500 font-bold ml-0.5">*</span>
-                  </label>
-                  <select
-                    value={newFlower.category}
-                    onChange={(e) => setNewFlower({ ...newFlower, category: e.target.value })}
-                    className="w-full border border-[var(--color-line)] p-2.5 bg-[var(--color-bg)] font-semibold"
-                  >
-                    {collections.map((c) => (
-                      <option key={c.id || c.slug} value={c.slug || c.id}>
-                        {c.title} ({c.slug || c.id})
-                      </option>
-                    ))}
-                  </select>
                 </div>
                 <div>
                   <label className="block font-bold uppercase mb-1">
@@ -3567,6 +3782,42 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               
               {/* Left Column — Form Fields */}
               <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold uppercase">
+                      Collection Category <span className="text-red-500 font-bold ml-0.5">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddColModal(true)}
+                      className="text-[0.68rem] text-[var(--color-primary)] font-bold hover:underline flex items-center gap-1"
+                      title="Create a new collection series"
+                    >
+                      <Plus size={12} /> Add Category
+                    </button>
+                  </div>
+                  <select
+                    value={editingProduct.category || ''}
+                    onChange={(e) => {
+                      if (e.target.value === '__add_new_category__') {
+                        setShowAddColModal(true)
+                      } else {
+                        setEditingProduct({ ...editingProduct, category: e.target.value })
+                      }
+                    }}
+                    className="w-full border border-[var(--color-line)] p-2.5 bg-[var(--color-bg)] font-semibold text-xs rounded-lg cursor-pointer"
+                  >
+                    <option value="">(Select Collection Category)</option>
+                    {collections.map((c) => (
+                      <option key={c.id || c.slug || c._id} value={c.slug || c.id || c._id}>
+                        {c.title} ({c.slug || c.id})
+                      </option>
+                    ))}
+                    <option value="__add_new_category__" className="font-bold text-[var(--color-primary)]">
+                      ➕ + Add New Collection Category...
+                    </option>
+                  </select>
+                </div>
                 <div>
                   <label className="block font-bold uppercase mb-1">
                     Creation Title <span className="text-red-500 font-bold ml-0.5">*</span>

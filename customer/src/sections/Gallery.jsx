@@ -3,9 +3,12 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { galleryImages } from '../data/products'
 import Reveal from '../components/Reveal'
+import { useScrollLock } from '../lib/useScrollLock'
 
 export default function Gallery() {
   const [active, setActive] = useState(null)
+
+  useScrollLock(Boolean(active))
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-12 sm:py-20 md:py-28 w-full max-w-full">

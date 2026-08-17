@@ -8,6 +8,7 @@ import { useAlert } from '../context/AlertContext'
 import { useStudio } from '../context/StudioContext'
 import AuthModal from './AuthModal'
 import { API_URL, RAZORPAY_KEY_ID } from '../config/api'
+import { useScrollLock } from '../lib/useScrollLock'
 
 export default function CustomDesignModal({ isOpen, onClose }) {
   const { user, token } = useAuth()
@@ -16,6 +17,8 @@ export default function CustomDesignModal({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState('submit') // 'submit' | 'check-quotes'
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authInitialMode, setAuthInitialMode] = useState('login')
+
+  useScrollLock(isOpen)
 
   const isShippingEnabled = shippingSettings?.shippingFeeEnabled ?? true
   const standardShippingFee = shippingSettings?.standardShippingFee ?? 100

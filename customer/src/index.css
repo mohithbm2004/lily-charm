@@ -171,4 +171,20 @@
     background-color: var(--color-primary);
     border-radius: 4px;
   }
+
+  /* Background scroll lock when any floating modal or overlay is open */
+  html.modal-open,
+  body.modal-open {
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+    touch-action: none !important;
+    height: 100% !important;
+  }
+
+  .modal-overlay,
+  [role="dialog"],
+  .fixed.inset-0 {
+    overscroll-behavior: contain !important;
+  }
 }
+

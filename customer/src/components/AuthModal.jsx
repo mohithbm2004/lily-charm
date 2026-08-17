@@ -5,6 +5,7 @@ import { useGoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { API_URL } from '../config/api'
+import { useScrollLock } from '../lib/useScrollLock'
 
 export default function AuthModal({
   isOpen,
@@ -15,6 +16,8 @@ export default function AuthModal({
 }) {
   const { updateUserProfile, setAuthSession, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
+
+  useScrollLock(isOpen)
 
   const [mode, setMode] = useState(initialMode) // 'login' | 'register' | 'forgot' | 'otp'
   const [showPassword, setShowPassword] = useState(false)

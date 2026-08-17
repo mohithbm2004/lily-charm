@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ShieldCheck, RefreshCw, Sparkles, CheckCircle2, Clock } from 'lucide-react'
 import { API_URL } from '../config/api'
+import { useScrollLock } from '../lib/useScrollLock'
 
 export default function OtpModal({ isOpen, onClose, email, onVerified }) {
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', ''])
@@ -9,6 +10,8 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
   const [isResending, setIsResending] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+
+  useScrollLock(isOpen)
 
   // 5-minute expiry timer (300 seconds)
   const [timeLeft, setTimeLeft] = useState(300)
@@ -39,6 +42,8 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
     const resendTimer = setInterval(() => {
       setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0))
     }, 1000)
+
+    setTimeout(() => inputRefs[0]?.current?.focus(), 100)
 
     return () => {
       clearInterval(timer)
