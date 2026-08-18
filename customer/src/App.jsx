@@ -16,6 +16,7 @@ import FAQ from './pages/FAQ'
 import Terms from './pages/Terms'
 import ResetPassword from './pages/ResetPassword'
 import PayCustomQuote from './pages/PayCustomQuote'
+import NotFound from './pages/NotFound'
 
 function PageTransition({ children }) {
   return (
@@ -47,6 +48,12 @@ export default function App() {
             <Route path="/product/:id" element={<PageTransition><Product /></PageTransition>} />
             <Route path="/checkout" element={<PageTransition><Checkout /></PageTransition>} />
             <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
+            <Route path="/orders" element={<Navigate to="/dashboard?tab=My+Orders" replace />} />
+            <Route path="/my-orders" element={<Navigate to="/dashboard?tab=My+Orders" replace />} />
+            <Route path="/profile" element={<Navigate to="/dashboard?tab=Profile+Details" replace />} />
+            <Route path="/account" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/cart" element={<Navigate to="/checkout" replace />} />
+            <Route path="/login" element={<Navigate to="/dashboard" replace />} />
             <Route path="/pay-quote/:id" element={<PageTransition><PayCustomQuote /></PageTransition>} />
             <Route path="/custom-quote/:id/pay" element={<PageTransition><PayCustomQuote /></PageTransition>} />
             <Route path="/about" element={<PageTransition><About /></PageTransition>} />
@@ -55,6 +62,7 @@ export default function App() {
             <Route path="/terms" element={<PageTransition><Terms /></PageTransition>} />
             <Route path="/journal" element={<Navigate to="/" replace />} />
             <Route path="/reset-password" element={<PageTransition><ResetPassword /></PageTransition>} />
+            <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
           </Routes>
         </AnimatePresence>
       </main>

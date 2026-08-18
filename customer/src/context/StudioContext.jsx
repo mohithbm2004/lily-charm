@@ -21,6 +21,7 @@ export function StudioProvider({ children }) {
   const [products, setProducts] = useState([])
   const [collections, setCollections] = useState([])
   const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
 
   const [marqueeText, setMarqueeText] = useState(() => {
     const saved = localStorage.getItem('lilycharm_marquee')
@@ -51,8 +52,8 @@ export function StudioProvider({ children }) {
       const res = await fetch(`${API_URL}/settings`)
       if (res.ok) {
         const data = await res.json()
-        if (data.marqueeText) setMarqueeText(data.marqueeText)
-        if (data.offerCode) {
+        if (data?.marqueeText) setMarqueeText(data.marqueeText)
+        if (data?.offerCode) {
           setActiveOffer((prev) => ({
             ...prev,
             code: data.offerCode,
@@ -62,9 +63,9 @@ export function StudioProvider({ children }) {
           }))
         }
         const updated = {
-          shippingFeeEnabled: data.shippingFeeEnabled !== undefined ? Boolean(data.shippingFeeEnabled) : true,
-          standardShippingFee: data.standardShippingFee !== undefined ? Number(data.standardShippingFee) : 100,
-          freeShippingThreshold: data.freeShippingThreshold !== undefined ? Number(data.freeShippingThreshold) : 2500,
+          shippingFeeEnabled: data?.shippingFeeEnabled !== undefined ? Boolean(data.shippingFeeEnabled) : true,
+          standardShippingFee: data?.standardShippingFee !== undefined ? Number(data.standardShippingFee) : 100,
+          freeShippingThreshold: data?.freeShippingThreshold !== undefined ? Number(data.freeShippingThreshold) : 2500,
         }
         setShippingSettings(updated)
         localStorage.setItem('lilycharm_shipping_settings', JSON.stringify(updated))
@@ -82,7 +83,7 @@ export function StudioProvider({ children }) {
         const data = await res.json()
         if (Array.isArray(data)) {
           const mapped = data
-            .filter((p) => !p.isArchived && !p.archived)
+            .filter((p) => p && !p.isArchived && !p.archived)
             .map((p) => ({
               ...p,
               id: p._id || p.id,
@@ -113,7 +114,7 @@ export function StudioProvider({ children }) {
       if (res.ok) {
         const data = await res.json()
         if (Array.isArray(data)) {
-          const mapped = data.map((c) => ({
+          const mapped = data.filter(Boolean).map((c) => ({
             ...c,
             id: c.slug || c._id || c.id,
             mongoId: c._id,
@@ -127,9 +128,13 @@ export function StudioProvider({ children }) {
   }
 
   useEffect(() => {
-    refreshProductsFromApi()
-    refreshCollectionsFromApi()
-    refreshSettingsFromApi()
+    Promise.allSettled([
+      refreshProductsFromApi(),
+      refreshCollectionsFromApi(),
+      refreshSettingsFromApi(),
+    ]).finally(() => {
+      setLoading(false)
+    })
 
     const socket = getSocket()
 
@@ -410,6 +415,7 @@ export function StudioProvider({ children }) {
         products,
         collections,
         orders,
+        loading,
         marqueeText,
         activeOffer,
         shippingSettings,

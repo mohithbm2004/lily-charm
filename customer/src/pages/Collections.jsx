@@ -23,8 +23,8 @@ function useImageRatio(src) {
   return ratio
 }
 
-function CollectionHero({ collection, isEven = true }) {
-  const { image, images, imageX, imageY, imageScale, imageRatio: savedRatio, imageOrientation } = collection
+function CollectionHero({ collection = {}, isEven = true }) {
+  const { image = '', images = [], imageX, imageY, imageScale, imageRatio: savedRatio, imageOrientation } = collection || {}
   const allColImages = Array.isArray(images) && images.length > 0 ? images : (image ? [image] : [])
   const [activeImg, setActiveImg] = useState(image || allColImages[0] || '')
   const currentBanner = activeImg || image || allColImages[0] || ''

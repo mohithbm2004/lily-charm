@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, CheckCircle2, AlertTriangle, AlertCircle, Info, X } from 'lucide-react'
 import { useScrollLock } from '../lib/useScrollLock'

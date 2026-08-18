@@ -10,14 +10,15 @@ import ReviewModal from '../components/ReviewModal'
 import { API_URL } from '../config/api'
 
 export default function Product() {
-  const { products } = useStudio()
+  const { products = [], loading = false } = useStudio()
   const { id } = useParams()
-  const product = products.find(
+  const product = (products || []).find(
     (p) =>
-      String(p.id) === String(id) ||
-      String(p.slug) === String(id) ||
-      String(p._id) === String(id) ||
-      String(p.mongoId) === String(id)
+      p &&
+      (String(p.id) === String(id) ||
+        String(p.slug) === String(id) ||
+        String(p._id) === String(id) ||
+        String(p.mongoId) === String(id))
   )
   const [qty, setQty] = useState(1)
   const [tab, setTab] = useState('description')
@@ -34,8 +35,9 @@ export default function Product() {
         if (Array.isArray(data)) {
           const matched = data.filter(
             (r) =>
-              (r.product && r.product === (product._id || product.id)) ||
-              (r.productTitle && r.productTitle.toLowerCase().includes(product.title.toLowerCase()))
+              r &&
+              ((r.product && r.product === (product._id || product.id)) ||
+                (r.productTitle && r.productTitle.toLowerCase().includes((product.title || '').toLowerCase())))
           )
           setProductReviews(matched)
         }
@@ -46,6 +48,17 @@ export default function Product() {
   useEffect(() => {
     if (product) fetchProductReviews()
   }, [product?.id, product?._id, product?.title])
+
+  if (loading && !product) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-36 pb-24 text-center space-y-4">
+        <div className="w-10 h-10 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-xs uppercase tracking-widest font-mono text-[var(--color-ink-soft)]">
+          Preparing creation details...
+        </p>
+      </div>
+    )
+  }
 
   if (!product) {
     return (
@@ -59,7 +72,9 @@ export default function Product() {
     )
   }
 
-  const related = products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4)
+  const related = (products || [])
+    .filter((p) => p && p.category === product.category && (p.id || p._id) !== (product.id || product._id))
+    .slice(0, 4)
 
   const ix = product.imageX ?? 50
   const iy = product.imageY ?? 50
