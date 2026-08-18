@@ -18,6 +18,8 @@ import ResetPassword from './pages/ResetPassword'
 import PayCustomQuote from './pages/PayCustomQuote'
 import NotFound from './pages/NotFound'
 
+import Watermark from './components/Watermark'
+
 function PageTransition({ children }) {
   return (
     <motion.div
@@ -67,6 +69,7 @@ export default function App() {
         </AnimatePresence>
       </main>
       <Footer />
+      <Watermark />
     </div>
   )
 }

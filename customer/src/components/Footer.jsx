@@ -82,6 +82,9 @@ export default function Footer() {
       <div className="border-t border-white/15 bg-[#1B2317]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-4 sm:py-5 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3 text-xs text-[#E2DACB] font-medium">
           <p>© {new Date().getFullYear()} Lily Charm. All rights reserved.</p>
+          <p className="text-xs text-[#E2DACB] font-mono">
+            Developed by <span className="font-bold text-[#F5E8D0]">Mohith BM</span>
+          </p>
         </div>
       </div>
     </footer>
