@@ -60,7 +60,7 @@ function CollectionHero({ collection = {}, isEven = true }) {
           }}
           className="rounded-3xl"
         />
-        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-black/60 backdrop-blur-md text-white text-[0.55rem] sm:text-[0.6rem] uppercase tracking-widest px-2.5 py-1 rounded-full font-mono">
+        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-black/80 text-white text-[0.55rem] sm:text-[0.6rem] uppercase tracking-widest px-2.5 py-1 rounded-full font-mono">
           {isPortrait ? '▬ Portrait Series' : '⬛ Landscape Series'}
         </div>
       </div>

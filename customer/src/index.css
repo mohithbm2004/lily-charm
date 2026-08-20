@@ -57,6 +57,9 @@
     overflow-x: clip;
     -webkit-text-size-adjust: 100%;
   }
+  section, header, footer, main {
+    isolation: isolate;
+  }
   body, #root {
     color-scheme: light;
     background-color: var(--color-bg);

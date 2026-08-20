@@ -21,7 +21,7 @@ export default function BrandIntro() {
                       loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-700 hover:scale-105 rounded-xl"
                     />
-                    <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-[var(--color-bg)]/90 backdrop-blur-sm border border-[var(--color-line)] rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 text-[0.6rem] sm:text-[0.65rem] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                    <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-[var(--color-bg)] border border-[var(--color-line)] rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 text-[0.6rem] sm:text-[0.65rem] font-bold uppercase tracking-wider text-[var(--color-primary)]">
                       ✨ Handcrafted with Love
                     </div>
                   </div>

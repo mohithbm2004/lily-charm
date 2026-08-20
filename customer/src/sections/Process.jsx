@@ -15,8 +15,8 @@ export default function Process() {
   return (
     <section className="bg-[#212B1C] text-[#FAF7F2] relative overflow-hidden border-y border-[#3E4D35] w-full max-w-full">
       {/* Subtle decorative background glow */}
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#3E4D35]/30 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#D5C29D]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-[radial-gradient(circle_at_center,_rgba(62,77,53,0.35)_0%,_transparent_70%)] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[radial-gradient(circle_at_center,_rgba(213,194,157,0.12)_0%,_transparent_70%)] rounded-full pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-14 sm:py-20 md:py-28 relative z-10">
         <Reveal>
