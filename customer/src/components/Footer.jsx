@@ -19,8 +19,9 @@ export default function Footer() {
           <div className="flex items-center gap-2.5 sm:gap-3">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-[#F5E8D0]/40 p-0.5 shadow-sm overflow-hidden bg-white shrink-0">
               <img
-                src="/images/logo.png"
+                src="/images/logo.webp"
                 alt="Lily Charm Official Logo"
+                loading="lazy"
                 className="w-full h-full object-cover rounded-full"
               />
             </div>

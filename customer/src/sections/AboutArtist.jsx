@@ -38,8 +38,9 @@ export default function AboutArtist() {
               <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-2.5 sm:p-3 shadow-xl overflow-hidden">
                 <div className="relative overflow-hidden aspect-[4/5] arch-frame rounded-b-2xl border border-[var(--color-line)] bg-[var(--color-bg)]">
                   <img
-                    src="/images/products/flower-crimson-velvet-bouquet.png"
+                    src="/images/products/flower-crimson-velvet-bouquet.webp"
                     alt="Lily Charm handcrafted crimson red velvet flower bouquet"
+                    loading="lazy"
                     className="w-full h-full object-cover transition-transform duration-700 hover:scale-105 rounded-b-2xl"
                   />
                 </div>

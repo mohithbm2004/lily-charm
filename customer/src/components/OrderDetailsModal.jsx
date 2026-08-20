@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Download, Truck, Package, AlertCircle, RefreshCw } from 'lucide-react'
+import { X, Download, Truck } from 'lucide-react'
 import { formatPrice } from '../lib/format'
 import OrderTimeline from './OrderTimeline'
 import { API_URL } from '../config/api'

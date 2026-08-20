@@ -362,12 +362,18 @@ export function CartProvider({ children }) {
     socket.on('COUPON_UPDATED', handleCouponUpdated)
     socket.on('COUPON_DELETED', handleCouponDeleted)
 
-    const interval = setInterval(fetchCoupons, 30000)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchCoupons()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
       socket.off('COUPON_CREATED', handleCouponCreated)
       socket.off('COUPON_UPDATED', handleCouponUpdated)
       socket.off('COUPON_DELETED', handleCouponDeleted)
-      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
 

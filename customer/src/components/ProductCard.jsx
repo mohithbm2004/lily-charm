@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Heart, Plus } from 'lucide-react'
@@ -5,7 +6,7 @@ import { formatPrice } from '../lib/format'
 import { useCart } from '../context/CartContext'
 import TiltCard3D from './TiltCard3D'
 
-export default function ProductCard({ product, index = 0 }) {
+function ProductCard({ product, index = 0 }) {
   const { addItem, openCart } = useCart()
 
   const ix = product.imageX ?? 50
@@ -115,3 +116,5 @@ export default function ProductCard({ product, index = 0 }) {
     </TiltCard3D>
   )
 }
+
+export default memo(ProductCard)

@@ -5,14 +5,14 @@ import { useAuth } from '../context/AuthContext'
 import { formatPrice } from '../lib/format'
 import Reveal from '../components/Reveal'
 import AuthModal from '../components/AuthModal'
-import { CheckCircle2, ShoppingBag, AlertTriangle, LogIn, UserPlus, Package } from 'lucide-react'
+import { CheckCircle2, ShoppingBag, AlertTriangle, Package } from 'lucide-react'
 
 import { useStudio } from '../context/StudioContext'
 import { API_URL, RAZORPAY_KEY_ID } from '../config/api'
 
 export default function Checkout() {
   const { items, subtotal, coupon: activeCoupon, discountAmount, applyCoupon, removeCoupon, clearCart } = useCart()
-  const { user, token, loading: authLoading, isAuthenticated } = useAuth()
+  const { user, token, loading: authLoading } = useAuth()
   const { shippingSettings } = useStudio()
   const navigate = useNavigate()
   const [processing, setProcessing] = useState(false)

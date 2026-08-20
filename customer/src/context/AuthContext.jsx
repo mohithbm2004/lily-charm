@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import { API_URL } from '../config/api'
 
 const AuthContext = createContext(null)
@@ -226,21 +226,21 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const contextValue = useMemo(() => ({
+    user,
+    token,
+    loading,
+    isAuthenticated: Boolean(user && token),
+    login,
+    register,
+    loginWithGoogle,
+    logout,
+    updateUserProfile,
+    setAuthSession,
+  }), [user, token, loading])
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        loading,
-        isAuthenticated: Boolean(user && token),
-        login,
-        register,
-        loginWithGoogle,
-        logout,
-        updateUserProfile,
-        setAuthSession,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   )

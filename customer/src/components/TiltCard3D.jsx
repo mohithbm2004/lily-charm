@@ -1,6 +1,23 @@
+import { useEffect, useState } from 'react'
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
 
 export default function TiltCard3D({ children, className = '', intensity = 15 }) {
+  const [canTilt, setCanTilt] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia('(hover: hover) and (pointer: fine)').matches
+  })
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const media = window.matchMedia('(hover: hover) and (pointer: fine)')
+    setCanTilt(media.matches)
+    const listener = (e) => setCanTilt(e.matches)
+    if (media.addEventListener) {
+      media.addEventListener('change', listener)
+      return () => media.removeEventListener('change', listener)
+    }
+  }, [])
+
   const x = useMotionValue(0)
   const y = useMotionValue(0)
 
@@ -11,6 +28,7 @@ export default function TiltCard3D({ children, className = '', intensity = 15 })
   const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [-intensity, intensity])
 
   const handleMouseMove = (e) => {
+    if (!canTilt) return
     const rect = e.currentTarget.getBoundingClientRect()
     const width = rect.width
     const height = rect.height
@@ -24,8 +42,13 @@ export default function TiltCard3D({ children, className = '', intensity = 15 })
   }
 
   const handleMouseLeave = () => {
+    if (!canTilt) return
     x.set(0)
     y.set(0)
+  }
+
+  if (!canTilt) {
+    return <div className={`transition-shadow duration-300 ${className}`}>{children}</div>
   }
 
   return (

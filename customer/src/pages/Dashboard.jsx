@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import Reveal from '../components/Reveal'
-import { User, Package, MapPin, Sparkles, Upload, CheckCircle2, Search, Edit3, LogOut, Download, Eye, Truck, RefreshCw, XCircle, Lock } from 'lucide-react'
+import { User, Package, MapPin, Sparkles, Upload, CheckCircle2, LogOut, Download, Eye, RefreshCw, XCircle, Lock } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useAlert } from '../context/AlertContext'
 import { useStudio } from '../context/StudioContext'

@@ -14,8 +14,10 @@ export default function Hero() {
               initial={{ scale: 1.08 }}
               animate={{ scale: 1 }}
               transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
-              src="/images/products/flower-10-1.jpg"
+              src="/images/products/flower-10-1.webp"
               alt="Handcrafting botanical floral arrangements by Lily Charm"
+              loading="eager"
+              fetchpriority="high"
               className="w-full h-full object-cover object-center transition-transform duration-1000 ease-out rounded-2xl"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent rounded-2xl" />

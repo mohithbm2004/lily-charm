@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles, CheckCircle2, AlertTriangle, AlertCircle, Info, X } from 'lucide-react'
+import { Sparkles, AlertTriangle, AlertCircle, Info, X } from 'lucide-react'
 import { useScrollLock } from '../lib/useScrollLock'
 
 const AlertContext = createContext()
@@ -22,7 +22,7 @@ export function AlertProvider({ children }) {
 
   useScrollLock(alertConfig.isOpen)
 
-  const showAlert = (options) => {
+  const showAlert = useCallback((options) => {
     if (typeof options === 'string') {
       const isSuccess = options.includes('✨') || options.includes('🎉') || options.toLowerCase().includes('success') || options.toLowerCase().includes('confirmed')
       const isError = options.toLowerCase().includes('failed') || options.toLowerCase().includes('error') || options.toLowerCase().includes('invalid') || options.includes('⚠️')
@@ -54,9 +54,9 @@ export function AlertProvider({ children }) {
         onCancel: null,
       })
     }
-  }
+  }, [])
 
-  const showConfirm = ({
+  const showConfirm = useCallback(({
     title = 'Please Confirm',
     message = '',
     disclaimer = '',
@@ -80,7 +80,7 @@ export function AlertProvider({ children }) {
       onConfirm,
       onCancel,
     })
-  }
+  }, [])
 
   const handleConfirm = () => {
     if (alertConfig.onConfirm) {
@@ -93,7 +93,7 @@ export function AlertProvider({ children }) {
     setAlertConfig((prev) => ({ ...prev, isOpen: false }))
   }
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     if (alertConfig.onCancel) {
       try {
         alertConfig.onCancel()
@@ -102,7 +102,7 @@ export function AlertProvider({ children }) {
       }
     }
     setAlertConfig((prev) => ({ ...prev, isOpen: false }))
-  }
+  }, [alertConfig.onCancel])
 
   // Intercept native window.alert to automatically render the custom alert modal
   useEffect(() => {
@@ -113,10 +113,16 @@ export function AlertProvider({ children }) {
     return () => {
       window.alert = originalAlert
     }
-  }, [])
+  }, [showAlert])
+
+  const alertContextValue = useMemo(() => ({
+    showAlert,
+    showConfirm,
+    closeAlert: handleCancel,
+  }), [showAlert, showConfirm, handleCancel])
 
   return (
-    <AlertContext.Provider value={{ showAlert, showConfirm, closeAlert: handleCancel }}>
+    <AlertContext.Provider value={alertContextValue}>
       {children}
 
       {/* Luxury Custom Lily Charm Alert / Confirmation Modal */}

@@ -16,8 +16,9 @@ export default function BrandIntro() {
                 <div className="border border-[var(--color-line)] bg-[var(--color-bg)] rounded-2xl p-2.5 sm:p-3 shadow-2xl overflow-hidden">
                   <div className="relative overflow-hidden aspect-[4/4.8] border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-xl">
                     <img
-                      src="/images/products/flower-crimson-velvet-bouquet.png"
+                      src="/images/products/flower-crimson-velvet-bouquet.webp"
                       alt="Lily Charm Handcrafted Crimson Red Velvet Floral Bouquet"
+                      loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-700 hover:scale-105 rounded-xl"
                     />
                     <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-[var(--color-bg)]/90 backdrop-blur-sm border border-[var(--color-line)] rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 text-[0.6rem] sm:text-[0.65rem] font-bold uppercase tracking-wider text-[var(--color-primary)]">
@@ -35,8 +36,9 @@ export default function BrandIntro() {
               <div className="flex items-center gap-2.5 sm:gap-3 mb-2">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-[var(--color-primary)]/40 p-0.5 shadow-md overflow-hidden bg-white shrink-0">
                   <img
-                    src="/images/logo.png"
+                    src="/images/logo.webp"
                     alt="Lily Charm Official Logo Seal"
+                    loading="lazy"
                     className="w-full h-full object-cover rounded-full"
                   />
                 </div>

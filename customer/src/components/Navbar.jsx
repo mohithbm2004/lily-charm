@@ -60,8 +60,9 @@ export default function Navbar() {
             >
               <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full border border-[var(--color-primary)]/40 p-0.5 shadow-sm overflow-hidden bg-white shrink-0 group-hover:scale-105 transition-transform">
                 <img
-                  src="/images/logo.png"
+                  src="/images/logo.webp"
                   alt="Lily Charm Official Logo"
+                  loading="eager"
                   className="w-full h-full object-cover rounded-full"
                 />
               </div>

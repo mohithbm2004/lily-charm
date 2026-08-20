@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import { products as initialProducts, categories as initialCategories } from '../data/products'
 
 import { API_URL } from '../config/api'
@@ -223,12 +223,14 @@ export function StudioProvider({ children }) {
     socket.on('COLLECTION_DELETED', handleCollectionDeleted)
     socket.on('SETTINGS_UPDATED', handleSettingsUpdated)
 
-    // Fallback sync interval for offline resilience
-    const interval = setInterval(() => {
-      refreshProductsFromApi()
-      refreshCollectionsFromApi()
-      refreshSettingsFromApi()
-    }, 15000)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshProductsFromApi()
+        refreshCollectionsFromApi()
+        refreshSettingsFromApi()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
       socket.off('PRODUCT_CREATED', handleProductCreated)
@@ -238,11 +240,9 @@ export function StudioProvider({ children }) {
       socket.off('COLLECTION_UPDATED', handleCollectionUpdated)
       socket.off('COLLECTION_DELETED', handleCollectionDeleted)
       socket.off('SETTINGS_UPDATED', handleSettingsUpdated)
-      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
-
-
 
   useEffect(() => {
     localStorage.setItem('lilycharm_marquee', marqueeText)
@@ -409,33 +409,33 @@ export function StudioProvider({ children }) {
     }
   }
 
+  const contextValue = useMemo(() => ({
+    products,
+    collections,
+    orders,
+    loading,
+    marqueeText,
+    activeOffer,
+    shippingSettings,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    deleteAllProducts,
+    addCollection,
+    updateCollection,
+    deleteCollection,
+    addOrder,
+    updateOrderStatus,
+    updateMarquee,
+    updateOffer,
+    updateShippingSettings,
+    refreshProductsFromApi,
+    refreshCollectionsFromApi,
+    refreshSettingsFromApi,
+  }), [products, collections, orders, loading, marqueeText, activeOffer, shippingSettings])
+
   return (
-    <StudioContext.Provider
-      value={{
-        products,
-        collections,
-        orders,
-        loading,
-        marqueeText,
-        activeOffer,
-        shippingSettings,
-        addProduct,
-        updateProduct,
-        deleteProduct,
-        deleteAllProducts,
-        addCollection,
-        updateCollection,
-        deleteCollection,
-        addOrder,
-        updateOrderStatus,
-        updateMarquee,
-        updateOffer,
-        updateShippingSettings,
-        refreshProductsFromApi,
-        refreshCollectionsFromApi,
-        refreshSettingsFromApi,
-      }}
-    >
+    <StudioContext.Provider value={contextValue}>
       {children}
     </StudioContext.Provider>
   )
