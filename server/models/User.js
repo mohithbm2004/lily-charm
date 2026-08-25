@@ -34,6 +34,7 @@ const userSchema = new mongoose.Schema(
 
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password') || !this.password) return next()
+  if (/^\$2[ayb]\$[0-9]{2}\$[./A-Za-z0-9]{53}$/.test(this.password)) return next()
   this.password = await bcrypt.hash(this.password, 10)
   next()
 })

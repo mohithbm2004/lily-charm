@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import User from '../models/User.js'
+import TempUser from '../models/TempUser.js'
 import { generateToken } from '../utils/generateToken.js'
 import { uploadToCloudinary } from '../utils/cloudinaryHelper.js'
 import { sendOtpEmail, sendPasswordResetEmail, sendWelcomeEmail } from '../services/emailService.js'
@@ -18,31 +19,36 @@ export async function register(req, res, next) {
     const cleanEmail = email.toLowerCase().trim()
     let user = await User.findOne({ email: cleanEmail })
 
-    if (user && user.isVerified) {
-      return res.status(400).json({ message: 'Email address is already registered and verified. Please sign in.' })
+    if (user) {
+      if (user.isVerified) {
+        return res.status(400).json({ message: 'Email address is already registered and verified. Please sign in.' })
+      } else {
+        // Clean up legacy unverified user to avoid duplicate entries in User collection
+        await User.deleteOne({ _id: user._id })
+      }
     }
 
     const rawOtp = generate6DigitOtp()
     const hashedOtp = hashToken(rawOtp)
     const otpExpire = new Date(Date.now() + 5 * 60 * 1000) // 5 minutes
 
-    if (user && !user.isVerified) {
-      user.name = name
-      user.password = password
-      user.phone = phone || user.phone
-      user.otp = hashedOtp
-      user.otpExpire = otpExpire
-      user.otpAttempts = 0
-      user.lastOtpSentAt = new Date()
-      await user.save()
+    let tempUser = await TempUser.findOne({ email: cleanEmail })
+
+    if (tempUser) {
+      tempUser.name = name
+      tempUser.password = password
+      tempUser.phone = phone || tempUser.phone
+      tempUser.otp = hashedOtp
+      tempUser.otpExpire = otpExpire
+      tempUser.otpAttempts = 0
+      tempUser.lastOtpSentAt = new Date()
+      await tempUser.save()
     } else {
-      user = await User.create({
+      tempUser = await TempUser.create({
         name,
         email: cleanEmail,
         password,
         phone: phone || '',
-        provider: 'email',
-        isVerified: false,
         otp: hashedOtp,
         otpExpire,
         otpAttempts: 0,
@@ -55,7 +61,7 @@ export async function register(req, res, next) {
     }
 
     try {
-      await sendOtpEmail(cleanEmail, user.name, rawOtp)
+      await sendOtpEmail(cleanEmail, tempUser.name, rawOtp)
     } catch (sendErr) {
       console.warn(`[REGISTER OTP NOTICE] [${cleanEmail}]:`, sendErr.message)
       if (sendErr.isSuppressed || sendErr.isHardBounce) {
@@ -92,40 +98,48 @@ export async function verifyOtp(req, res, next) {
     }
 
     const cleanEmail = email.toLowerCase().trim()
-    const user = await User.findOne({ email: cleanEmail })
+    let user = await User.findOne({ email: cleanEmail })
 
-    if (!user) {
-      return res.status(404).json({ message: 'User account not found.' })
-    }
-
-    if (user.isVerified) {
+    if (user && user.isVerified) {
       const token = generateToken(user._id)
       return res.json({ message: 'Account already verified.', user, token })
     }
 
-    if (isOtpExpired(user.otpExpire)) {
+    const tempUser = await TempUser.findOne({ email: cleanEmail })
+
+    if (!tempUser) {
+      return res.status(404).json({ message: 'No registration session found. Please register again.' })
+    }
+
+    if (isOtpExpired(tempUser.otpExpire)) {
       return res.status(400).json({ message: 'OTP expired. Please request a new verification code.' })
     }
 
-    if (user.otpAttempts >= 5) {
+    if (tempUser.otpAttempts >= 5) {
       return res.status(400).json({ message: 'Maximum OTP attempts exceeded. Please click Resend OTP.' })
     }
 
     const inputHashedOtp = hashToken(otp)
-    if (user.otp !== inputHashedOtp) {
-      user.otpAttempts = (user.otpAttempts || 0) + 1
-      await user.save()
-      const remaining = 5 - user.otpAttempts
+    if (tempUser.otp !== inputHashedOtp) {
+      tempUser.otpAttempts = (tempUser.otpAttempts || 0) + 1
+      await tempUser.save()
+      const remaining = 5 - tempUser.otpAttempts
       return res.status(400).json({ message: `Invalid OTP code. ${remaining} attempts remaining.` })
     }
 
-    // OTP Verified successfully!
-    user.isVerified = true
-    user.otp = ''
-    user.otpExpire = null
-    user.otpAttempts = 0
-    user.lastLogin = new Date()
-    await user.save()
+    // OTP Verified successfully! Now create the real verified user in User collection
+    user = await User.create({
+      name: tempUser.name,
+      email: cleanEmail,
+      password: tempUser.password, // This is already a bcrypt hash from tempUser
+      phone: tempUser.phone || '',
+      provider: 'email',
+      isVerified: true,
+      lastLogin: new Date(),
+    })
+
+    // Delete the TempUser document
+    await TempUser.deleteOne({ _id: tempUser._id })
 
     // Send Welcome Email asynchronously
     sendWelcomeEmail(cleanEmail, user.name).catch(console.error)
@@ -150,33 +164,35 @@ export async function resendOtp(req, res, next) {
     const cleanEmail = email.toLowerCase().trim()
     const user = await User.findOne({ email: cleanEmail })
 
-    if (!user) {
-      return res.status(404).json({ message: 'No account found with this email address.' })
-    }
-
-    if (user.isVerified) {
+    if (user && user.isVerified) {
       return res.status(400).json({ message: 'Account is already verified. Please sign in.' })
     }
 
-    if (!canResendOtp(user.lastOtpSentAt, 60)) {
+    const tempUser = await TempUser.findOne({ email: cleanEmail })
+
+    if (!tempUser) {
+      return res.status(404).json({ message: 'No registration session found. Please register again.' })
+    }
+
+    if (!canResendOtp(tempUser.lastOtpSentAt, 60)) {
       return res.status(429).json({ message: 'Please wait 60 seconds before requesting another OTP.' })
     }
 
     const rawOtp = generate6DigitOtp()
     const hashedOtp = hashToken(rawOtp)
 
-    user.otp = hashedOtp
-    user.otpExpire = new Date(Date.now() + 5 * 60 * 1000) // 5 minutes
-    user.otpAttempts = 0
-    user.lastOtpSentAt = new Date()
-    await user.save()
+    tempUser.otp = hashedOtp
+    tempUser.otpExpire = new Date(Date.now() + 5 * 60 * 1000) // 5 minutes
+    tempUser.otpAttempts = 0
+    tempUser.lastOtpSentAt = new Date()
+    await tempUser.save()
 
     if (req.otpSecurity?.recordRequest) {
       req.otpSecurity.recordRequest()
     }
 
     try {
-      await sendOtpEmail(cleanEmail, user.name, rawOtp)
+      await sendOtpEmail(cleanEmail, tempUser.name, rawOtp)
     } catch (sendErr) {
       console.warn(`[RESEND OTP NOTICE] [${cleanEmail}]:`, sendErr.message)
       if (sendErr.isSuppressed || sendErr.isHardBounce) {
