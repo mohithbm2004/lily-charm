@@ -35,7 +35,7 @@ export function StudioProvider({ children }) {
         const parsed = JSON.parse(saved)
         if (parsed && typeof parsed === 'object') {
           return {
-            shippingFeeEnabled: parsed.shippingFeeEnabled !== undefined ? Boolean(parsed.shippingFeeEnabled) : true,
+            shippingFeeEnabled: true,
             standardShippingFee: Number(parsed.standardShippingFee) || 100,
             freeShippingThreshold: Number(parsed.freeShippingThreshold) || 2000,
           }
