@@ -30,31 +30,55 @@ export async function processOrderPaymentSuccess({
   // 1. Locate internal Order record
   const order = await Order.findOne({ razorpayOrderId })
   if (!order) {
-    console.warn(`[PAYMENT PROCESSOR]: No order found for Razorpay Order ID '${razorpayOrderId}' (Source: ${source})`)
+    console.warn(`[PAYMENT] No order found for Razorpay Order ID '${razorpayOrderId}' (Source: ${source})`)
     return { success: false, reason: 'ORDER_NOT_FOUND' }
   }
 
   // 2. Idempotency Check: Return immediately if already processed
-  if (
-    order.paymentStatus === 'Paid' &&
-    (order.status === 'Order Confirmed' || order.status === 'Confirmed')
-  ) {
+  if (order.paymentStatus === 'Paid') {
+    console.log(`[PAYMENT] Order ${order.orderNumber} already processed and paid. (Idempotent bypass)`)
     return { success: true, alreadyProcessed: true, order }
   }
 
-  // 3. Amount Validation (if specified)
+  // 3. Authoritative Amount Validation
   if (amountInRupees !== null && !isNaN(Number(amountInRupees))) {
     const expectedAmount = Number(order.grandTotal)
     const paidAmount = Number(amountInRupees)
-    if (Math.abs(expectedAmount - paidAmount) > 1.0) {
+    if (Math.abs(expectedAmount - paidAmount) > 0.01) {
       console.error(
-        `[SECURITY WARNING]: Payment amount mismatch for Order ${order.orderNumber}. Expected ₹${expectedAmount}, received ₹${paidAmount}`
+        `[PAYMENT ERROR] Amount mismatch for Order ${order.orderNumber}. Expected ₹${expectedAmount}, received ₹${paidAmount}`
       )
+      // Flag order with reconciliation mismatch note
+      try {
+        await Order.updateOne(
+          { _id: order._id },
+          {
+            $set: {
+              notes: `[PAYMENT RECONCILIATION ERROR] Amount mismatch detected on ${new Date().toLocaleString()}. Expected ₹${expectedAmount}, received ₹${paidAmount}. Please investigate manually.`,
+            },
+            $push: {
+              statusHistory: {
+                status: order.status,
+                timestamp: new Date(),
+                note: `⚠️ Warning: Payment amount mismatch detected during verification. Expected ₹${expectedAmount}, received ₹${paidAmount}. Order remains unpaid.`,
+              },
+            },
+          }
+        )
+      } catch (err) {
+        console.error('[PAYMENT] Failed to save reconciliation error note:', err.message)
+      }
       return { success: false, reason: 'AMOUNT_MISMATCH', order }
     }
+    console.log(`[PAYMENT] Amount verified successfully: ₹${paidAmount}`)
   }
 
-  // 4. Idempotent Atomic State Transition (Only updates if paymentStatus is not already 'Paid')
+  // 4. Fulfillment status preservation check
+  const isInitialStatus = ['Pending Payment', 'Payment Failed', 'Pending'].includes(order.status)
+  const statusUpdate = isInitialStatus ? { status: 'Order Confirmed' } : {}
+
+  // 5. Critical Database Order Update (Committed immediately)
+  console.log(`[PAYMENT] Marking order ${order.orderNumber} as Paid...`)
   const updatedOrder = await Order.findOneAndUpdate(
     {
       _id: order._id,
@@ -63,13 +87,13 @@ export async function processOrderPaymentSuccess({
     {
       $set: {
         paymentStatus: 'Paid',
-        status: 'Order Confirmed',
         razorpayPaymentId: razorpayPaymentId || order.razorpayPaymentId || '',
         razorpaySignature: razorpaySignature || order.razorpaySignature || '',
+        ...statusUpdate,
       },
       $push: {
         statusHistory: {
-          status: 'Order Confirmed',
+          status: isInitialStatus ? 'Order Confirmed' : order.status,
           timestamp: new Date(),
           note: `Payment verified & captured via Razorpay (${source}). Payment ID: ${razorpayPaymentId || 'N/A'}`,
         },
@@ -80,39 +104,14 @@ export async function processOrderPaymentSuccess({
 
   // If null, a concurrent process already updated this order to 'Paid'
   if (!updatedOrder) {
+    console.log(`[PAYMENT] Order ${order.orderNumber} was marked Paid concurrently.`)
     const currentOrder = await Order.findById(order._id)
     return { success: true, alreadyProcessed: true, order: currentOrder }
   }
 
-  // 5. Inventory Protection: Decrement Product Stock Exactly Once
-  if (updatedOrder.items && updatedOrder.items.length > 0) {
-    for (const item of updatedOrder.items) {
-      if (item.product && item.qty > 0) {
-        try {
-          await Product.updateOne(
-            { _id: item.product, stock: { $gte: item.qty } },
-            { $inc: { stock: -item.qty } }
-          )
-        } catch (stockErr) {
-          console.warn(`[INVENTORY NOTICE]: Could not decrement stock for product ${item.product}:`, stockErr.message)
-        }
-      }
-    }
-  }
+  console.log(`[PAYMENT] Order ${order.orderNumber} marked Paid successfully.`)
 
-  // 5b. Increment Coupon Usage Count exactly once on captured payment
-  if (updatedOrder.couponCode) {
-    try {
-      await Coupon.updateOne(
-        { code: updatedOrder.couponCode.toUpperCase().trim() },
-        { $inc: { usageCount: 1 } }
-      )
-    } catch (couponErr) {
-      console.warn(`[COUPON USAGE INCREMENT NOTICE]:`, couponErr.message)
-    }
-  }
-
-  // 6. Upsert Ledger Payment Record
+  // 6. Critical Database Payment Ledger Update (Committed immediately)
   try {
     await Payment.findOneAndUpdate(
       { razorpayOrderId },
@@ -126,41 +125,76 @@ export async function processOrderPaymentSuccess({
           razorpaySignature: razorpaySignature || '',
           amount: updatedOrder.grandTotal,
           currency: 'INR',
-          paymentMethod: updatedOrder.paymentMethod || 'Razorpay Prepaid',
           status: 'captured',
           processedAt: new Date(),
         },
       },
       { upsert: true, new: true }
     )
+    console.log(`[PAYMENT] Payment ledger record finalized.`)
   } catch (payErr) {
-    console.warn('[PAYMENT LEDGER RECORD NOTICE]:', payErr.message)
+    console.warn('[PAYMENT] Payment ledger record error:', payErr.message)
   }
 
-  // 7. Clear User Cart (if authenticated order)
-  if (updatedOrder.user) {
+  // 7. Non-Critical, slow secondary actions executed asynchronously (Background)
+  ;(async () => {
     try {
-      await Cart.findOneAndUpdate({ user: updatedOrder.user }, { items: [], coupon: null })
-      emitCartUpdated(updatedOrder.user, { items: [], coupon: null })
-    } catch (cartErr) {
-      console.warn('[CART CLEAR NOTICE]:', cartErr.message)
+      // 7a. Asynchronous Inventory Reduction
+      if (updatedOrder.items && updatedOrder.items.length > 0) {
+        for (const item of updatedOrder.items) {
+          if (item.product && item.qty > 0) {
+            try {
+              await Product.updateOne(
+                { _id: item.product, stock: { $gte: item.qty } },
+                { $inc: { stock: -item.qty } }
+              )
+            } catch (stockErr) {
+              console.warn(`[PAYMENT BACKGROUND] Could not decrement stock for product ${item.product}:`, stockErr.message)
+            }
+          }
+        }
+      }
+
+      // 7b. Asynchronous Coupon Usage Update
+      if (updatedOrder.couponCode) {
+        try {
+          await Coupon.updateOne(
+            { code: updatedOrder.couponCode.toUpperCase().trim() },
+            { $inc: { usageCount: 1 } }
+          )
+        } catch (couponErr) {
+          console.warn(`[PAYMENT BACKGROUND] Coupon usage increment notice:`, couponErr.message)
+        }
+      }
+
+      // 7c. Asynchronous Cart Clearance
+      if (updatedOrder.user) {
+        try {
+          await Cart.findOneAndUpdate({ user: updatedOrder.user }, { items: [], coupon: null })
+          emitCartUpdated(updatedOrder.user, { items: [], coupon: null })
+        } catch (cartErr) {
+          console.warn('[PAYMENT BACKGROUND] Cart clear notice:', cartErr.message)
+        }
+      }
+
+      // 7d. Asynchronous WebSocket Broadcast
+      try {
+        emitOrderUpdated(updatedOrder)
+      } catch (wsErr) {
+        console.warn('[PAYMENT BACKGROUND] WebSocket notice:', wsErr.message)
+      }
+
+      // 7e. Asynchronous Transactional Email Dispatches
+      sendOrderConfirmationEmail(updatedOrder).catch((e) =>
+        console.warn('[PAYMENT BACKGROUND] Order confirmation email warning:', e.message)
+      )
+      sendAdminNewOrderNotification(updatedOrder).catch((e) =>
+        console.warn('[PAYMENT BACKGROUND] Admin notification email warning:', e.message)
+      )
+    } catch (asyncErr) {
+      console.error('[PAYMENT BACKGROUND] Unexpected background finalization error:', asyncErr.message)
     }
-  }
-
-  // 8. Real-time UI Update via WebSockets
-  try {
-    emitOrderUpdated(updatedOrder)
-  } catch (wsErr) {
-    console.warn('[WEBSOCKET NOTICE]:', wsErr.message)
-  }
-
-  // 9. Asynchronous Transactional Email Dispatches (Decoupled from DB success)
-  sendOrderConfirmationEmail(updatedOrder).catch((e) =>
-    console.warn('[ORDER CONFIRMATION EMAIL WARNING]:', e.message)
-  )
-  sendAdminNewOrderNotification(updatedOrder).catch((e) =>
-    console.warn('[ADMIN ORDER NOTIFICATION WARNING]:', e.message)
-  )
+  })().catch((err) => console.error('[PAYMENT BACKGROUND] Uncaught thread error:', err))
 
   return { success: true, alreadyProcessed: false, order: updatedOrder }
 }
