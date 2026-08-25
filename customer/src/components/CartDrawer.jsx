@@ -27,9 +27,9 @@ export default function CartDrawer() {
 
   useScrollLock(open)
 
-  const isShippingEnabled = shippingSettings?.shippingFeeEnabled ?? true
-  const standardShippingFee = shippingSettings?.standardShippingFee ?? 100
-  const freeThreshold = shippingSettings?.freeShippingThreshold ?? 2500
+  const isShippingEnabled = shippingSettings?.shippingFeeEnabled !== false
+  const standardShippingFee = Number(shippingSettings?.standardShippingFee) || 100
+  const freeThreshold = Number(shippingSettings?.freeShippingThreshold) || 2000
 
   const shipping = items.length === 0 ? 0 : isShippingEnabled ? (subtotal >= freeThreshold ? 0 : standardShippingFee) : 0
   const grandTotal = Math.max(0, subtotal - discountAmount + shipping)

@@ -29,11 +29,23 @@ export function StudioProvider({ children }) {
   })
 
   const [shippingSettings, setShippingSettings] = useState(() => {
-    const saved = localStorage.getItem('lilycharm_shipping_settings')
-    return saved !== null ? JSON.parse(saved) : {
+    try {
+      const saved = localStorage.getItem('lilycharm_shipping_settings')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed && typeof parsed === 'object') {
+          return {
+            shippingFeeEnabled: parsed.shippingFeeEnabled !== undefined ? Boolean(parsed.shippingFeeEnabled) : true,
+            standardShippingFee: Number(parsed.standardShippingFee) || 100,
+            freeShippingThreshold: Number(parsed.freeShippingThreshold) || 2000,
+          }
+        }
+      }
+    } catch {}
+    return {
       shippingFeeEnabled: true,
       standardShippingFee: 100,
-      freeShippingThreshold: 2500,
+      freeShippingThreshold: 2000,
     }
   })
 
@@ -55,7 +67,7 @@ export function StudioProvider({ children }) {
         const updated = {
           shippingFeeEnabled: data?.shippingFeeEnabled !== undefined ? Boolean(data.shippingFeeEnabled) : true,
           standardShippingFee: data?.standardShippingFee !== undefined ? Number(data.standardShippingFee) : 100,
-          freeShippingThreshold: data?.freeShippingThreshold !== undefined ? Number(data.freeShippingThreshold) : 2500,
+          freeShippingThreshold: data?.freeShippingThreshold !== undefined ? Number(data.freeShippingThreshold) : 2000,
         }
         setShippingSettings(updated)
         localStorage.setItem('lilycharm_shipping_settings', JSON.stringify(updated))

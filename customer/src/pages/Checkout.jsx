@@ -23,9 +23,9 @@ export default function Checkout() {
   const [authInitialMode, setAuthInitialMode] = useState('login')
   const [termsAccepted, setTermsAccepted] = useState(false)
 
-  const isShippingEnabled = shippingSettings?.shippingFeeEnabled ?? true
-  const standardShippingFee = shippingSettings?.standardShippingFee ?? 100
-  const freeThreshold = shippingSettings?.freeShippingThreshold ?? 2500
+  const isShippingEnabled = shippingSettings?.shippingFeeEnabled !== false
+  const standardShippingFee = Number(shippingSettings?.standardShippingFee) || 100
+  const freeThreshold = Number(shippingSettings?.freeShippingThreshold) || 2000
 
   const shipping = isShippingEnabled ? (subtotal >= freeThreshold ? 0 : standardShippingFee) : 0
   const total = Math.max(0, subtotal - discountAmount + shipping)
