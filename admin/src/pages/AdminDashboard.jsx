@@ -1932,7 +1932,17 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                           {/* Separate Actions Column */}
                           <td className="p-4 text-right align-top space-y-2">
                             <button
-                              onClick={() => deleteOrder(o)}
+                              onClick={() => {
+                                setDoubleConfirmModal({
+                                  isOpen: true,
+                                  title: `Delete Order ${o.orderNumber || 'Record'}`,
+                                  message: `⚠️ WARNING: You are about to permanently delete order ${o.orderNumber || 'record'} for ₹${o.grandTotal || o.total || 0}. This will remove all order histories, payment logs, and tracking records from the database. This action cannot be undone.`,
+                                  expectedPhrase: o.orderNumber || 'DELETE',
+                                  inputText: '',
+                                  actionLabel: 'Permanently Delete Order',
+                                  onConfirm: () => deleteOrder(o),
+                                })
+                              }}
                               className="text-rose-600 hover:text-rose-800 text-xs font-bold flex items-center gap-1 ml-auto hover:underline"
                             >
                               <Trash2 size={13} /> Delete
@@ -4486,7 +4496,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
 
             <div className="bg-red-50/90 border border-red-300 p-4 space-y-2.5 rounded text-xs text-red-950">
               <p className="font-bold">
-                To confirm this bulk deletion, please type <span className="font-mono bg-red-200 px-2 py-0.5 rounded font-bold text-red-900">{doubleConfirmModal.expectedPhrase}</span> in the box below:
+                To confirm this deletion, please type <span className="font-mono bg-red-200 px-2 py-0.5 rounded font-bold text-red-900">{doubleConfirmModal.expectedPhrase}</span> in the box below:
               </p>
               <input
                 type="text"
