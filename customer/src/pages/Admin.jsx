@@ -568,8 +568,6 @@ export default function Admin() {
             </form>
           </div>
 
-          </div>
-
           {/* Shipping Fee & Free Delivery Threshold Manager */}
           <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 space-y-4 md:col-span-2">
             <div className="flex items-center gap-2">

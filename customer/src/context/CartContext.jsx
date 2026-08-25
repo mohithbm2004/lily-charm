@@ -500,6 +500,99 @@ export function CartProvider({ children }) {
       dispatch({ type: 'REMOVE_COUPON' })
     }
 
+    const addItemAsync = async (product, qty = 1) => {
+      if (!product) return { success: false, message: 'Invalid product details.' }
+
+      const pId = String(product.id || product._id || product.slug || '')
+      const existingIndex = state.items.findIndex(
+        (i) => String(i.id) === pId || String(i._id) === pId || (i.slug && i.slug === pId)
+      )
+
+      let updatedItems = []
+      if (existingIndex > -1) {
+        const existing = state.items[existingIndex]
+        const newQty = Math.min(MAX_QTY_PER_PRODUCT, existing.qty + (Number(qty) || 1))
+        updatedItems = state.items.map((i, idx) =>
+          idx === existingIndex ? { ...i, qty: newQty } : i
+        )
+      } else {
+        updatedItems = [
+          ...state.items,
+          {
+            ...product,
+            id: pId || product.id,
+            qty: Math.min(MAX_QTY_PER_PRODUCT, Math.max(1, Number(qty) || 1)),
+          },
+        ]
+      }
+
+      if (token && user) {
+        try {
+          const authToken = token || localStorage.getItem('lilycharm_token') || ''
+          const res = await fetch(`${API_URL}/cart`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+            },
+            body: JSON.stringify({
+              items: updatedItems,
+              coupon: state.coupon,
+            }),
+          })
+
+          if (!res.ok) {
+            throw new Error('Server cart update failed')
+          }
+
+          const data = await res.json()
+          if (data && Array.isArray(data.items)) {
+            isRemoteUpdate.current = true
+            dispatch({
+              type: 'SET_CART',
+              items: data.items,
+              coupon: data.coupon,
+            })
+            try {
+              localStorage.setItem(
+                CART_STORAGE_KEY,
+                JSON.stringify({
+                  items: data.items,
+                  coupon: data.coupon,
+                })
+              )
+            } catch {}
+            return { success: true }
+          } else {
+            throw new Error('Invalid response payload')
+          }
+        } catch (err) {
+          console.error('[CART BACKGROUND UPDATE ERROR]:', err)
+          return { success: false, message: 'Unable to add this item. Please try again.' }
+        }
+      } else {
+        try {
+          isRemoteUpdate.current = true
+          dispatch({
+            type: 'SET_CART',
+            items: updatedItems,
+            coupon: state.coupon,
+          })
+          localStorage.setItem(
+            CART_STORAGE_KEY,
+            JSON.stringify({
+              items: updatedItems,
+              coupon: state.coupon,
+            })
+          )
+          return { success: true }
+        } catch (err) {
+          console.error('[CART GUEST UPDATE ERROR]:', err)
+          return { success: false, message: 'Unable to add this item. Please try again.' }
+        }
+      }
+    }
+
     return {
       items: state.items,
       open: state.open,
@@ -509,6 +602,7 @@ export function CartProvider({ children }) {
       discountAmount,
       maxQtyPerProduct: MAX_QTY_PER_PRODUCT,
       addItem: (product, qty = 1) => dispatch({ type: 'ADD', product, qty }),
+      addItemAsync,
       removeItem: (id) => dispatch({ type: 'REMOVE', id }),
       setQty: (id, qty) => dispatch({ type: 'SET_QTY', id, qty }),
       openCart: () => dispatch({ type: 'OPEN' }),
@@ -522,7 +616,7 @@ export function CartProvider({ children }) {
       applyCoupon,
       removeCoupon,
     }
-  }, [state, availableCoupons])
+  }, [state, availableCoupons, user, token])
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }

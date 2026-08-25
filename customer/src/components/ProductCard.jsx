@@ -1,13 +1,16 @@
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Heart, Plus } from 'lucide-react'
+import { Heart, Plus, Loader2 } from 'lucide-react'
 import { formatPrice } from '../lib/format'
 import { useCart } from '../context/CartContext'
+import { useAlert } from '../context/AlertContext'
 import TiltCard3D from './TiltCard3D'
 
 function ProductCard({ product, index = 0 }) {
-  const { addItem, openCart } = useCart()
+  const { addItemAsync, openCart } = useCart()
+  const { showAlert } = useAlert()
+  const [loading, setLoading] = useState(false)
 
   const ix = product.imageX ?? 50
   const iy = product.imageY ?? 50
@@ -103,13 +106,35 @@ function ProductCard({ product, index = 0 }) {
           </div>
 
           <button
-            onClick={() => {
-              addItem(product)
-              openCart()
+            onClick={async (e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              if (loading) return
+              setLoading(true)
+              const res = await addItemAsync(product)
+              if (res && res.success) {
+                openCart()
+              } else {
+                showAlert({
+                  type: 'error',
+                  title: 'Cart Update Failed',
+                  message: res?.message || 'Unable to add this item. Please try again.',
+                })
+              }
+              setLoading(false)
             }}
-            className="w-full btn-outline rounded-full py-2 px-1 text-[0.6rem] sm:text-[0.68rem] tracking-wider uppercase font-bold flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis shadow-sm"
+            disabled={loading}
+            className="w-full btn-outline rounded-full py-2 px-1 text-[0.6rem] sm:text-[0.68rem] tracking-wider uppercase font-bold flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Plus size={12} /> ADD TO CART
+            {loading ? (
+              <>
+                <Loader2 size={12} className="animate-spin" /> ADDING...
+              </>
+            ) : (
+              <>
+                <Plus size={12} /> ADD TO CART
+              </>
+            )}
           </button>
         </div>
       </motion.div>

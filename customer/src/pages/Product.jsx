@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Heart, Minus, Plus, Star, Edit3, CheckCircle2 } from 'lucide-react'
+import { Heart, Minus, Plus, Star, Edit3, CheckCircle2, Loader2 } from 'lucide-react'
 import { useStudio } from '../context/StudioContext'
 import { formatPrice } from '../lib/format'
 import { useCart } from '../context/CartContext'
+import { useAlert } from '../context/AlertContext'
 import ProductCard from '../components/ProductCard'
 import Reveal from '../components/Reveal'
 import ReviewModal from '../components/ReviewModal'
@@ -24,7 +25,9 @@ export default function Product() {
   const [tab, setTab] = useState('description')
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [productReviews, setProductReviews] = useState([])
-  const { addItem, openCart } = useCart()
+  const { addItemAsync, openCart } = useCart()
+  const { showAlert } = useAlert()
+  const [loadingCart, setLoadingCart] = useState(false)
 
   const fetchProductReviews = async () => {
     if (!product) return
@@ -176,13 +179,31 @@ export default function Product() {
                 </div>
 
                 <button
-                  onClick={() => {
-                    addItem(product, qty)
-                    openCart()
+                  onClick={async () => {
+                    if (loadingCart) return
+                    setLoadingCart(true)
+                    const res = await addItemAsync(product, qty)
+                    if (res && res.success) {
+                      openCart()
+                    } else {
+                      showAlert({
+                        type: 'error',
+                        title: 'Cart Update Failed',
+                        message: res?.message || 'Unable to add this item. Please try again.',
+                      })
+                    }
+                    setLoadingCart(false)
                   }}
-                  className="btn-primary flex-1 py-3 text-xs uppercase font-bold tracking-widest text-center rounded-full shadow-md cursor-pointer"
+                  disabled={loadingCart}
+                  className="btn-primary flex-1 py-3 text-xs uppercase font-bold tracking-widest text-center rounded-full shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Add to Cart • {formatPrice(product.price * qty)}
+                  {loadingCart ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" /> ADDING...
+                    </>
+                  ) : (
+                    <>Add to Cart • {formatPrice(product.price * qty)}</>
+                  )}
                 </button>
 
                 <button
