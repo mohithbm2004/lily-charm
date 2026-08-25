@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
 import { useStudio } from '../context/StudioContext'
 import { formatPrice } from '../lib/format'
