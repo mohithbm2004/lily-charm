@@ -42,9 +42,10 @@ export default function Dashboard() {
     }
   }, [requestedTab])
 
-  const isShippingEnabled = shippingSettings?.shippingFeeEnabled ?? true
-  const standardShippingFee = shippingSettings?.standardShippingFee ?? 100
-  const freeThreshold = shippingSettings?.freeShippingThreshold ?? 2500
+  const rawEnabled = shippingSettings?.shippingFeeEnabled
+  const isShippingEnabled = rawEnabled === true || rawEnabled === 'true' || rawEnabled === undefined || rawEnabled === null
+  const standardShippingFee = Number(shippingSettings?.standardShippingFee) || 100
+  const freeThreshold = Number(shippingSettings?.freeShippingThreshold) || 2000
 
   const getCustomOrderShipping = (price) => {
     if (!isShippingEnabled) return 0

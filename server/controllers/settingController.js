@@ -16,10 +16,17 @@ export const getSettings = async (req, res) => {
         freeShippingThreshold: 2500,
       })
     }
-    res.json(settings)
+    res.json({
+      success: true,
+      shippingFeeEnabled: Boolean(settings.shippingFeeEnabled),
+      standardShippingFee: Number(settings.standardShippingFee) || 100,
+      freeShippingThreshold: Number(settings.freeShippingThreshold) || 2000,
+      marqueeText: settings.marqueeText || '',
+      updatedAt: settings.updatedAt,
+    })
   } catch (error) {
     console.error('Error fetching settings:', error)
-    res.status(500).json({ message: 'Server error fetching settings' })
+    res.status(500).json({ success: false, message: 'Server error fetching settings' })
   }
 }
 
@@ -47,10 +54,20 @@ export const updateSettings = async (req, res) => {
     if (freeShippingThreshold !== undefined) settings.freeShippingThreshold = Math.max(0, Number(freeShippingThreshold))
 
     await settings.save()
-    emitSettingsUpdated(settings)
-    res.json({ message: 'Settings updated successfully', settings })
+
+    const payload = {
+      success: true,
+      shippingFeeEnabled: Boolean(settings.shippingFeeEnabled),
+      standardShippingFee: Number(settings.standardShippingFee) || 100,
+      freeShippingThreshold: Number(settings.freeShippingThreshold) || 2000,
+      marqueeText: settings.marqueeText || '',
+      updatedAt: settings.updatedAt,
+    }
+
+    emitSettingsUpdated(payload)
+    res.json({ message: 'Settings updated successfully', settings: payload })
   } catch (error) {
     console.error('Error updating settings:', error)
-    res.status(500).json({ message: 'Server error updating settings' })
+    res.status(500).json({ success: false, message: 'Server error updating settings' })
   }
 }

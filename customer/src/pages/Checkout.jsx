@@ -13,7 +13,7 @@ import { API_URL, RAZORPAY_KEY_ID } from '../config/api'
 export default function Checkout() {
   const { items, subtotal, coupon: activeCoupon, discountAmount, applyCoupon, removeCoupon, clearCart } = useCart()
   const { user, token, loading: authLoading } = useAuth()
-  const { shippingSettings, shippingLoading } = useStudio()
+  const { shippingSettings, shippingLoading, refreshSettingsFromApi } = useStudio()
   const navigate = useNavigate()
   const [processing, setProcessing] = useState(false)
   const [orderConfirmed, setOrderConfirmed] = useState(null)
@@ -22,6 +22,12 @@ export default function Checkout() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authInitialMode, setAuthInitialMode] = useState('login')
   const [termsAccepted, setTermsAccepted] = useState(false)
+
+  useEffect(() => {
+    if (refreshSettingsFromApi) {
+      refreshSettingsFromApi()
+    }
+  }, [])
 
   const rawEnabled = shippingSettings?.shippingFeeEnabled
   const isShippingEnabled = rawEnabled === true || rawEnabled === 'true' || rawEnabled === undefined || rawEnabled === null

@@ -21,11 +21,17 @@ export default function CartDrawer() {
     removeCoupon,
     maxQtyPerProduct = 4,
   } = useCart()
-  const { shippingSettings, shippingLoading } = useStudio()
+  const { shippingSettings, shippingLoading, refreshSettingsFromApi } = useStudio()
   const [couponInput, setCouponInput] = useState('')
   const [couponMsg, setCouponMsg] = useState(null)
 
   useScrollLock(open)
+
+  useEffect(() => {
+    if (open && refreshSettingsFromApi) {
+      refreshSettingsFromApi()
+    }
+  }, [open])
 
   const rawEnabled = shippingSettings?.shippingFeeEnabled
   const isShippingEnabled = rawEnabled === true || rawEnabled === 'true' || rawEnabled === undefined || rawEnabled === null
