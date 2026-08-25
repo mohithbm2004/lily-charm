@@ -139,5 +139,6 @@ connectDB().then(() => {
   seedDefaultCoupons()
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Bloom Atelier API & Real-Time WebSockets running on port ${PORT}`)
+    console.log(`EMAIL TEST MODE: ${ENV.EMAIL_TEST_MODE ? 'ENABLED' : 'DISABLED'}`)
   })
 })

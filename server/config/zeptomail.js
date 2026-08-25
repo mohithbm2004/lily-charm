@@ -1,6 +1,24 @@
 import nodemailer from 'nodemailer'
 import ENV from './env.js'
 
+function getOverriddenMailOptions(options) {
+  if (ENV.EMAIL_TEST_MODE) {
+    const originalTo = options.to || ''
+    const testRecipients = ENV.TEST_EMAIL_RECIPIENTS.join(', ')
+    console.log(`[EMAIL TEST MODE ACTIVE]: Overriding recipient "${originalTo}" with test list: "${testRecipients}"`)
+    
+    const subjectPrefix = `[TEST TO: ${originalTo}] `
+    const overriddenSubject = options.subject ? (options.subject.startsWith('[TEST TO:') ? options.subject : `${subjectPrefix}${options.subject}`) : ''
+
+    return {
+      ...options,
+      to: testRecipients,
+      ...(overriddenSubject ? { subject: overriddenSubject } : {}),
+    }
+  }
+  return options
+}
+
 export const DEFAULT_API_URL = process.env.ZEPTO_API_URL || 'https://api.zeptomail.in/v1.1/email'
 
 export function getZeptoMailAgent(purpose = 'otp') {
@@ -100,11 +118,12 @@ export function getZeptoTransporter(purpose = 'otp') {
       configured: false,
       sender,
       sendMail: async (options) => {
+        const finalOptions = getOverriddenMailOptions(options)
         console.log(`\n=================== [SIMULATED ZEPTOMAIL DISPATCH] ===================`)
         console.log(`[CHANNEL]: ZeptoMail ${channel} SMTP (${host}:${port})`)
-        console.log(`[FROM]: ${options.from || sender.full}`)
-        console.log(`[TO]: ${options.to}`)
-        console.log(`[SUBJECT]: ${options.subject}`)
+        console.log(`[FROM]: ${finalOptions.from || sender.full}`)
+        console.log(`[TO]: ${finalOptions.to}`)
+        console.log(`[SUBJECT]: ${finalOptions.subject}`)
         console.log(`[STATUS]: SIMULATED (ZeptoMail credentials are not configured)`)
         console.log(`======================================================================\n`)
         return { success: true, messageId: `mock-zepto-${channel.toLowerCase()}-${Date.now()}`, simulated: true }
@@ -138,9 +157,10 @@ export function getZeptoTransporter(purpose = 'otp') {
       sender,
       transport,
       sendMail: async (options) => {
+        const finalOptions = getOverriddenMailOptions(options)
         return await transport.sendMail({
           from: sender.full,
-          ...options,
+          ...finalOptions,
         })
       },
       verify: async () => {

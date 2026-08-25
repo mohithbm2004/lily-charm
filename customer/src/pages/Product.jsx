@@ -25,9 +25,29 @@ export default function Product() {
   const [tab, setTab] = useState('description')
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [productReviews, setProductReviews] = useState([])
-  const { addItemAsync } = useCart()
+  const { items, addItemAsync } = useCart()
   const { showAlert } = useAlert()
   const [loadingCart, setLoadingCart] = useState(false)
+
+  const cartItem = items?.find(
+    (i) =>
+      product &&
+      (String(i.id) === String(product.id) ||
+        String(i._id) === String(product.id) ||
+        (i.slug && i.slug === product.slug) ||
+        (product._id && String(i.id) === String(product._id)))
+  )
+  const cartQty = cartItem ? cartItem.qty : 0
+  const maxAllowedQty = Math.max(0, 4 - cartQty)
+  const isMaxQty = cartQty >= 4
+
+  useEffect(() => {
+    if (maxAllowedQty > 0) {
+      setQty((q) => Math.min(maxAllowedQty, Math.max(1, q)))
+    } else {
+      setQty(0)
+    }
+  }, [maxAllowedQty])
 
   const fetchProductReviews = async () => {
     if (!product) return
@@ -161,18 +181,19 @@ export default function Product() {
                 <div className="flex items-center border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-full shrink-0 overflow-hidden px-1">
                   <button
                     onClick={() => setQty((q) => Math.max(1, q - 1))}
-                    className="w-10 h-11 flex items-center justify-center hover:bg-black/5 rounded-full cursor-pointer"
+                    disabled={maxAllowedQty <= 0}
+                    className="w-10 h-11 flex items-center justify-center hover:bg-black/5 rounded-full disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                     aria-label="Decrease quantity"
                   >
                     <Minus size={13} />
                   </button>
                   <span className="w-10 text-center text-sm font-bold font-mono">{qty}</span>
                   <button
-                    onClick={() => setQty((q) => Math.min(4, q + 1))}
-                    disabled={qty >= 4}
+                    onClick={() => setQty((q) => Math.min(maxAllowedQty, q + 1))}
+                    disabled={qty >= maxAllowedQty || maxAllowedQty <= 0}
                     className="w-10 h-11 flex items-center justify-center hover:bg-black/5 rounded-full disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                     aria-label="Increase quantity"
-                    title={qty >= 4 ? 'Maximum limit of 4 units per design' : 'Increase quantity'}
+                    title={qty >= maxAllowedQty ? `Maximum limit of 4 units (you already have ${cartQty} in cart)` : 'Increase quantity'}
                   >
                     <Plus size={13} />
                   </button>
@@ -180,7 +201,7 @@ export default function Product() {
 
                 <button
                   onClick={async () => {
-                    if (loadingCart) return
+                    if (loadingCart || isMaxQty) return
                     setLoadingCart(true)
                     const res = await addItemAsync(product, qty)
                     if (!res || !res.success) {
@@ -192,13 +213,17 @@ export default function Product() {
                     }
                     setLoadingCart(false)
                   }}
-                  disabled={loadingCart}
-                  className="btn-primary flex-1 py-3 text-xs uppercase font-bold tracking-widest text-center rounded-full shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loadingCart || isMaxQty}
+                  className={`btn-primary flex-1 py-3 text-xs uppercase font-bold tracking-widest text-center rounded-full shadow-md cursor-pointer flex items-center justify-center gap-2 ${
+                    isMaxQty ? 'bg-amber-600/10 border border-amber-600/20 text-amber-800/60 shadow-none cursor-not-allowed' : ''
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {loadingCart ? (
                     <>
                       <Loader2 size={13} className="animate-spin" /> ADDING...
                     </>
+                  ) : isMaxQty ? (
+                    <>LIMIT REACHED (4 IN CART)</>
                   ) : (
                     <>Add to Cart • {formatPrice(product.price * qty)}</>
                   )}

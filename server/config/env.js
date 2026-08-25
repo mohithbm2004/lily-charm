@@ -20,6 +20,13 @@ export const ENV = {
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
   ADMIN_CLIENT_URL: process.env.ADMIN_CLIENT_URL || 'http://localhost:5174',
 
+  // Email Test Mode Override
+  EMAIL_TEST_MODE: process.env.EMAIL_TEST_MODE === 'true',
+  TEST_EMAIL_RECIPIENTS: (process.env.TEST_EMAIL_RECIPIENTS || 'mohithbmanjunatha@gmail.com,mohithb47@gmail.com,bmmohith48@gmail.com')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
+
   // Cloudinary
   CLOUDINARY: {
     CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || '',
