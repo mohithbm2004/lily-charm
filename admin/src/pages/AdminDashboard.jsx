@@ -3151,9 +3151,19 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                         day: 'numeric',
                       })}
                     </p>
-                    <span className="inline-block mt-1 px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[0.62rem] font-bold uppercase rounded border border-emerald-300">
-                      Verified Account
-                    </span>
+                    {selectedUserModal.user.provider === 'google' || selectedUserModal.user.googleId ? (
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[0.62rem] font-bold uppercase rounded border border-emerald-300">
+                        Verified via Google OAuth
+                      </span>
+                    ) : selectedUserModal.user.isVerified ? (
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-800 text-[0.62rem] font-bold uppercase rounded border border-blue-300">
+                        Verified via Email OTP
+                      </span>
+                    ) : (
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-amber-100 text-amber-800 text-[0.62rem] font-bold uppercase rounded border border-amber-300">
+                        Pending OTP Verification
+                      </span>
+                    )}
                   </div>
 
                   <div>
