@@ -8,9 +8,18 @@ import { useAlert } from '../context/AlertContext'
 import TiltCard3D from './TiltCard3D'
 
 function ProductCard({ product, index = 0 }) {
-  const { addItemAsync } = useCart()
+  const { items, addItemAsync } = useCart()
   const { showAlert } = useAlert()
   const [loading, setLoading] = useState(false)
+
+  const cartItem = items?.find(
+    (i) =>
+      String(i.id) === String(product.id) ||
+      String(i._id) === String(product.id) ||
+      (i.slug && i.slug === product.slug) ||
+      (product._id && String(i.id) === String(product._id))
+  )
+  const isMaxQty = cartItem && cartItem.qty >= 4
 
   const ix = product.imageX ?? 50
   const iy = product.imageY ?? 50
@@ -109,7 +118,7 @@ function ProductCard({ product, index = 0 }) {
             onClick={async (e) => {
               e.preventDefault()
               e.stopPropagation()
-              if (loading) return
+              if (loading || isMaxQty) return
               setLoading(true)
               const res = await addItemAsync(product)
               if (!res || !res.success) {
@@ -121,13 +130,17 @@ function ProductCard({ product, index = 0 }) {
               }
               setLoading(false)
             }}
-            disabled={loading}
-            className="w-full btn-outline rounded-full py-2 px-1 text-[0.6rem] sm:text-[0.68rem] tracking-wider uppercase font-bold flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading || isMaxQty}
+            className={`w-full btn-outline rounded-full py-2 px-1 text-[0.6rem] sm:text-[0.68rem] tracking-wider uppercase font-bold flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis shadow-sm ${
+              isMaxQty ? 'border-amber-600/40 text-amber-700/60 bg-amber-50/20' : ''
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {loading ? (
               <>
                 <Loader2 size={12} className="animate-spin" /> ADDING...
               </>
+            ) : isMaxQty ? (
+              <>LIMIT REACHED (4)</>
             ) : (
               <>
                 <Plus size={12} /> ADD TO CART
