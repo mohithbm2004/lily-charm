@@ -198,11 +198,13 @@ export function StudioProvider({ children }) {
           enabled: data.isOfferActive ?? prev.enabled,
         }))
       }
-      setShippingSettings({
-        shippingFeeEnabled: data.shippingFeeEnabled ?? true,
-        standardShippingFee: data.standardShippingFee ?? 100,
-        freeShippingThreshold: data.freeShippingThreshold ?? 2500,
-      })
+      const updatedShipping = {
+        shippingFeeEnabled: data.shippingFeeEnabled !== undefined ? Boolean(data.shippingFeeEnabled) : true,
+        standardShippingFee: data.standardShippingFee !== undefined ? Number(data.standardShippingFee) : 100,
+        freeShippingThreshold: data.freeShippingThreshold !== undefined ? Number(data.freeShippingThreshold) : 2500,
+      }
+      setShippingSettings(updatedShipping)
+      localStorage.setItem('lilycharm_shipping_settings', JSON.stringify(updatedShipping))
     }
 
     socket.on('PRODUCT_CREATED', handleProductCreated)
