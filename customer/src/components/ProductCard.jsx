@@ -8,7 +8,7 @@ import { useAlert } from '../context/AlertContext'
 import TiltCard3D from './TiltCard3D'
 
 function ProductCard({ product, index = 0 }) {
-  const { addItemAsync, openCart } = useCart()
+  const { addItemAsync } = useCart()
   const { showAlert } = useAlert()
   const [loading, setLoading] = useState(false)
 
@@ -112,9 +112,7 @@ function ProductCard({ product, index = 0 }) {
               if (loading) return
               setLoading(true)
               const res = await addItemAsync(product)
-              if (res && res.success) {
-                openCart()
-              } else {
+              if (!res || !res.success) {
                 showAlert({
                   type: 'error',
                   title: 'Cart Update Failed',

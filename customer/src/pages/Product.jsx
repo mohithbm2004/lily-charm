@@ -25,7 +25,7 @@ export default function Product() {
   const [tab, setTab] = useState('description')
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [productReviews, setProductReviews] = useState([])
-  const { addItemAsync, openCart } = useCart()
+  const { addItemAsync } = useCart()
   const { showAlert } = useAlert()
   const [loadingCart, setLoadingCart] = useState(false)
 
@@ -183,9 +183,7 @@ export default function Product() {
                     if (loadingCart) return
                     setLoadingCart(true)
                     const res = await addItemAsync(product, qty)
-                    if (res && res.success) {
-                      openCart()
-                    } else {
+                    if (!res || !res.success) {
                       showAlert({
                         type: 'error',
                         title: 'Cart Update Failed',
