@@ -614,7 +614,9 @@ export default function AuthModal({
               <div className="space-y-1">
                 <h3 className="text-sm font-bold text-amber-950 uppercase tracking-wide">Please Confirm Your Email Address</h3>
                 <p className="text-xs text-[var(--color-ink-soft)]">
-                  We will send a 6-digit OTP verification code to:
+                  {mode === 'forgot'
+                    ? 'We will send a secure password reset link to:'
+                    : 'We will send a 6-digit OTP verification code to:'}
                 </p>
                 <div className="bg-white border border-amber-300 p-2.5 rounded-xl font-mono text-sm font-bold text-[var(--color-primary)] break-all shadow-sm my-2">
                   {formData.email}
@@ -623,7 +625,7 @@ export default function AuthModal({
                   </div>
                 </div>
                 <p className="text-[0.7rem] text-slate-600">
-                  Please make sure there are no typos in your email domain so that you receive your code without delay.
+                  Please make sure there are no typos in your email domain so that you receive your link/code without delay.
                 </p>
               </div>
 
@@ -642,7 +644,7 @@ export default function AuthModal({
                   className="flex-1 btn-primary py-2.5 px-3 text-xs font-bold uppercase tracking-wider rounded flex items-center justify-center gap-1 disabled:opacity-50"
                 >
                   {isLoading ? <Sparkles size={13} className="animate-spin" /> : <Send size={13} />}
-                  Send OTP Code
+                  {mode === 'forgot' ? 'Send Reset Link' : 'Send OTP Code'}
                 </button>
               </div>
             </div>
