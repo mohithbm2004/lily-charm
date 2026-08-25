@@ -21,7 +21,7 @@ export default function CartDrawer() {
     removeCoupon,
     maxQtyPerProduct = 4,
   } = useCart()
-  const { shippingSettings } = useStudio()
+  const { shippingSettings, shippingLoading } = useStudio()
   const [couponInput, setCouponInput] = useState('')
   const [couponMsg, setCouponMsg] = useState(null)
 
@@ -173,9 +173,11 @@ export default function CartDrawer() {
                   <div className="flex justify-between items-center">
                     <span>Shipping</span>
                     <span className="font-bold">
-                      {shipping === 0 ? (
+                      {shippingLoading ? (
+                        <span className="text-[var(--color-ink-soft)] font-mono animate-pulse">Calculating...</span>
+                      ) : shipping === 0 ? (
                         <span className="text-emerald-700 font-mono">
-                          Free {isShippingEnabled && subtotal >= freeThreshold ? `(> ₹${freeThreshold})` : ''}
+                          Free {isShippingEnabled && subtotal >= freeThreshold ? `(> ₹${freeThreshold.toLocaleString('en-IN')})` : ''}
                         </span>
                       ) : (
                         formatPrice(shipping)

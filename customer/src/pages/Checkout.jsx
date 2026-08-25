@@ -13,7 +13,7 @@ import { API_URL, RAZORPAY_KEY_ID } from '../config/api'
 export default function Checkout() {
   const { items, subtotal, coupon: activeCoupon, discountAmount, applyCoupon, removeCoupon, clearCart } = useCart()
   const { user, token, loading: authLoading } = useAuth()
-  const { shippingSettings } = useStudio()
+  const { shippingSettings, shippingLoading } = useStudio()
   const navigate = useNavigate()
   const [processing, setProcessing] = useState(false)
   const [orderConfirmed, setOrderConfirmed] = useState(null)
@@ -767,9 +767,11 @@ export default function Checkout() {
             <div className="flex justify-between items-center">
               <span>Shipping Charge</span>
               <span className="font-bold">
-                {shipping === 0 ? (
+                {shippingLoading ? (
+                  <span className="text-[var(--color-ink-soft)] font-mono animate-pulse">Calculating...</span>
+                ) : shipping === 0 ? (
                   <span className="text-emerald-700 font-mono">
-                    FREE {isShippingEnabled && subtotal >= freeThreshold ? `(> ₹${freeThreshold})` : ''}
+                    FREE {isShippingEnabled && subtotal >= freeThreshold ? `(> ₹${freeThreshold.toLocaleString('en-IN')})` : ''}
                   </span>
                 ) : (
                   formatPrice(shipping)

@@ -49,6 +49,8 @@ export function StudioProvider({ children }) {
     }
   })
 
+  const [shippingLoading, setShippingLoading] = useState(true)
+
   const refreshSettingsFromApi = async () => {
     try {
       const res = await fetch(`${API_URL}/settings`)
@@ -72,7 +74,9 @@ export function StudioProvider({ children }) {
         setShippingSettings(updated)
         localStorage.setItem('lilycharm_shipping_settings', JSON.stringify(updated))
       }
-    } catch {}
+    } catch {} finally {
+      setShippingLoading(false)
+    }
   }
 
   const refreshProductsFromApi = async () => {
@@ -412,6 +416,7 @@ export function StudioProvider({ children }) {
     loading,
     marqueeText,
     shippingSettings,
+    shippingLoading,
     addProduct,
     updateProduct,
     deleteProduct,
@@ -426,7 +431,7 @@ export function StudioProvider({ children }) {
     refreshProductsFromApi,
     refreshCollectionsFromApi,
     refreshSettingsFromApi,
-  }), [products, collections, orders, loading, marqueeText, shippingSettings])
+  }), [products, collections, orders, loading, marqueeText, shippingSettings, shippingLoading])
 
   return (
     <StudioContext.Provider value={contextValue}>
