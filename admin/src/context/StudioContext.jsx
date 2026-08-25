@@ -59,6 +59,47 @@ export function StudioProvider({ children }) {
     return saved || 'FREE DELIVERY ON ORDERS ABOVE ₹2500 • HANDCRAFTED VELVET BOTANICAL FLORALS • USE CODE LILY10 FOR 10% OFF'
   })
 
+  const [shippingSettings, setShippingSettings] = useState({
+    shippingFeeEnabled: true,
+    standardShippingFee: 100,
+    freeShippingThreshold: 2500,
+  })
+
+  const refreshSettingsFromApi = async () => {
+    try {
+      const res = await fetch(`${API_URL}/settings`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data?.marqueeText) setMarqueeText(data.marqueeText)
+        setShippingSettings({
+          shippingFeeEnabled: data?.shippingFeeEnabled !== undefined ? Boolean(data.shippingFeeEnabled) : true,
+          standardShippingFee: data?.standardShippingFee !== undefined ? Number(data.standardShippingFee) : 100,
+          freeShippingThreshold: data?.freeShippingThreshold !== undefined ? Number(data.freeShippingThreshold) : 2500,
+        })
+      }
+    } catch (e) {
+      console.error('Failed to fetch settings in admin:', e)
+    }
+  }
+
+  const updateShippingSettings = async (newSettings) => {
+    const updated = { ...shippingSettings, ...newSettings }
+    setShippingSettings(updated)
+    try {
+      const res = await fetch(`${API_URL}/settings`, {
+        method: 'POST',
+        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
+        credentials: 'include',
+        body: JSON.stringify(updated),
+      })
+      if (res.ok) {
+        refreshSettingsFromApi()
+      }
+    } catch (e) {
+      console.error('Failed to update shipping settings on server:', e)
+    }
+  }
+
   const refreshProductsFromApi = async () => {
     try {
       const controller = new AbortController()
@@ -176,47 +217,7 @@ export function StudioProvider({ children }) {
     }
   }
 
-  const refreshSettingsFromApi = async () => {
-    try {
-      const res = await fetch(`${API_URL}/settings`)
-      if (res.ok) {
-        const data = await res.json()
-        if (data.offerCode) {
-          setActiveOffer({
-            code: data.offerCode,
-            discountPercent: data.discountPercent,
-            title: data.offerTitle || `${data.discountPercent}% OFF Studio Discount`,
-            isActive: data.isOfferActive !== false,
-          })
-        }
-        if (data.marqueeText) {
-          setMarqueeText(data.marqueeText)
-        }
-        setShippingSettings((prev) => {
-          const newFeeEnabled = data.shippingFeeEnabled ?? true
-          const newStandardFee = data.standardShippingFee ?? 100
-          const newThreshold = data.freeShippingThreshold ?? 2500
-          if (
-            prev &&
-            prev.shippingFeeEnabled === newFeeEnabled &&
-            prev.standardShippingFee === newStandardFee &&
-            prev.freeShippingThreshold === newThreshold
-          ) {
-            return prev
-          }
-          const updated = {
-            shippingFeeEnabled: newFeeEnabled,
-            standardShippingFee: newStandardFee,
-            freeShippingThreshold: newThreshold,
-          }
-          localStorage.setItem('lilycharm_shipping_settings', JSON.stringify(updated))
-          return updated
-        })
-      }
-    } catch {
-      // offline safe
-    }
-  }
+
 
   useEffect(() => {
     refreshProductsFromApi()
@@ -400,14 +401,6 @@ export function StudioProvider({ children }) {
     const handleSettingsUpdated = (data) => {
       if (!data) return
       if (data.marqueeText) setMarqueeText(data.marqueeText)
-      if (data.offerCode) {
-        setActiveOffer({
-          code: data.offerCode,
-          discountPercent: data.discountPercent,
-          title: data.offerTitle || `${data.discountPercent}% OFF Studio Discount`,
-          isActive: data.isOfferActive !== false,
-        })
-      }
       setShippingSettings({
         shippingFeeEnabled: data.shippingFeeEnabled ?? true,
         standardShippingFee: data.standardShippingFee ?? 100,
@@ -770,31 +763,7 @@ export function StudioProvider({ children }) {
     }
   }
 
-  const [shippingSettings, setShippingSettings] = useState(() => {
-    const saved = localStorage.getItem('lilycharm_shipping_settings')
-    return saved !== null ? JSON.parse(saved) : {
-      shippingFeeEnabled: true,
-      standardShippingFee: 100,
-      freeShippingThreshold: 2500,
-    }
-  })
 
-  const updateShippingSettings = async (newSettings) => {
-    const updated = { ...shippingSettings, ...newSettings }
-    setShippingSettings(updated)
-    localStorage.setItem('lilycharm_shipping_settings', JSON.stringify(updated))
-    try {
-      await fetch(`${API_URL}/settings`, {
-        method: 'POST',
-        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
-        credentials: 'include',
-        body: JSON.stringify(updated),
-      })
-      refreshSettingsFromApi()
-    } catch (e) {
-      console.error('Failed to update shipping settings:', e)
-    }
-  }
 
   const [reviews, setReviews] = useState([])
 
@@ -941,6 +910,7 @@ export function StudioProvider({ children }) {
 
   useEffect(() => {
     refreshCouponsFromApi()
+    refreshSettingsFromApi()
   }, [])
 
   return (

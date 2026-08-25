@@ -1255,6 +1255,17 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
           </button>
 
           <button
+            onClick={() => handleTabChange('settings', '/admin/settings')}
+            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+              activeTab === 'settings'
+                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
+                : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
+            }`}
+          >
+            <Truck size={15} className="text-amber-600" /> Shipping & Settings
+          </button>
+
+          <button
             onClick={() => handleTabChange('email-security', '/admin/email-security')}
             className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
               activeTab === 'email-security'
@@ -2207,6 +2218,83 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                 </div>
               </form>
             </div>
+          </div>
+        )}
+
+        {/* TAB: SHIPPING & SETTINGS */}
+        {(activeTab === 'settings' || activeTab === 'coupons') && (
+          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 space-y-6 shadow-sm rounded-3xl mb-6">
+            <div className="border-b border-[var(--color-line)] pb-4 space-y-1">
+              <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
+                🚚 Storefront Shipping Rules & Charges
+              </h2>
+              <p className="text-xs text-[var(--color-ink-soft)]">
+                Configure standard shipping fee and free shipping order threshold for storefront checkout. Updates reflect instantly across all customer sessions.
+              </p>
+            </div>
+
+            <form onSubmit={handleSaveShipping} className="bg-[var(--color-bg)] p-5 border border-[var(--color-line)] space-y-4 rounded-2xl">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div>
+                  <label className="block text-[0.7rem] font-bold uppercase mb-1">
+                    Enable Storefront Shipping Fee
+                  </label>
+                  <select
+                    value={tempShipping.shippingFeeEnabled ? 'true' : 'false'}
+                    onChange={(e) => setTempShipping({ ...tempShipping, shippingFeeEnabled: e.target.value === 'true' })}
+                    className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold rounded-xl bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                  >
+                    <option value="true">YES — Charge Shipping Fee Below Free Threshold</option>
+                    <option value="false">NO — 100% Free Shipping Everywhere</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[0.7rem] font-bold uppercase mb-1">
+                    Standard Shipping Fee (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    placeholder="100"
+                    value={tempShipping.standardShippingFee}
+                    onChange={(e) => setTempShipping({ ...tempShipping, standardShippingFee: Number(e.target.value) })}
+                    className="w-full border border-[var(--color-line)] p-2.5 text-xs font-mono font-bold rounded-xl bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[0.7rem] font-bold uppercase mb-1">
+                    Free Shipping Order Minimum (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    placeholder="2500"
+                    value={tempShipping.freeShippingThreshold}
+                    onChange={(e) => setTempShipping({ ...tempShipping, freeShippingThreshold: Number(e.target.value) })}
+                    className="w-full border border-[var(--color-line)] p-2.5 text-xs font-mono font-bold rounded-xl bg-white focus:outline-none focus:border-[var(--color-primary)]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 pt-2 border-t border-[var(--color-line)]">
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-[var(--color-primary)] hover:bg-[#1a2316] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors shadow-sm"
+                >
+                  💾 Save Shipping Settings
+                </button>
+
+                {savedShippingMsg && (
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-3 py-1.5 rounded-xl font-mono flex items-center gap-1.5 animate-pulse">
+                    <CheckCircle2 size={14} /> Shipping settings saved & synced to storefront!
+                  </span>
+                )}
+              </div>
+            </form>
           </div>
         )}
 
