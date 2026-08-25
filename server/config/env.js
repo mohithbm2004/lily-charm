@@ -34,13 +34,33 @@ export const ENV = {
     WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET || '',
   },
 
-  // ZeptoMail
+  // ZeptoMail Multi-Channel Configuration
   ZEPTO: {
-    API_URL: process.env.ZEPTO_API_URL || 'https://api.zeptomail.in/v1.1/email',
-    OTP_TOKEN: (process.env.ZEPTO_OTP_API_TOKEN || process.env.ZEPTOMAIL_API_TOKEN || '').trim(),
-    ORDER_TOKEN: (process.env.ZEPTO_ORDER_API_TOKEN || process.env.ZEPTOMAIL_API_TOKEN || '').trim(),
-    SUPPORT_TOKEN: (process.env.ZEPTO_SUPPORT_API_TOKEN || process.env.ZEPTOMAIL_API_TOKEN || '').trim(),
-    CONTACT_TOKEN: (process.env.ZEPTO_CONTACT_API_TOKEN || process.env.ZEPTOMAIL_API_TOKEN || '').trim(),
+    WEBHOOK_SECRET: (process.env.ZEPTOMAIL_WEBHOOK_SECRET || '').trim(),
+    OTP: {
+      HOST: process.env.ZEPTO_OTP_HOST || process.env.ZEPTOMAIL_HOST || 'smtp.zeptomail.in',
+      PORT: Number(process.env.ZEPTO_OTP_PORT || process.env.ZEPTOMAIL_PORT || 587),
+      USER: process.env.ZEPTO_OTP_USER || process.env.ZEPTOMAIL_USER || 'emailapikey',
+      PASS: process.env.ZEPTO_OTP_PASSWORD || process.env.ZEPTOMAIL_PASSWORD || '',
+    },
+    ORDER: {
+      HOST: process.env.ZEPTO_ORDER_HOST || process.env.ZEPTOMAIL_HOST || 'smtp.zeptomail.in',
+      PORT: Number(process.env.ZEPTO_ORDER_PORT || process.env.ZEPTOMAIL_PORT || 587),
+      USER: process.env.ZEPTO_ORDER_USER || process.env.ZEPTOMAIL_USER || 'emailapikey',
+      PASS: process.env.ZEPTO_ORDER_PASSWORD || process.env.ZEPTOMAIL_PASSWORD || '',
+    },
+    SUPPORT: {
+      HOST: process.env.ZEPTO_SUPPORT_HOST || process.env.ZEPTOMAIL_HOST || 'smtp.zeptomail.in',
+      PORT: Number(process.env.ZEPTO_SUPPORT_PORT || process.env.ZEPTOMAIL_PORT || 587),
+      USER: process.env.ZEPTO_SUPPORT_USER || process.env.ZEPTOMAIL_USER || 'emailapikey',
+      PASS: process.env.ZEPTO_SUPPORT_PASSWORD || process.env.ZEPTOMAIL_PASSWORD || '',
+    },
+    CONTACT: {
+      HOST: process.env.ZEPTO_CONTACT_HOST || process.env.ZEPTOMAIL_HOST || 'smtp.zeptomail.in',
+      PORT: Number(process.env.ZEPTO_CONTACT_PORT || process.env.ZEPTOMAIL_PORT || 587),
+      USER: process.env.ZEPTO_CONTACT_USER || process.env.ZEPTOMAIL_USER || 'emailapikey',
+      PASS: process.env.ZEPTO_CONTACT_PASSWORD || process.env.ZEPTOMAIL_PASSWORD || '',
+    },
   },
 
   // Allowed CORS origins generator

@@ -34,9 +34,9 @@ export default function CartDrawer() {
   const shipping = items.length === 0 ? 0 : isShippingEnabled ? (subtotal >= freeThreshold ? 0 : standardShippingFee) : 0
   const grandTotal = Math.max(0, subtotal - discountAmount + shipping)
 
-  const handleApplyCoupon = (e) => {
+  const handleApplyCoupon = async (e) => {
     e.preventDefault()
-    const res = applyCoupon(couponInput)
+    const res = await applyCoupon(couponInput)
     setCouponMsg(res)
     if (res.success) {
       setCouponInput('')
@@ -152,7 +152,7 @@ export default function CartDrawer() {
                         Apply
                       </button>
                     </div>
-                    <p className="text-[0.62rem] text-[var(--color-ink-soft)] italic">Try code: <strong className="font-mono text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('LILY10')}>LILY10</strong> or <strong className="font-mono text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('VELVET20')}>VELVET20</strong></p>
+                    <p className="text-[0.62rem] text-[var(--color-ink-soft)] italic">Try code: <strong className="font-mono text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('LILY10')}>LILY10</strong></p>
                   </form>
                 )}
 

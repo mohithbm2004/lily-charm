@@ -11,6 +11,8 @@ import Setting from '../models/Setting.js'
 import { generateInvoicePDF } from '../utils/pdfGenerator.js'
 import { sendOrderConfirmationEmail, sendOrderStatusEmail, sendAdminNewOrderNotification } from '../utils/emailService.js'
 import { emitOrderCreated, emitOrderUpdated, emitOrderCancelled, emitCartUpdated } from '../socket.js'
+import { processOrderPaymentSuccess } from '../utils/paymentProcessor.js'
+import { validateAndCalculateCoupon } from '../utils/couponValidator.js'
 import { ENV } from '../config/env.js'
 
 // POST /api/create-order or /api/orders/create-razorpay-order
@@ -136,45 +138,17 @@ export async function createOrder(req, res, next) {
 
     const subtotal = calcSubtotal
 
-    // 2. Authoritative Coupon Validation & Discount Calculation
-    let cleanCouponCode = ''
-    let discountAmount = 0
+    // 2. Authoritative Server-Side Coupon & Shipping Calculation (NO TAX)
+    const calcResult = await validateAndCalculateCoupon({
+      couponCode,
+      items: orderItems,
+      userId: req.user._id,
+    })
 
-    if (couponCode && typeof couponCode === 'string' && couponCode.trim()) {
-      const formattedCode = couponCode.trim().toUpperCase()
-      const coupon = await Coupon.findOne({ code: formattedCode, isActive: true })
-      if (coupon) {
-        if (!coupon.minOrderAmount || subtotal >= coupon.minOrderAmount) {
-          cleanCouponCode = coupon.code
-          if (coupon.discountType === 'percentage') {
-            const calculatedPercentDiscount = Math.round((subtotal * coupon.discountValue) / 100)
-            discountAmount = coupon.maxDiscountCap > 0
-              ? Math.min(calculatedPercentDiscount, coupon.maxDiscountCap)
-              : calculatedPercentDiscount
-          } else if (coupon.discountType === 'flat') {
-            discountAmount = Math.min(subtotal, coupon.discountValue)
-          }
-        }
-      }
-    }
-
-    // 3. Authoritative Studio Shipping Calculation
-    let shippingCharge = 0
-    try {
-      const studioSettings = await Setting.findOne({ key: 'main_studio_settings' })
-      const isShippingEnabled = studioSettings?.shippingFeeEnabled ?? true
-      const standardFee = studioSettings?.standardShippingFee ?? 100
-      const threshold = studioSettings?.freeShippingThreshold ?? 2500
-
-      if (isShippingEnabled) {
-        shippingCharge = subtotal >= threshold ? 0 : standardFee
-      }
-    } catch {
-      shippingCharge = 0
-    }
-
-    // 4. Authoritative Grand Total
-    const grandTotal = Math.max(1, subtotal - discountAmount + shippingCharge)
+    const cleanCouponCode = calcResult.isValid && calcResult.discountAmount > 0 ? calcResult.code : ''
+    const discountAmount = calcResult.isValid ? calcResult.discountAmount : 0
+    const shippingCharge = calcResult.shippingCharge
+    const grandTotal = calcResult.grandTotal
     const amountInPaise = Math.round(grandTotal * 100)
 
     const orderNumber = `LC-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`
@@ -330,6 +304,7 @@ export async function verifyPayment(req, res, next) {
     if (req.user) {
       if (!ownedOrder.user) {
         ownedOrder.user = req.user._id
+        await ownedOrder.save()
       } else if (String(ownedOrder.user) !== String(req.user._id) && req.user.role !== 'admin') {
         return res.status(403).json({
           success: false,
@@ -338,65 +313,28 @@ export async function verifyPayment(req, res, next) {
       }
     }
 
-    // Idempotency: if already Confirmed / Paid, return cleanly without duplicate state transitions
-    if (
-      (ownedOrder.status === 'Order Confirmed' || ownedOrder.status === 'Confirmed') &&
-      ownedOrder.paymentStatus === 'Paid'
-    ) {
-      return res.status(200).json({
-        success: true,
-        message: 'Payment already processed and order confirmed.',
-        order: ownedOrder,
+    const processResult = await processOrderPaymentSuccess({
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
+      razorpaySignature: razorpay_signature,
+      source: 'REST Verification API',
+    })
+
+    if (!processResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: processResult.reason === 'AMOUNT_MISMATCH'
+          ? 'Payment amount mismatch.'
+          : 'Payment processing failed.',
       })
     }
-
-    ownedOrder.status = 'Order Confirmed'
-    ownedOrder.paymentStatus = 'Paid'
-    ownedOrder.razorpayPaymentId = razorpay_payment_id
-    ownedOrder.razorpaySignature = razorpay_signature
-
-    const alreadyHasConfirmedHistory = ownedOrder.statusHistory.some(
-      (h) => h.status === 'Order Confirmed' || h.status === 'Confirmed'
-    )
-    if (!alreadyHasConfirmedHistory) {
-      ownedOrder.statusHistory.push({
-        status: 'Order Confirmed',
-        note: 'Payment verified successfully via Razorpay.',
-      })
-    }
-    await ownedOrder.save()
-
-    // Update Payment Record
-    await Payment.findOneAndUpdate(
-      { razorpayOrderId: razorpay_order_id },
-      {
-        order: ownedOrder._id,
-        user: req.user._id,
-        razorpayPaymentId: razorpay_payment_id,
-        razorpaySignature: razorpay_signature,
-        status: 'captured',
-      },
-      { upsert: true }
-    )
-
-    sendOrderConfirmationEmail(ownedOrder).catch((e) => console.warn('[ORDER CONFIRMATION EMAIL NOTICE]:', e.message))
-    sendAdminNewOrderNotification(ownedOrder).catch((e) => console.warn('[ADMIN ORDER NOTIFICATION NOTICE]:', e.message))
-
-    if (ownedOrder.user) {
-      try {
-        await Cart.findOneAndUpdate({ user: ownedOrder.user }, { items: [], coupon: null })
-        emitCartUpdated(ownedOrder.user, { items: [], coupon: null })
-      } catch (cErr) {
-        console.warn('[CART CLEAR NOTICE]:', cErr.message)
-      }
-    }
-
-    emitOrderUpdated(ownedOrder)
 
     return res.status(200).json({
       success: true,
-      message: 'Payment verified and order confirmed.',
-      order: ownedOrder,
+      message: processResult.alreadyProcessed
+        ? 'Payment already processed and order confirmed.'
+        : 'Payment verified and order confirmed.',
+      order: processResult.order,
     })
   } catch (err) {
     next(err)

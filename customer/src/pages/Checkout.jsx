@@ -30,9 +30,9 @@ export default function Checkout() {
   const shipping = isShippingEnabled ? (subtotal >= freeThreshold ? 0 : standardShippingFee) : 0
   const total = Math.max(0, subtotal - discountAmount + shipping)
 
-  const handleApplyCoupon = (e) => {
+  const handleApplyCoupon = async (e) => {
     e.preventDefault()
-    const res = applyCoupon(couponInput)
+    const res = await applyCoupon(couponInput)
     setCouponMsg(res)
     if (res.success) {
       setCouponInput('')
@@ -299,7 +299,30 @@ export default function Checkout() {
             }
           } catch (verifyErr) {
             console.error('Verification error:', verifyErr)
-            alert('Connection interrupted while confirming payment. Please check your orders page.')
+            try {
+              let attempts = 0
+              let confirmed = false
+              while (attempts < 3 && !confirmed) {
+                await new Promise((r) => setTimeout(r, 2000))
+                attempts++
+                const checkRes = await fetch(`${API_URL}/orders/${savedOrder._id}`, {
+                  headers: { ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
+                })
+                if (checkRes.ok) {
+                  const checkData = await checkRes.json()
+                  if (checkData.paymentStatus === 'Paid') {
+                    setOrderConfirmed(checkData)
+                    clearCart()
+                    confirmed = true
+                  }
+                }
+              }
+              if (!confirmed) {
+                alert('Your payment is being confirmed by studio servers. Please check your Account Dashboard in a moment.')
+              }
+            } catch {
+              alert('Connection interrupted while confirming payment. Please check your orders page.')
+            }
           } finally {
             setProcessing(false)
           }
@@ -722,7 +745,7 @@ export default function Checkout() {
                     Apply
                   </button>
                 </div>
-                <p className="text-[0.62rem] text-[var(--color-ink-soft)]">Promo codes: <span className="font-mono font-bold text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('LILY10')}>LILY10</span>, <span className="font-mono font-bold text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('VELVET20')}>VELVET20</span></p>
+                <p className="text-[0.62rem] text-[var(--color-ink-soft)]">Try code: <span className="font-mono font-bold text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('LILY10')}>LILY10</span></p>
               </form>
             )}
 

@@ -30,14 +30,12 @@ export default function Admin() {
     products,
     orders,
     marqueeText,
-    activeOffer,
     shippingSettings,
     addProduct,
     deleteProduct,
     updateProduct,
     updateOrderStatus,
     updateMarquee,
-    updateOffer,
     updateShippingSettings,
   } = useStudio()
 
@@ -141,8 +139,6 @@ export default function Admin() {
   // Marquee & Offer State
   const [tempMarquee, setTempMarquee] = useState(marqueeText)
   const [savedMarqueeMsg, setSavedMarqueeMsg] = useState(false)
-  const [tempOffer, setTempOffer] = useState(activeOffer)
-  const [savedOfferMsg, setSavedOfferMsg] = useState(false)
 
   // Handlers
   const handleImageFileChange = (e) => {
@@ -177,13 +173,6 @@ export default function Admin() {
     updateMarquee(tempMarquee)
     setSavedMarqueeMsg(true)
     setTimeout(() => setSavedMarqueeMsg(false), 3000)
-  }
-
-  const handleSaveOffer = (e) => {
-    e.preventDefault()
-    updateOffer(tempOffer)
-    setSavedOfferMsg(true)
-    setTimeout(() => setSavedOfferMsg(false), 3000)
   }
 
   // Filtered Lists
@@ -580,59 +569,6 @@ export default function Admin() {
             </form>
           </div>
 
-          {/* Active Promo Coupon Manager */}
-          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 space-y-4">
-            <div className="flex items-center gap-2">
-              <Tag size={18} className="text-[var(--color-primary)]" />
-              <h3 className="font-bold text-xl font-[var(--font-display)]">Active Studio Offer / Coupon</h3>
-            </div>
-            <p className="text-xs text-[var(--color-ink-soft)]">
-              Configure active coupon code and promotional text shown to customers.
-            </p>
-            <form onSubmit={handleSaveOffer} className="space-y-4 pt-2">
-              <div>
-                <label className="eyebrow block mb-1">Coupon Code</label>
-                <input
-                  type="text"
-                  value={tempOffer.code}
-                  onChange={(e) => setTempOffer({ ...tempOffer, code: e.target.value.toUpperCase() })}
-                  className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] px-3 py-2 text-xs font-mono font-bold uppercase focus:outline-none focus:border-[var(--color-primary)]"
-                />
-              </div>
-
-              <div>
-                <label className="eyebrow block mb-1">Discount (%)</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={90}
-                  value={tempOffer.discountPercent}
-                  onChange={(e) => setTempOffer({ ...tempOffer, discountPercent: Number(e.target.value) })}
-                  className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] px-3 py-2 text-xs focus:outline-none focus:border-[var(--color-primary)]"
-                />
-              </div>
-
-              <div>
-                <label className="eyebrow block mb-1">Offer Banner Text</label>
-                <input
-                  type="text"
-                  value={tempOffer.bannerText}
-                  onChange={(e) => setTempOffer({ ...tempOffer, bannerText: e.target.value })}
-                  className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] px-3 py-2 text-xs focus:outline-none focus:border-[var(--color-primary)]"
-                />
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <button type="submit" className="btn-primary py-2.5 text-xs flex items-center gap-2">
-                  <Check size={14} /> Save Active Offer
-                </button>
-                {savedOfferMsg && (
-                  <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
-                    <CheckCircle2 size={14} /> Offer Active!
-                  </span>
-                )}
-              </div>
-            </form>
           </div>
 
           {/* Shipping Fee & Free Delivery Threshold Manager */}

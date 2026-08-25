@@ -185,4 +185,21 @@ router.delete('/coupons/:id', deleteCoupon)
 router.get('/settings', getSettings)
 router.put('/settings', updateSettings)
 
+// ==========================================
+// 11. ZEPTOMAIL EMAIL SECURITY & BOUNCE MONITORING
+// ==========================================
+import {
+  getEmailSecurityStats,
+  getSuppressedEmails,
+  removeSuppressedEmail,
+  getBounceLogs,
+  resetCircuitBreaker,
+} from '../controllers/emailSecurityController.js'
+
+router.get('/email-security/stats', getEmailSecurityStats)
+router.get('/email-security/suppressed', getSuppressedEmails)
+router.delete('/email-security/suppressed/:email', removeSuppressedEmail)
+router.get('/email-security/bounces', getBounceLogs)
+router.post('/email-security/circuit-breaker/reset', resetCircuitBreaker)
+
 export default router

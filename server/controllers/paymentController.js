@@ -3,6 +3,7 @@ import Payment from '../models/Payment.js'
 import Order from '../models/Order.js'
 import CustomRequest from '../models/CustomRequest.js'
 import { processCustomQuotePaymentSuccess } from './customRequestController.js'
+import { processOrderPaymentSuccess } from '../utils/paymentProcessor.js'
 import { sendOrderConfirmationEmail, sendAdminNewOrderNotification } from '../utils/emailService.js'
 import { emitOrderUpdated } from '../socket.js'
 import { ENV } from '../config/env.js'
@@ -135,45 +136,24 @@ export async function handleRazorpayWebhook(req, res, next) {
       }
 
       // Check if this payment belongs to a Standard Order
-      const order = await Order.findOne({ razorpayOrderId })
+      const result = await processOrderPaymentSuccess({
+        razorpayOrderId,
+        razorpayPaymentId,
+        razorpaySignature: signature,
+        amountInRupees: (paymentEntity.amount || 0) / 100,
+        source: 'Razorpay Webhook',
+      })
 
-      if (order) {
-        // Idempotency check: if order is already Paid/Confirmed, skip duplicate email/status updates
-        if (order.paymentStatus === 'Paid' && order.status === 'Confirmed') {
-          return res.status(200).json({ status: 'ok', note: 'Order already processed' })
-        }
-
-        order.status = 'Confirmed'
-        order.paymentStatus = 'Paid'
-        order.razorpayPaymentId = razorpayPaymentId
-        order.statusHistory.push({
-          status: 'Confirmed',
-          note: `Payment verified via Razorpay webhook (${razorpayPaymentId}).`,
+      if (result.success) {
+        return res.status(200).json({
+          status: 'ok',
+          alreadyProcessed: result.alreadyProcessed,
+          orderId: result.order?._id,
         })
-        await order.save()
+      }
 
-        await Payment.findOneAndUpdate(
-          { razorpayOrderId },
-          {
-            order: order._id,
-            razorpayPaymentId,
-            status: 'captured',
-            rawResponse: paymentEntity,
-          },
-          { upsert: true }
-        )
-
-        // Dispatch transactional emails safely to registered account
-        sendOrderConfirmationEmail(order).catch((e) =>
-          console.warn('[WEBHOOK ORDER CONFIRMATION EMAIL WARNING]:', e.message)
-        )
-        sendAdminNewOrderNotification(order).catch((e) =>
-          console.warn('[WEBHOOK ADMIN ORDER NOTIFICATION WARNING]:', e.message)
-        )
-
-        emitOrderUpdated(order)
-      } else {
-        // Record orphan payment in payment ledger
+      // If order wasn't found by razorpayOrderId, record as orphan payment in ledger
+      if (result.reason === 'ORDER_NOT_FOUND') {
         await Payment.findOneAndUpdate(
           { razorpayOrderId },
           {

@@ -7,6 +7,7 @@ const AdminLogin = lazy(() => import('./pages/AdminLogin'))
 const AdminSetup = lazy(() => import('./pages/AdminSetup'))
 const AdminForgotPassword = lazy(() => import('./pages/AdminForgotPassword'))
 const AdminResetPassword = lazy(() => import('./pages/AdminResetPassword'))
+const EmailSecurity = lazy(() => import('./pages/EmailSecurity'))
 
 function AdminFallback() {
   return (
@@ -109,6 +110,14 @@ export default function App() {
           element={
             <ProtectedAdminRoute>
               <AdminDashboard activeTabName="Settings" />
+            </ProtectedAdminRoute>
+          }
+        />
+        <Route
+          path="/admin/email-security"
+          element={
+            <ProtectedAdminRoute>
+              <EmailSecurity />
             </ProtectedAdminRoute>
           }
         />

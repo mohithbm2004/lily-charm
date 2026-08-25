@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Lock, Mail, User, Phone, Sparkles, LogIn, UserPlus, CheckCircle2, Eye, EyeOff, KeyRound, ShieldCheck, RefreshCw, Clock } from 'lucide-react'
+import { X, Lock, Mail, User, Phone, Sparkles, LogIn, UserPlus, CheckCircle2, Eye, EyeOff, KeyRound, ShieldCheck, RefreshCw, Clock, AlertTriangle, Edit3, Send } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { API_URL } from '../config/api'
 import { useScrollLock } from '../lib/useScrollLock'
+import { detectDomainTypo, maskEmailForDisplay } from '../utils/emailValidator'
 
 export default function AuthModal({
   isOpen,
@@ -29,6 +30,17 @@ export default function AuthModal({
     newPassword: '',
   })
 
+  // Email Security & Confirmation States
+  const [typoSuggestion, setTypoSuggestion] = useState(null)
+  const [showConfirmEmail, setShowConfirmEmail] = useState(false)
+  const [isSuppressedError, setIsSuppressedError] = useState(false)
+
+  // CAPTCHA Challenge State
+  const [requireCaptcha, setRequireCaptcha] = useState(false)
+  const [captchaNum1, setCaptchaNum1] = useState(3)
+  const [captchaNum2, setCaptchaNum2] = useState(4)
+  const [captchaAnswerInput, setCaptchaAnswerInput] = useState('')
+
   // OTP State
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', ''])
   const [timeLeft, setTimeLeft] = useState(300)
@@ -38,6 +50,7 @@ export default function AuthModal({
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
+  const emailInputRef = useRef(null)
   const inputRefs = [
     useRef(null),
     useRef(null),
@@ -49,6 +62,14 @@ export default function AuthModal({
 
   const [fieldErrors, setFieldErrors] = useState({})
 
+  const generateCaptcha = () => {
+    const n1 = Math.floor(Math.random() * 8) + 1
+    const n2 = Math.floor(Math.random() * 8) + 1
+    setCaptchaNum1(n1)
+    setCaptchaNum2(n2)
+    setCaptchaAnswerInput('')
+  }
+
   useEffect(() => {
     if (!isOpen) return
     setErrorMessage('')
@@ -56,6 +77,10 @@ export default function AuthModal({
     setFieldErrors({})
     setMode(initialMode)
     setOtpDigits(['', '', '', '', '', ''])
+    setShowConfirmEmail(false)
+    setIsSuppressedError(false)
+    setTypoSuggestion(null)
+    setRequireCaptcha(false)
   }, [isOpen, initialMode])
 
   useEffect(() => {
@@ -79,11 +104,33 @@ export default function AuthModal({
     }
   }, [mode])
 
+  const handleEmailChange = (val) => {
+    setFormData((prev) => ({ ...prev, email: val }))
+    if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: '' }))
+    setIsSuppressedError(false)
+
+    const typo = detectDomainTypo(val)
+    if (typo) {
+      setTypoSuggestion(typo)
+    } else {
+      setTypoSuggestion(null)
+    }
+  }
+
+  const applyTypoSuggestion = () => {
+    if (typoSuggestion?.suggestedEmail) {
+      setFormData((prev) => ({ ...prev, email: typoSuggestion.suggestedEmail }))
+      setTypoSuggestion(null)
+    }
+  }
+
   const handleModeSwitch = (newMode) => {
     setMode(newMode)
     setErrorMessage('')
     setSuccessMessage('')
     setShowPassword(false)
+    setShowConfirmEmail(false)
+    setIsSuppressedError(false)
   }
 
   const handleDigitChange = (index, value) => {
@@ -220,26 +267,6 @@ export default function AuthModal({
     }, 600)
   }
 
-  const handleGoogleCredentialSuccess = async (credentialResponse) => {
-    setIsLoading(true)
-    setErrorMessage('')
-    try {
-      const tokenOrCredential = credentialResponse.credential || credentialResponse.access_token
-      const result = await loginWithGoogle(tokenOrCredential)
-      if (result.ok) {
-        setSuccessMessage('🎉 Signed in successfully!')
-        handleAuthSuccess(result.user, result.token)
-      } else {
-        setErrorMessage(result.error || 'Could not sign in with Google. Please try again.')
-      }
-    } catch (err) {
-      console.error('[GOOGLE CREDENTIAL ERROR]:', err)
-      setErrorMessage('Unable to connect to the server. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   const handleGoogleSignIn = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setIsLoading(true)
@@ -267,7 +294,8 @@ export default function AuthModal({
     },
   })
 
-  const handleSubmit = async (e) => {
+  // Submit Handler: Triggers Email Confirmation Step for Register/Forgot before actual API dispatch
+  const handleInitialFormSubmit = (e) => {
     e.preventDefault()
     setErrorMessage('')
     setSuccessMessage('')
@@ -299,7 +327,50 @@ export default function AuthModal({
     }
 
     setFieldErrors({})
+
+    const typo = detectDomainTypo(formData.email)
+    if (typo) {
+      setTypoSuggestion(typo)
+      setErrorMessage(`Did you mean ${typo.suggestedEmail}? Please check your email domain.`)
+      setShowConfirmEmail(false)
+      return
+    }
+
+    // Step 2 Protection: Show Email Confirmation Card before sending OTP for register or forgot mode
+    if ((mode === 'register' || mode === 'forgot') && !showConfirmEmail) {
+      setShowConfirmEmail(true)
+      return
+    }
+
+    // Process actual API submit
+    executeSubmitApi()
+  }
+
+  const executeSubmitApi = async () => {
+    const typo = detectDomainTypo(formData.email)
+    if (typo) {
+      setTypoSuggestion(typo)
+      setErrorMessage(`Did you mean ${typo.suggestedEmail}? Please check your email domain.`)
+      setShowConfirmEmail(false)
+      setIsLoading(false)
+      return
+    }
+
+    setShowConfirmEmail(false)
     setIsLoading(true)
+    setErrorMessage('')
+    setIsSuppressedError(false)
+
+    // CAPTCHA check if required
+    if (requireCaptcha) {
+      const expected = captchaNum1 + captchaNum2
+      if (parseInt(captchaAnswerInput, 10) !== expected) {
+        setIsLoading(false)
+        setErrorMessage(`Security verification incorrect. Please solve ${captchaNum1} + ${captchaNum2}.`)
+        generateCaptcha()
+        return
+      }
+    }
 
     try {
       if (mode === 'login') {
@@ -326,10 +397,18 @@ export default function AuthModal({
           setMode('otp')
         } else if (res.status === 401) {
           setErrorMessage(data.message || 'Invalid email or password.')
-        } else if (res.status === 400) {
-          setErrorMessage(data.message || 'Please enter a valid email and password.')
+        } else if (res.status === 400 && data.hasTypo) {
+          setErrorMessage(data.message)
+          if (data.suggestedEmail) setTypoSuggestion({ suggestedEmail: data.suggestedEmail })
+        } else if (res.status === 400 && data.isSuppressed) {
+          setIsSuppressedError(true)
+          setErrorMessage(data.message || 'This email address was previously flagged as undeliverable. Please check or enter a different email address.')
         } else if (res.status === 429) {
-          setErrorMessage(data.message || 'Too many attempts. Please try again later.')
+          setErrorMessage(data.message || 'Too many verification attempts. Please try again later.')
+          if (data.requireCaptcha) {
+            setRequireCaptcha(true)
+            generateCaptcha()
+          }
         } else if (res.status >= 500) {
           setErrorMessage('Something went wrong on the server. Please try again.')
         } else {
@@ -344,6 +423,8 @@ export default function AuthModal({
             email: formData.email.trim(),
             password: formData.password,
             phone: formData.phone?.trim() || '',
+            captchaAnswer: captchaAnswerInput,
+            captchaExpected: captchaNum1 + captchaNum2,
           }),
         })
 
@@ -359,10 +440,18 @@ export default function AuthModal({
         } else if (res.ok) {
           setSuccessMessage('✨ Account created successfully!')
           handleAuthSuccess(data.user, data.token)
-        } else if (res.status === 400) {
-          setErrorMessage(data.message || 'Registration details are invalid. Please check and try again.')
+        } else if (res.status === 400 && data.hasTypo) {
+          setErrorMessage(data.message)
+          if (data.suggestedEmail) setTypoSuggestion({ suggestedEmail: data.suggestedEmail })
+        } else if (res.status === 400 && data.isSuppressed) {
+          setIsSuppressedError(true)
+          setErrorMessage(data.message || 'This email address was previously flagged as undeliverable. Please check or enter a different email address.')
         } else if (res.status === 429) {
-          setErrorMessage(data.message || 'Too many attempts. Please try again later.')
+          setErrorMessage(data.message || 'Too many verification attempts. Please try again later.')
+          if (data.requireCaptcha) {
+            setRequireCaptcha(true)
+            generateCaptcha()
+          }
         } else if (res.status >= 500) {
           setErrorMessage('Something went wrong on the server. Please try again.')
         } else {
@@ -372,7 +461,11 @@ export default function AuthModal({
         const res = await fetch(`${API_URL}/auth/forgot-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: formData.email.trim() }),
+          body: JSON.stringify({
+            email: formData.email.trim(),
+            captchaAnswer: captchaAnswerInput,
+            captchaExpected: captchaNum1 + captchaNum2,
+          }),
         })
 
         let data = {}
@@ -384,8 +477,15 @@ export default function AuthModal({
 
         if (res.ok) {
           setSuccessMessage(data.message || 'Password reset link sent to your email.')
+        } else if (res.status === 400 && data.isSuppressed) {
+          setIsSuppressedError(true)
+          setErrorMessage(data.message || 'This email address was previously flagged as undeliverable.')
         } else if (res.status === 429) {
           setErrorMessage(data.message || 'Too many requests. Please try again later.')
+          if (data.requireCaptcha) {
+            setRequireCaptcha(true)
+            generateCaptcha()
+          }
         } else if (res.status >= 500) {
           setErrorMessage('Something went wrong on the server. Please try again.')
         } else {
@@ -448,7 +548,7 @@ export default function AuthModal({
               </div>
             )}
 
-            {mode !== 'otp' && (
+            {mode !== 'otp' && !showConfirmEmail && (
               <div className="flex border-b border-[var(--color-line)]">
                 <button
                   type="button"
@@ -477,8 +577,25 @@ export default function AuthModal({
           </div>
 
           {errorMessage && (
-            <div className="p-2.5 sm:p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold rounded">
-              ⚠️ {errorMessage}
+            <div className="p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold rounded flex flex-col gap-2">
+              <div className="flex items-start gap-2">
+                <AlertTriangle size={16} className="shrink-0 text-rose-600 mt-0.5" />
+                <span>{errorMessage}</span>
+              </div>
+              {isSuppressedError && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowConfirmEmail(false)
+                    setErrorMessage('')
+                    setIsSuppressedError(false)
+                    setTimeout(() => emailInputRef.current?.focus(), 100)
+                  }}
+                  className="self-start text-[0.68rem] bg-rose-200 hover:bg-rose-300 text-rose-900 px-2.5 py-1 rounded font-bold transition-colors flex items-center gap-1 mt-1"
+                >
+                  <Edit3 size={12} /> Correct Your Email Address
+                </button>
+              )}
             </div>
           )}
 
@@ -488,8 +605,49 @@ export default function AuthModal({
             </div>
           )}
 
-          {/* MODE: OTP VERIFICATION */}
-          {mode === 'otp' ? (
+          {/* STEP 2 EMAIL CONFIRMATION CARD */}
+          {showConfirmEmail ? (
+            <div className="space-y-4 text-center bg-amber-50/60 border border-amber-200 p-4 rounded-2xl">
+              <div className="w-10 h-10 bg-amber-100 text-amber-900 rounded-full flex items-center justify-center mx-auto border border-amber-300">
+                <Mail size={22} />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-amber-950 uppercase tracking-wide">Please Confirm Your Email Address</h3>
+                <p className="text-xs text-[var(--color-ink-soft)]">
+                  We will send a 6-digit OTP verification code to:
+                </p>
+                <div className="bg-white border border-amber-300 p-2.5 rounded-xl font-mono text-sm font-bold text-[var(--color-primary)] break-all shadow-sm my-2">
+                  {formData.email}
+                  <div className="text-[0.68rem] text-slate-500 font-sans font-normal mt-0.5">
+                    (Preview: {maskEmailForDisplay(formData.email)})
+                  </div>
+                </div>
+                <p className="text-[0.7rem] text-slate-600">
+                  Please make sure there are no typos in your email domain so that you receive your code without delay.
+                </p>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmEmail(false)}
+                  className="flex-1 py-2.5 px-3 border border-[var(--color-line)] bg-white hover:bg-gray-100 text-xs font-bold uppercase tracking-wider rounded flex items-center justify-center gap-1 text-slate-700"
+                >
+                  <Edit3 size={13} /> Edit Email
+                </button>
+                <button
+                  type="button"
+                  onClick={executeSubmitApi}
+                  disabled={isLoading}
+                  className="flex-1 btn-primary py-2.5 px-3 text-xs font-bold uppercase tracking-wider rounded flex items-center justify-center gap-1 disabled:opacity-50"
+                >
+                  {isLoading ? <Sparkles size={13} className="animate-spin" /> : <Send size={13} />}
+                  Send OTP Code
+                </button>
+              </div>
+            </div>
+          ) : mode === 'otp' ? (
+            /* MODE: OTP VERIFICATION */
             <div className="space-y-4 sm:space-y-5 text-center">
               <div className="w-12 h-12 bg-amber-100 text-amber-900 rounded-full flex items-center justify-center mx-auto border border-amber-300">
                 <ShieldCheck size={26} />
@@ -597,7 +755,7 @@ export default function AuthModal({
               </div>
 
               {/* Form */}
-              <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+              <form onSubmit={handleInitialFormSubmit} className="space-y-4 text-xs">
                 {mode === 'register' && (
                   <div>
                     <label className="block font-bold uppercase mb-1">
@@ -637,15 +795,13 @@ export default function AuthModal({
                   <div className="relative">
                     <Mail size={16} className="absolute left-3 top-3.5 text-[var(--color-ink-soft)]" />
                     <input
+                      ref={emailInputRef}
                       type="email"
                       required
                       aria-required="true"
                       placeholder="e.g. customer@example.com"
                       value={formData.email}
-                      onChange={(e) => {
-                        setFormData({ ...formData, email: e.target.value })
-                        if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: '' }))
-                      }}
+                      onChange={(e) => handleEmailChange(e.target.value)}
                       className={`w-full border bg-[var(--color-card-bg)] pl-10 pr-3 py-3 font-semibold transition-colors ${
                         fieldErrors.email
                           ? 'border-red-500 focus:border-red-500 bg-red-50/20'
@@ -653,6 +809,21 @@ export default function AuthModal({
                       }`}
                     />
                   </div>
+
+                  {/* DOMAIN TYPO WARNING BANNER */}
+                  {typoSuggestion && (
+                    <div className="mt-1.5 p-2 bg-amber-50 border border-amber-300 text-amber-900 rounded flex items-center justify-between text-[0.7rem] font-medium shadow-sm">
+                      <span>💡 Did you mean <strong>{typoSuggestion.suggestedEmail}</strong>?</span>
+                      <button
+                        type="button"
+                        onClick={applyTypoSuggestion}
+                        className="bg-amber-800 text-white px-2 py-0.5 rounded font-bold hover:bg-amber-900 transition-colors ml-2 shrink-0"
+                      >
+                        Use Suggestion
+                      </button>
+                    </div>
+                  )}
+
                   {fieldErrors.email && (
                     <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
                       ⚠️ {fieldErrors.email}
@@ -728,6 +899,27 @@ export default function AuthModal({
                   </div>
                 )}
 
+                {/* CAPTCHA CHALLENGE FIELD */}
+                {requireCaptcha && (
+                  <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl space-y-2">
+                    <label className="block text-[0.72rem] font-bold text-amber-950 uppercase">
+                      🔒 Security Verification Required
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <span className="bg-white border border-amber-300 font-mono font-bold px-3 py-2 text-sm rounded">
+                        {captchaNum1} + {captchaNum2} = ?
+                      </span>
+                      <input
+                        type="number"
+                        placeholder="Answer"
+                        value={captchaAnswerInput}
+                        onChange={(e) => setCaptchaAnswerInput(e.target.value)}
+                        className="flex-1 border border-amber-400 bg-white p-2 font-mono font-bold text-sm rounded"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -743,7 +935,7 @@ export default function AuthModal({
                     </>
                   ) : mode === 'register' ? (
                     <>
-                      <UserPlus size={15} /> Send Verification Code
+                      <UserPlus size={15} /> Continue to Verification
                     </>
                   ) : (
                     <>

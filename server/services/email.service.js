@@ -1,15 +1,20 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { getZeptoMailAgent, SENDER_ADDRESSES } from '../config/zeptomail.js'
+import { getZeptoTransporter, SENDER_ADDRESSES } from '../config/zeptomail.js'
+import SuppressedEmail from '../models/SuppressedEmail.js'
+import EmailBounceLog from '../models/EmailBounceLog.js'
+import emailCircuitBreaker from '../utils/emailCircuitBreaker.js'
+import { validateAndNormalizeEmail } from '../utils/emailValidator.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-export { SENDER_ADDRESSES, getZeptoMailAgent }
+export { SENDER_ADDRESSES, getZeptoTransporter }
 
 export function getSenderByPurpose(type = '') {
-  return getZeptoMailAgent(type).from.full
+  const transporter = getZeptoTransporter(type)
+  return transporter && transporter.sender ? transporter.sender.full : SENDER_ADDRESSES.NOREPLY.full
 }
 
 /**
@@ -19,30 +24,6 @@ export function validateEmail(email) {
   if (!email || typeof email !== 'string') return false
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return re.test(email.trim())
-}
-
-/**
- * Parses email strings like "Lily Charm <no-reply@lilycharm.in>" into { name, address }
- */
-export function parseEmailAddress(input, defaultName = 'Lily Charm') {
-  if (!input) return { address: 'no-reply@lilycharm.in', name: defaultName }
-  if (typeof input === 'object' && input.address) {
-    return { address: input.address.trim().toLowerCase(), name: input.name || defaultName }
-  }
-
-  const str = String(input).trim()
-  const match = str.match(/^(?:"?([^"]*)"?\s)?(?:<(.+)>)$/)
-  if (match) {
-    return {
-      name: (match[1] || defaultName).trim(),
-      address: match[2].trim().toLowerCase(),
-    }
-  }
-
-  return {
-    name: defaultName,
-    address: str.toLowerCase(),
-  }
 }
 
 /**
@@ -70,7 +51,7 @@ export function compileTemplate(templateName, data = {}) {
 }
 
 /**
- * Centralized Email Dispatcher using ZeptoMail HTTP REST API (Port 443 HTTPS)
+ * Centralized Email Dispatcher using ZeptoMail SMTP Multi-Channel Transporters
  */
 export async function sendEmail({
   type = 'generic',
@@ -85,167 +66,151 @@ export async function sendEmail({
   data = {},
   retries = 2,
 }) {
-  // 1. Recipient Validation
-  if (!validateEmail(to)) {
+  // 1. Recipient Validation & Normalization
+  const validation = validateAndNormalizeEmail(to)
+  if (!validation.isValid) {
     const errorMsg = `Invalid recipient email address: "${to}"`
-    console.error(`[ZEPTOMAIL API VALIDATION ERROR]: ${errorMsg}`)
+    console.error(`[ZEPTOMAIL VALIDATION ERROR]: ${errorMsg}`)
     throw new Error(errorMsg)
   }
 
-  const cleanTo = to.trim().toLowerCase()
+  const cleanTo = validation.normalized
 
-  // 2. Resolve Agent and Sender details for this purpose
-  const agent = getZeptoMailAgent(type)
-  const parsedFrom = from ? parseEmailAddress(from) : { address: agent.from.address, name: agent.from.name }
+  // 2. Hard-Bounce Suppression Check
+  const suppressed = await SuppressedEmail.isSuppressed(cleanTo)
+  if (suppressed) {
+    const suppErr = new Error('This email address was previously flagged as undeliverable. Please check or enter a different email address.')
+    suppErr.isSuppressed = true
+    console.warn(`[ZEPTOMAIL SUPPRESSION BLOCK]: Aborting email send to ${cleanTo} because it is in the hard bounce suppression list.`)
+    throw suppErr
+  }
 
-  // 3. Configuration Check
-  if (!agent.configured) {
-    const notice = `ZeptoMail API token is not configured for ${agent.agent}. Please set ${getEnvVarNameForAgent(agent.purpose)} in Render environment variables.`
-    console.warn(`[ZEPTOMAIL API CONFIG NOTICE] [${agent.agent}]: ${notice}`)
-    return {
-      success: false,
-      message: 'ZeptoMail API token is not configured.',
-      configured: false,
-      agent: agent.agent,
-      purpose: agent.purpose,
+  // 3. Email Circuit Breaker Check
+  if (emailCircuitBreaker.isOpen()) {
+    const cbErr = new Error('Email verification is temporarily paused due to security protection. Please try again later or contact support.')
+    cbErr.circuitBreakerOpen = true
+    console.warn(`[ZEPTOMAIL CIRCUIT BREAKER BLOCK]: Aborting email send to ${cleanTo} because the email circuit breaker is OPEN.`)
+    throw cbErr
+  }
+
+  // 4. Resolve Transporter for Purpose/Channel
+  const transporterWrapper = getZeptoTransporter(type)
+
+  if (!transporterWrapper || !transporterWrapper.configured) {
+    console.warn(`[ZEPTOMAIL CONFIG NOTICE]: ZeptoMail credentials are not configured for [${type}]. Email will run in simulated mode.`)
+    emailCircuitBreaker.recordSuccess()
+    return await transporterWrapper.sendMail({
       to: cleanTo,
-    }
+      subject: subject || 'Notification from Lily Charm',
+      html: html || `<p>${text || ''}</p>`,
+      text: text || '',
+      attachments,
+      ...(replyTo ? { replyTo } : {}),
+    })
   }
 
-  // 4. Build ZeptoMail HTTP REST API Payload
-  const formattedAttachments = attachments.map((att) => ({
-    name: att.filename || 'attachment',
-    content: Buffer.isBuffer(att.content) ? att.content.toString('base64') : att.content,
-    mime_type: att.contentType || 'application/octet-stream',
-  }))
-
-  const payload = {
-    from: {
-      address: parsedFrom.address,
-      name: parsedFrom.name,
-    },
-    to: [
-      {
-        email_address: {
-          address: cleanTo,
-          name: toName || parsedFrom.name || 'Valued Customer',
-        },
-      },
-    ],
-    subject: subject || 'Notification from Lily Charm',
-    htmlbody: html || `<p>${text || ''}</p>`,
-    ...(text ? { textbody: text } : {}),
-    ...(replyTo
-      ? {
-          reply_to: [
-            typeof replyTo === 'string'
-              ? { address: replyTo.trim().toLowerCase(), name: parsedFrom.name }
-              : { address: replyTo.address, name: replyTo.name || parsedFrom.name },
-          ],
-        }
-      : {}),
-    ...(formattedAttachments.length > 0 ? { attachments: formattedAttachments } : {}),
-  }
-
-  // 5. Retry Loop for HTTP API with Exponential Backoff
+  // 5. Retry Loop for SMTP Dispatch
   let attempt = 0
   let lastError = null
 
   while (attempt < retries) {
     attempt++
     try {
-      const response = await fetch(agent.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': agent.authHeader,
-        },
-        body: JSON.stringify(payload),
-      })
-
-      const rawResponseText = await response.text()
-      let responseData = {}
-      try {
-        responseData = JSON.parse(rawResponseText)
-      } catch (_jsonErr) {
-        responseData = { raw: rawResponseText }
+      const mailOptions = {
+        from: from || transporterWrapper.sender.full,
+        to: cleanTo,
+        subject: subject || 'Notification from Lily Charm',
+        html: html || `<p>${text || ''}</p>`,
+        text: text || '',
+        attachments,
+        ...(replyTo ? { replyTo } : {}),
       }
 
-      if (response.ok || response.status === 200 || response.status === 201) {
-        const messageId =
-          responseData?.data?.[0]?.message_id ||
-          responseData?.data?.[0]?.additional_info?.[0]?.message_id ||
-          `zepto-${Date.now()}`
+      const info = await transporterWrapper.sendMail(mailOptions)
+      console.log(`[EMAIL SUCCESS] [ZeptoMail SMTP] [Channel: ${transporterWrapper.channel}] Sent to ${cleanTo} (ID: ${info.messageId})`)
 
-        console.log(
-          `[EMAIL SUCCESS] [ZeptoMail HTTP API] [${agent.agent}] [From: ${parsedFrom.address}] Sent to ${cleanTo} (ID: ${messageId})`
-        )
-        return {
-          success: true,
-          messageId,
-          provider: 'zeptomail-http-api',
-          agent: agent.agent,
-          purpose: agent.purpose,
-          attempts: attempt,
-          data: responseData,
+      // Record success in Circuit Breaker
+      emailCircuitBreaker.recordSuccess()
+
+      return {
+        success: true,
+        messageId: info.messageId,
+        provider: 'zeptomail-smtp',
+        channel: transporterWrapper.channel,
+        attempts: attempt,
+      }
+    } catch (err) {
+      lastError = err
+      const errMsg = (err.message || '').toLowerCase()
+
+      // Detect Hard Bounce SMTP response codes (550, 551, 552, 553, 554, invalid recipient, user unknown)
+      const isHardBounce =
+        errMsg.includes('550') ||
+        errMsg.includes('551') ||
+        errMsg.includes('552') ||
+        errMsg.includes('553') ||
+        errMsg.includes('554') ||
+        errMsg.includes('recipient rejected') ||
+        errMsg.includes('invalid recipient') ||
+        errMsg.includes('user unknown') ||
+        errMsg.includes('mailbox not found') ||
+        errMsg.includes('address rejected')
+
+      if (isHardBounce) {
+        console.error(`🚨 [ZEPTOMAIL HARD BOUNCE DETECTED] [To: ${cleanTo}]: ${err.message}`)
+
+        // Instantly add to SuppressedEmail database
+        await SuppressedEmail.suppressEmail({
+          email: cleanTo,
+          reason: err.message,
+          bounceType: 'hard',
+          bounceCode: '550',
+          source: 'zeptomail-smtp',
+        }).catch(console.error)
+
+        // Record in Bounce Log
+        await EmailBounceLog.create({
+          email: cleanTo,
+          bounceType: 'hard',
+          bounceCode: '550',
+          reason: err.message,
+          channel: transporterWrapper.channel,
+        }).catch(console.error)
+
+        // Inform Circuit Breaker of Hard Bounce
+        emailCircuitBreaker.recordHardBounce(cleanTo, err.message)
+
+        const hardBounceErr = new Error('This email address was reported as undeliverable. Please check or enter a different email address.')
+        hardBounceErr.isHardBounce = true
+        throw hardBounceErr
+      } else {
+        // Soft Bounce / Temporary Transport Failure
+        console.warn(`[ZEPTOMAIL SOFT BOUNCE / RETRY] [Attempt ${attempt}/${retries}] Failed to send to ${cleanTo}: ${err.message}`)
+        await EmailBounceLog.create({
+          email: cleanTo,
+          bounceType: 'soft',
+          reason: err.message,
+          channel: transporterWrapper.channel,
+        }).catch(console.error)
+
+        if (attempt < retries) {
+          await new Promise((resolve) => setTimeout(resolve, 1000 * attempt))
         }
       }
-
-      // Handle HTTP API Error Statuses
-      const errCode = responseData?.error?.code || response.status
-      const errMsg =
-        responseData?.error?.details?.[0]?.message ||
-        responseData?.error?.message ||
-        responseData?.message ||
-        response.statusText
-
-      if (response.status === 401 || response.status === 403) {
-        console.error(
-          `[ZEPTOMAIL API AUTH ERROR] [${agent.agent}] Status ${response.status}: ${errMsg}. Check ${getEnvVarNameForAgent(agent.purpose)} token.`
-        )
-      } else if (response.status === 400) {
-        console.error(
-          `[ZEPTOMAIL API VALIDATION ERROR] [${agent.agent}] Status 400: ${errMsg}. Sender address: ${parsedFrom.address}`
-        )
-      } else {
-        console.warn(
-          `[ZEPTOMAIL API REQUEST WARNING] [Attempt ${attempt}/${retries}] Status ${response.status}: ${errMsg}`
-        )
-      }
-
-      lastError = new Error(`ZeptoMail HTTP API Error (${response.status}): ${errMsg}`)
-    } catch (fetchErr) {
-      console.warn(
-        `[ZEPTOMAIL API NETWORK WARNING] [Attempt ${attempt}/${retries}] Network error: ${fetchErr.message}`
-      )
-      lastError = fetchErr
-    }
-
-    if (attempt < retries) {
-      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt))
     }
   }
 
-  console.error(
-    `[EMAIL DISPATCH FAILURE] Exhausted ${retries} attempts to ${cleanTo} via ZeptoMail HTTP API (${agent.agent}). Error: ${lastError?.message}`
-  )
-  throw new Error(`Email dispatch failed via ZeptoMail HTTP API: ${lastError?.message}`)
-}
+  // Record transport failure in Circuit Breaker if all retries failed
+  emailCircuitBreaker.recordTransportFailure(cleanTo, lastError?.message)
 
-function getEnvVarNameForAgent(purpose = '') {
-  const p = purpose.toLowerCase()
-  if (p.includes('otp') || p.includes('verify') || p.includes('reset')) return 'ZEPTO_OTP_API_TOKEN'
-  if (p.includes('order') || p.includes('invoice') || p.includes('refund')) return 'ZEPTO_ORDER_API_TOKEN'
-  if (p.includes('support')) return 'ZEPTO_SUPPORT_API_TOKEN'
-  return 'ZEPTO_CONTACT_API_TOKEN'
+  console.error(`[EMAIL DISPATCH FAILURE] Exhausted ${retries} attempts to ${cleanTo} via ZeptoMail SMTP. Error: ${lastError?.message}`)
+  throw new Error(`Email dispatch failed via ZeptoMail SMTP: ${lastError?.message}`)
 }
 
 export default {
   SENDER_ADDRESSES,
-  getZeptoMailAgent,
+  getZeptoTransporter,
   validateEmail,
   compileTemplate,
-  parseEmailAddress,
   sendEmail,
 }

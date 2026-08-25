@@ -1,7 +1,7 @@
 import Setting from '../models/Setting.js'
 import { emitSettingsUpdated } from '../socket.js'
 
-// @desc    Get studio settings (offer code, percentage, marquee)
+// @desc    Get studio settings (marquee, shipping)
 // @route   GET /api/settings
 // @access  Public
 export const getSettings = async (req, res) => {
@@ -10,10 +10,6 @@ export const getSettings = async (req, res) => {
     if (!settings) {
       settings = await Setting.create({
         key: 'main_studio_settings',
-        offerCode: 'LILY10',
-        discountPercent: 10,
-        offerTitle: '10% OFF Studio Discount',
-        isOfferActive: true,
         marqueeText: 'EVERY PIECE HANDMADE TO ORDER • FREE SHIPPING ON ALL ORDERS ABOVE ₹2500 • CUSTOM BESPOKE ORDERS OPEN',
         shippingFeeEnabled: true,
         standardShippingFee: 100,
@@ -27,16 +23,12 @@ export const getSettings = async (req, res) => {
   }
 }
 
-// @desc    Update studio settings (offer code, discount percentage, marquee, shipping)
+// @desc    Update studio settings (marquee, shipping)
 // @route   POST /api/settings
 // @access  Admin/Public
 export const updateSettings = async (req, res) => {
   try {
     const {
-      offerCode,
-      discountPercent,
-      offerTitle,
-      isOfferActive,
       marqueeText,
       shippingFeeEnabled,
       standardShippingFee,
@@ -48,10 +40,6 @@ export const updateSettings = async (req, res) => {
       settings = new Setting({ key: 'main_studio_settings' })
     }
 
-    if (offerCode !== undefined) settings.offerCode = offerCode.toUpperCase().trim()
-    if (discountPercent !== undefined) settings.discountPercent = Number(discountPercent)
-    if (offerTitle !== undefined) settings.offerTitle = offerTitle
-    if (isOfferActive !== undefined) settings.isOfferActive = Boolean(isOfferActive)
     if (marqueeText !== undefined) settings.marqueeText = marqueeText
 
     if (shippingFeeEnabled !== undefined) settings.shippingFeeEnabled = Boolean(shippingFeeEnabled)

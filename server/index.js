@@ -25,6 +25,8 @@ import { handleRazorpayWebhook } from './controllers/paymentController.js'
 import { protect, authenticateUserOrAdmin } from './middleware/auth.js'
 import { startAutomaticDbCleanup } from './utils/dbCleanup.js'
 import { backfillExistingCarts } from './utils/backfillCarts.js'
+import { startReconciliationWorker } from './utils/paymentReconciliation.js'
+import { seedDefaultCoupons } from './utils/seedCoupons.js'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
 
 const app = express()
@@ -101,7 +103,10 @@ app.use('/api/', apiLimiter)
 app.post('/api/create-order', authenticateUserOrAdmin, createRazorpayOrder)
 app.post('/api/verify-payment', authenticateUserOrAdmin, verifyPayment)
 
+import webhookRoutes from './routes/webhookRoutes.js'
+
 // Primary Routes
+app.use('/api/webhooks', webhookRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/products', productRoutes)
@@ -130,6 +135,8 @@ initSocket(server)
 connectDB().then(() => {
   startAutomaticDbCleanup()
   backfillExistingCarts()
+  startReconciliationWorker()
+  seedDefaultCoupons()
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Bloom Atelier API & Real-Time WebSockets running on port ${PORT}`)
   })

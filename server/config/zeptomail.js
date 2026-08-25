@@ -1,9 +1,18 @@
-/**
- * ZeptoMail HTTP REST API Configuration
- * Supports Zoho-enczapikey header format as shown in ZeptoMail API Console.
- */
+import nodemailer from 'nodemailer'
+import ENV from './env.js'
 
 export const DEFAULT_API_URL = process.env.ZEPTO_API_URL || 'https://api.zeptomail.in/v1.1/email'
+
+export function getZeptoMailAgent(purpose = 'otp') {
+  const transporter = getZeptoTransporter(purpose)
+  return {
+    agent: `${transporter.channel} Agent`,
+    purpose: transporter.channel.toLowerCase(),
+    from: transporter.sender,
+    configured: transporter.configured,
+    apiUrl: DEFAULT_API_URL,
+  }
+}
 
 /**
  * Standard Verified ZeptoMail Senders for Lily Charm
@@ -31,59 +40,16 @@ export const SENDER_ADDRESSES = {
   },
 }
 
-/**
- * Formats the Authorization header for ZeptoMail HTTP REST API
- * Handles 'Zoho-enczapikey <token>', 'Zoho-enczpt-01 <token>', or raw token keys.
- */
-export function formatZeptoAuthHeader(rawToken = '') {
-  const token = (rawToken || '').trim()
-  if (!token) return ''
-  if (
-    token.startsWith('Zoho-enczapikey') ||
-    token.startsWith('Zoho-enczpt-') ||
-    token.startsWith('SendMail ') ||
-    token.startsWith('Bearer ')
-  ) {
-    return token
-  }
-  return `Zoho-enczapikey ${token}`
-}
+// Transporter Cache
+const transporterCache = {}
 
 /**
- * Resolves the designated ZeptoMail agent token, authorization header, and sender
+ * Creates or retrieves a cached Nodemailer SMTP Transporter for the designated channel
  */
-export function getZeptoMailAgent(purpose = 'contact') {
+export function getZeptoTransporter(purpose = 'otp') {
   const p = (purpose || '').toLowerCase()
+  let channel = 'OTP'
 
-  // 1. OTP / Verification / Reset Password / Auth
-  if (
-    p.includes('otp') ||
-    p.includes('verify') ||
-    p.includes('verification') ||
-    p.includes('reset') ||
-    p.includes('auth') ||
-    p.includes('welcome')
-  ) {
-    const token = (
-      process.env.ZEPTO_OTP_API_TOKEN ||
-      process.env.ZEPTOMAIL_API_TOKEN ||
-      process.env.ZEPTO_API_TOKEN ||
-      process.env.ZEPTO_OTP_PASSWORD ||
-      ''
-    ).trim()
-
-    return {
-      agent: 'OTP Agent',
-      purpose: 'otp',
-      from: SENDER_ADDRESSES.NOREPLY,
-      token,
-      authHeader: formatZeptoAuthHeader(token),
-      configured: Boolean(token),
-      apiUrl: DEFAULT_API_URL,
-    }
-  }
-
-  // 2. Orders / Invoices / Shipping / Delivery / Refunds / Payments
   if (
     p.includes('order') ||
     p.includes('invoice') ||
@@ -94,69 +60,129 @@ export function getZeptoMailAgent(purpose = 'contact') {
     p.includes('refund') ||
     p.includes('receipt')
   ) {
-    const token = (
-      process.env.ZEPTO_ORDER_API_TOKEN ||
-      process.env.ZEPTOMAIL_API_TOKEN ||
-      process.env.ZEPTO_API_TOKEN ||
-      process.env.ZEPTO_ORDER_PASSWORD ||
-      ''
-    ).trim()
-
-    return {
-      agent: 'Order Agent',
-      purpose: 'order',
-      from: SENDER_ADDRESSES.ORDERS,
-      token,
-      authHeader: formatZeptoAuthHeader(token),
-      configured: Boolean(token),
-      apiUrl: DEFAULT_API_URL,
-    }
+    channel = 'ORDER'
+  } else if (p.includes('support') || p.includes('help') || p.includes('ticket')) {
+    channel = 'SUPPORT'
+  } else if (
+    p.includes('contact') ||
+    p.includes('inquiry') ||
+    p.includes('newsletter') ||
+    p.includes('generic')
+  ) {
+    channel = 'CONTACT'
   }
 
-  // 3. Customer Support
-  if (p.includes('support') || p.includes('help') || p.includes('ticket')) {
-    const token = (
-      process.env.ZEPTO_SUPPORT_API_TOKEN ||
-      process.env.ZEPTOMAIL_API_TOKEN ||
-      process.env.ZEPTO_API_TOKEN ||
-      process.env.ZEPTO_SUPPORT_PASSWORD ||
-      ''
-    ).trim()
-
-    return {
-      agent: 'Support Agent',
-      purpose: 'support',
-      from: SENDER_ADDRESSES.SUPPORT,
-      token,
-      authHeader: formatZeptoAuthHeader(token),
-      configured: Boolean(token),
-      apiUrl: DEFAULT_API_URL,
-    }
+  if (transporterCache[channel]) {
+    return transporterCache[channel]
   }
 
-  // 4. Contact / General Inquiries / Newsletters
-  const token = (
-    process.env.ZEPTO_CONTACT_API_TOKEN ||
-    process.env.ZEPTOMAIL_API_TOKEN ||
-    process.env.ZEPTO_API_TOKEN ||
-    process.env.ZEPTO_CONTACT_PASSWORD ||
-    ''
-  ).trim()
+  const config = ENV.ZEPTO[channel] || ENV.ZEPTO.OTP
+  const host = config.HOST || 'smtp.zeptomail.in'
+  const port = Number(config.PORT || 587)
+  const user = config.USER || 'emailapikey'
+  const pass = config.PASS || ''
 
-  return {
-    agent: 'Contact Agent',
-    purpose: 'contact',
-    from: SENDER_ADDRESSES.CONTACT,
-    token,
-    authHeader: formatZeptoAuthHeader(token),
-    configured: Boolean(token),
-    apiUrl: DEFAULT_API_URL,
+  const sender =
+    channel === 'ORDER'
+      ? SENDER_ADDRESSES.ORDERS
+      : channel === 'SUPPORT'
+      ? SENDER_ADDRESSES.SUPPORT
+      : channel === 'CONTACT'
+      ? SENDER_ADDRESSES.CONTACT
+      : SENDER_ADDRESSES.NOREPLY
+
+  if (!pass) {
+    console.warn(
+      `[ZEPTOMAIL NOTICE]: ZeptoMail credentials are not configured for [${channel}] channel (ZEPTO_${channel}_PASSWORD is empty). Email service will run in simulated mode for ${channel}.`
+    )
+    const mockTransporter = {
+      channel,
+      configured: false,
+      sender,
+      sendMail: async (options) => {
+        console.log(`\n=================== [SIMULATED ZEPTOMAIL DISPATCH] ===================`)
+        console.log(`[CHANNEL]: ZeptoMail ${channel} SMTP (${host}:${port})`)
+        console.log(`[FROM]: ${options.from || sender.full}`)
+        console.log(`[TO]: ${options.to}`)
+        console.log(`[SUBJECT]: ${options.subject}`)
+        console.log(`[STATUS]: SIMULATED (ZeptoMail credentials are not configured)`)
+        console.log(`======================================================================\n`)
+        return { success: true, messageId: `mock-zepto-${channel.toLowerCase()}-${Date.now()}`, simulated: true }
+      },
+    }
+    transporterCache[channel] = mockTransporter
+    return mockTransporter
+  }
+
+  try {
+    const transport = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      requireTLS: port === 587,
+      auth: {
+        user,
+        pass,
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+      tls: {
+        rejectUnauthorized: false,
+      },
+    })
+
+    const wrapper = {
+      channel,
+      configured: true,
+      sender,
+      transport,
+      sendMail: async (options) => {
+        return await transport.sendMail({
+          from: sender.full,
+          ...options,
+        })
+      },
+      verify: async () => {
+        return await transport.verify()
+      },
+    }
+
+    transporterCache[channel] = wrapper
+    return wrapper
+  } catch (err) {
+    console.error(`[ZEPTOMAIL ERROR]: Failed to initialize ${channel} SMTP transporter:`, err.message)
+    return null
   }
 }
 
+/**
+ * Verifies active ZeptoMail SMTP connections for configured channels
+ */
+export async function verifyZeptoMailConnections() {
+  const channels = ['OTP', 'ORDER', 'SUPPORT', 'CONTACT']
+  const results = {}
+
+  for (const ch of channels) {
+    const transporter = getZeptoTransporter(ch.toLowerCase())
+    if (transporter && transporter.configured && transporter.verify) {
+      try {
+        await transporter.verify()
+        console.log(`[ZEPTOMAIL SUCCESS]: Verified ${ch} SMTP connection.`)
+        results[ch] = true
+      } catch (err) {
+        console.error(`[ZEPTOMAIL ERROR]: ${ch} SMTP connection failed:`, err.message)
+        results[ch] = false
+      }
+    } else {
+      results[ch] = false
+    }
+  }
+  return results
+}
+
 export default {
-  DEFAULT_API_URL,
   SENDER_ADDRESSES,
-  formatZeptoAuthHeader,
-  getZeptoMailAgent,
+  getZeptoTransporter,
+  verifyZeptoMailConnections,
 }

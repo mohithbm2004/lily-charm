@@ -16,16 +16,17 @@ import {
 } from '../controllers/authController.js'
 import { protect, adminOnly } from '../middleware/auth.js'
 import { protectAdmin } from '../middleware/adminAuth.js'
+import { protectOtpRequests } from '../middleware/otpAbuseProtection.js'
 
 const router = Router()
 
 router.get('/test-email', protectAdmin, testEmail)
-router.post('/register', register)
+router.post('/register', protectOtpRequests, register)
 router.post('/verify-otp', verifyOtp)
-router.post('/resend-otp', resendOtp)
+router.post('/resend-otp', protectOtpRequests, resendOtp)
 router.post('/login', login)
 router.post('/google', googleAuth)
-router.post('/forgot-password', forgotPassword)
+router.post('/forgot-password', protectOtpRequests, forgotPassword)
 router.get('/verify-reset-token', verifyResetToken)
 router.post('/reset-password', resetPassword)
 

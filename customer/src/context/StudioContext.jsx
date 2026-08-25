@@ -28,16 +28,6 @@ export function StudioProvider({ children }) {
     return saved || 'FREE DELIVERY ON ORDERS ABOVE ₹2500 • HANDCRAFTED VELVET BOTANICAL FLORALS • USE CODE LILY10 FOR 10% OFF'
   })
 
-  const [activeOffer, setActiveOffer] = useState(() => {
-    const saved = localStorage.getItem('lilycharm_offer')
-    return saved !== null ? JSON.parse(saved) : {
-      code: 'LILY10',
-      discountPercent: 10,
-      bannerText: 'SPECIAL OFFER: 10% OFF ON ALL HANDCRAFTED VELVET BOUQUETS',
-      enabled: true,
-    }
-  })
-
   const [shippingSettings, setShippingSettings] = useState(() => {
     const saved = localStorage.getItem('lilycharm_shipping_settings')
     return saved !== null ? JSON.parse(saved) : {
@@ -249,10 +239,6 @@ export function StudioProvider({ children }) {
   }, [marqueeText])
 
   useEffect(() => {
-    localStorage.setItem('lilycharm_offer', JSON.stringify(activeOffer))
-  }, [activeOffer])
-
-  useEffect(() => {
     if (shippingSettings) {
       localStorage.setItem('lilycharm_shipping_settings', JSON.stringify(shippingSettings))
     }
@@ -389,10 +375,6 @@ export function StudioProvider({ children }) {
     setMarqueeText(text)
   }
 
-  const updateOffer = (offerObj) => {
-    setActiveOffer(offerObj)
-  }
-
   const updateShippingSettings = async (newSettings) => {
     const updated = { ...shippingSettings, ...newSettings }
     setShippingSettings(updated)
@@ -415,7 +397,6 @@ export function StudioProvider({ children }) {
     orders,
     loading,
     marqueeText,
-    activeOffer,
     shippingSettings,
     addProduct,
     updateProduct,
@@ -427,12 +408,11 @@ export function StudioProvider({ children }) {
     addOrder,
     updateOrderStatus,
     updateMarquee,
-    updateOffer,
     updateShippingSettings,
     refreshProductsFromApi,
     refreshCollectionsFromApi,
     refreshSettingsFromApi,
-  }), [products, collections, orders, loading, marqueeText, activeOffer, shippingSettings])
+  }), [products, collections, orders, loading, marqueeText, shippingSettings])
 
   return (
     <StudioContext.Provider value={contextValue}>

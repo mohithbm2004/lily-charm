@@ -50,8 +50,27 @@ export async function register(req, res, next) {
       })
     }
 
-    // Send OTP email asynchronously in background so HTTP response is instant
-    sendOtpEmail(cleanEmail, user.name, rawOtp).catch(console.error)
+    if (req.otpSecurity?.recordRequest) {
+      req.otpSecurity.recordRequest()
+    }
+
+    try {
+      await sendOtpEmail(cleanEmail, user.name, rawOtp)
+    } catch (sendErr) {
+      console.warn(`[REGISTER OTP NOTICE] [${cleanEmail}]:`, sendErr.message)
+      if (sendErr.isSuppressed || sendErr.isHardBounce) {
+        return res.status(400).json({
+          message: sendErr.message || 'This email address was previously flagged as undeliverable. Please check or enter a different email address.',
+          isSuppressed: true,
+        })
+      }
+      if (sendErr.circuitBreakerOpen) {
+        return res.status(503).json({
+          message: 'Email verification is temporarily paused due to security protection. Please try again later or contact support.',
+          circuitBreakerOpen: true,
+        })
+      }
+    }
 
     res.status(201).json({
       message: 'Verification OTP sent to your email address.',
@@ -152,8 +171,27 @@ export async function resendOtp(req, res, next) {
     user.lastOtpSentAt = new Date()
     await user.save()
 
-    // Send OTP email asynchronously in background
-    sendOtpEmail(cleanEmail, user.name, rawOtp).catch(console.error)
+    if (req.otpSecurity?.recordRequest) {
+      req.otpSecurity.recordRequest()
+    }
+
+    try {
+      await sendOtpEmail(cleanEmail, user.name, rawOtp)
+    } catch (sendErr) {
+      console.warn(`[RESEND OTP NOTICE] [${cleanEmail}]:`, sendErr.message)
+      if (sendErr.isSuppressed || sendErr.isHardBounce) {
+        return res.status(400).json({
+          message: sendErr.message || 'This email address was previously flagged as undeliverable. Please check or enter a different email address.',
+          isSuppressed: true,
+        })
+      }
+      if (sendErr.circuitBreakerOpen) {
+        return res.status(503).json({
+          message: 'Email verification is temporarily paused due to security protection. Please try again later or contact support.',
+          circuitBreakerOpen: true,
+        })
+      }
+    }
 
     res.json({
       message: 'A new 6-digit OTP code has been sent to your email.',

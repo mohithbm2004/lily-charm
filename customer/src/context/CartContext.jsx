@@ -407,57 +407,92 @@ export function CartProvider({ children }) {
       const codeKey = state.coupon.toUpperCase().trim()
       const rule = availableCoupons[codeKey]
 
-      if (rule && subtotal >= rule.minOrderAmount) {
-        let rawDiscount = 0
-        if (rule.type === 'percentage' || rule.type === 'percent') {
-          rawDiscount = Math.round((subtotal * rule.value) / 100)
-          if (rule.maxDiscountCap > 0 && rawDiscount > rule.maxDiscountCap) {
-            rawDiscount = rule.maxDiscountCap
-          }
-        } else if (rule.type === 'flat') {
-          rawDiscount = Math.min(subtotal, rule.value)
+      if (rule) {
+        let eligibleSubtotal = 0
+        const targetSeg = (rule.targetSegment || 'All Products').toLowerCase().trim()
+
+        if (targetSeg === 'all products' || targetSeg === 'all') {
+          eligibleSubtotal = subtotal
+        } else {
+          state.items.forEach((item) => {
+            const cat = (item.specimen || item.category || '').toLowerCase()
+            const title = (item.title || '').toLowerCase()
+            if (cat.includes(targetSeg) || title.includes(targetSeg)) {
+              eligibleSubtotal += (Number(item.price) || 0) * (Number(item.qty) || 1)
+            }
+          })
         }
-        discountAmount = rawDiscount
-        couponInfo = {
-          code: codeKey,
-          label: rule.label,
-          discountAmount,
-          minOrderAmount: rule.minOrderAmount,
-          maxDiscountCap: rule.maxDiscountCap,
-          targetSegment: rule.targetSegment,
+
+        if (eligibleSubtotal > 0 && (!rule.minOrderAmount || eligibleSubtotal >= rule.minOrderAmount)) {
+          let rawDiscount = 0
+          if (rule.type === 'percentage' || rule.type === 'percent') {
+            rawDiscount = Math.round((eligibleSubtotal * rule.value) / 100)
+            if (rule.maxDiscountCap > 0 && rawDiscount > rule.maxDiscountCap) {
+              rawDiscount = rule.maxDiscountCap
+            }
+          } else if (rule.type === 'flat') {
+            rawDiscount = Math.min(eligibleSubtotal, rule.value)
+          }
+          discountAmount = Math.max(0, Math.min(rawDiscount, eligibleSubtotal))
+          couponInfo = {
+            code: codeKey,
+            label: rule.label,
+            discountAmount,
+            eligibleSubtotal,
+            minOrderAmount: rule.minOrderAmount,
+            maxDiscountCap: rule.maxDiscountCap,
+            targetSegment: rule.targetSegment,
+          }
         }
       }
     }
 
-    const applyCoupon = (rawCode) => {
+    const applyCoupon = async (rawCode) => {
       const codeKey = (rawCode || '').toUpperCase().trim()
       if (!codeKey) {
         return { success: false, message: 'Please enter a promo code' }
       }
 
-      const rule = availableCoupons[codeKey]
-      if (!rule) {
-        return { success: false, message: `Invalid promo code "${codeKey}". Try LILY10 or VELVET20!` }
-      }
+      try {
+        const authToken = token || localStorage.getItem('lilycharm_token') || ''
+        const res = await fetch(`${API_URL}/coupons/validate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+          body: JSON.stringify({
+            code: codeKey,
+            items: state.items,
+          }),
+        })
 
-      // Check minimum order spend
-      if (rule.minOrderAmount > 0 && subtotal < rule.minOrderAmount) {
-        return {
-          success: false,
-          message: `⚠️ Code "${codeKey}" requires a minimum order spend of ₹${rule.minOrderAmount.toLocaleString('en-IN')}. Add ₹${(rule.minOrderAmount - subtotal).toLocaleString('en-IN')} more to unlock!`,
+        const data = await res.json()
+        if (res.ok && data.success) {
+          dispatch({ type: 'APPLY_COUPON', coupon: codeKey })
+          return {
+            success: true,
+            message: data.message || `✨ Promo code "${codeKey}" applied successfully!`,
+          }
+        } else {
+          return {
+            success: false,
+            message: data.message || `Invalid promo code "${codeKey}".`,
+          }
         }
-      }
-
-      dispatch({ type: 'APPLY_COUPON', coupon: codeKey })
-
-      let capNotice = ''
-      if (rule.maxDiscountCap > 0) {
-        capNotice = ` (Capped at max ₹${rule.maxDiscountCap.toLocaleString('en-IN')} OFF)`
-      }
-
-      return {
-        success: true,
-        message: `✨ Promo code "${codeKey}" applied successfully!${capNotice}`,
+      } catch (err) {
+        const rule = availableCoupons[codeKey]
+        if (!rule) {
+          return { success: false, message: `Invalid promo code "${codeKey}".` }
+        }
+        if (rule.minOrderAmount > 0 && subtotal < rule.minOrderAmount) {
+          return {
+            success: false,
+            message: `⚠️ Code "${codeKey}" requires a minimum order spend of ₹${rule.minOrderAmount.toLocaleString('en-IN')}.`,
+          }
+        }
+        dispatch({ type: 'APPLY_COUPON', coupon: codeKey })
+        return { success: true, message: `✨ Promo code "${codeKey}" applied successfully!` }
       }
     }
 

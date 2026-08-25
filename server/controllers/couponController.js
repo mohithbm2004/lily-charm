@@ -1,6 +1,48 @@
 import mongoose from 'mongoose'
 import Coupon from '../models/Coupon.js'
+import { validateAndCalculateCoupon } from '../utils/couponValidator.js'
 import { emitCouponCreated, emitCouponUpdated, emitCouponDeleted } from '../socket.js'
+
+// @desc    Validate a promo code for cart items (Customer API)
+// @route   POST /api/coupons/validate
+export const validateCouponApi = async (req, res) => {
+  try {
+    const { code, items = [] } = req.body
+    const userId = req.user?._id || null
+
+    const result = await validateAndCalculateCoupon({
+      couponCode: code,
+      items,
+      userId,
+    })
+
+    if (!result.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: result.message,
+        cartSubtotal: result.cartSubtotal,
+        shippingCharge: result.shippingCharge,
+        grandTotal: result.grandTotal,
+      })
+    }
+
+    return res.status(200).json({
+      success: true,
+      code: result.code,
+      coupon: result.coupon,
+      cartSubtotal: result.cartSubtotal,
+      eligibleSubtotal: result.eligibleSubtotal,
+      discountAmount: result.discountAmount,
+      shippingCharge: result.shippingCharge,
+      grandTotal: result.grandTotal,
+      tax: 0,
+      message: result.message,
+    })
+  } catch (error) {
+    console.error('Error validating coupon:', error)
+    return res.status(500).json({ success: false, message: 'Server error validating coupon.' })
+  }
+}
 
 // @desc    Get all coupons (Admin)
 // @route   GET /api/coupons
@@ -26,14 +68,36 @@ export const getActiveCoupons = async (req, res) => {
   }
 }
 
-// @desc    Create a new coupon
+// @desc    Create a new coupon (Admin)
 // @route   POST /api/coupons
 export const createCoupon = async (req, res) => {
   try {
-    const { code, title, discountType, discountValue, minOrderAmount, maxDiscountCap, targetSegment, isActive } = req.body
+    const {
+      code,
+      title,
+      discountType,
+      discountValue,
+      minOrderAmount,
+      maxDiscountCap,
+      targetSegment,
+      maxUsageLimit,
+      perUserLimit,
+      startDate,
+      expiryDate,
+      isActive,
+    } = req.body
 
-    if (!code) {
+    if (!code || !code.trim()) {
       return res.status(400).json({ success: false, message: 'Coupon code is required' })
+    }
+
+    const val = Number(discountValue)
+    if (isNaN(val) || val <= 0) {
+      return res.status(400).json({ success: false, message: 'Discount value must be greater than zero' })
+    }
+
+    if (discountType === 'percentage' && val > 100) {
+      return res.status(400).json({ success: false, message: 'Percentage discount cannot exceed 100%' })
     }
 
     const cleanCode = code.toUpperCase().trim()
@@ -44,12 +108,16 @@ export const createCoupon = async (req, res) => {
 
     const coupon = await Coupon.create({
       code: cleanCode,
-      title: title || `${discountValue}${discountType === 'percentage' ? '%' : '₹'} OFF Offer`,
+      title: title || `${val}${discountType === 'percentage' ? '%' : '₹'} OFF Offer`,
       discountType: discountType || 'percentage',
-      discountValue: Number(discountValue || 10),
-      minOrderAmount: Number(minOrderAmount || 0),
-      maxDiscountCap: Number(maxDiscountCap || 0),
+      discountValue: val,
+      minOrderAmount: Math.max(0, Number(minOrderAmount || 0)),
+      maxDiscountCap: Math.max(0, Number(maxDiscountCap || 0)),
       targetSegment: targetSegment || 'All Products',
+      maxUsageLimit: Math.max(0, Number(maxUsageLimit || 0)),
+      perUserLimit: Math.max(0, Number(perUserLimit || 0)),
+      startDate: startDate ? new Date(startDate) : null,
+      expiryDate: expiryDate ? new Date(expiryDate) : null,
       isActive: isActive !== false,
     })
 
@@ -61,7 +129,7 @@ export const createCoupon = async (req, res) => {
   }
 }
 
-// @desc    Update coupon details
+// @desc    Update coupon details (Admin)
 // @route   PUT /api/coupons/:id
 export const updateCoupon = async (req, res) => {
   try {
@@ -79,14 +147,42 @@ export const updateCoupon = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Coupon not found' })
     }
 
-    const { code, title, discountType, discountValue, minOrderAmount, maxDiscountCap, targetSegment, isActive } = req.body
+    const {
+      code,
+      title,
+      discountType,
+      discountValue,
+      minOrderAmount,
+      maxDiscountCap,
+      targetSegment,
+      maxUsageLimit,
+      perUserLimit,
+      startDate,
+      expiryDate,
+      isActive,
+    } = req.body
 
     if (code) coupon.code = code.toUpperCase().trim()
     if (title !== undefined) coupon.title = title
     if (discountType) coupon.discountType = discountType
-    if (discountValue !== undefined) coupon.discountValue = Number(discountValue)
-    if (minOrderAmount !== undefined) coupon.minOrderAmount = Number(minOrderAmount)
-    if (maxDiscountCap !== undefined) coupon.maxDiscountCap = Number(maxDiscountCap)
+
+    if (discountValue !== undefined) {
+      const val = Number(discountValue)
+      if (isNaN(val) || val <= 0) {
+        return res.status(400).json({ success: false, message: 'Discount value must be greater than zero' })
+      }
+      if ((discountType || coupon.discountType) === 'percentage' && val > 100) {
+        return res.status(400).json({ success: false, message: 'Percentage discount cannot exceed 100%' })
+      }
+      coupon.discountValue = val
+    }
+
+    if (minOrderAmount !== undefined) coupon.minOrderAmount = Math.max(0, Number(minOrderAmount))
+    if (maxDiscountCap !== undefined) coupon.maxDiscountCap = Math.max(0, Number(maxDiscountCap))
+    if (maxUsageLimit !== undefined) coupon.maxUsageLimit = Math.max(0, Number(maxUsageLimit))
+    if (perUserLimit !== undefined) coupon.perUserLimit = Math.max(0, Number(perUserLimit))
+    if (startDate !== undefined) coupon.startDate = startDate ? new Date(startDate) : null
+    if (expiryDate !== undefined) coupon.expiryDate = expiryDate ? new Date(expiryDate) : null
     if (targetSegment) coupon.targetSegment = targetSegment
     if (isActive !== undefined) coupon.isActive = Boolean(isActive)
 
@@ -99,7 +195,7 @@ export const updateCoupon = async (req, res) => {
   }
 }
 
-// @desc    Delete coupon
+// @desc    Delete coupon (Admin)
 // @route   DELETE /api/coupons/:id
 export const deleteCoupon = async (req, res) => {
   try {

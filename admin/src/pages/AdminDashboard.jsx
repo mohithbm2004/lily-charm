@@ -78,7 +78,6 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     users = [],
     reviews = [],
     marqueeText,
-    activeOffer,
     addProduct,
     updateProduct,
     deleteProduct,
@@ -96,7 +95,6 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     deleteReview,
     refreshReviewsFromApi,
     updateMarquee,
-    updateOffer,
     shippingSettings,
     updateShippingSettings,
     coupons = [],
@@ -153,6 +151,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     if (p.includes('/admin/payments')) return 'payments'
     if (p.includes('/admin/refunds')) return 'refunds'
     if (p.includes('/admin/coupons')) return 'coupons'
+    if (p.includes('/admin/email-security')) return 'email-security'
     if (p.includes('/admin/settings')) return 'offers'
     if (p.includes('/admin/dashboard')) return 'dashboard'
     return activeTabName ? activeTabName.toLowerCase().replace(/\s+/g, '-') : 'products'
@@ -167,6 +166,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     else if (p.includes('/admin/payments')) setActiveTab('payments')
     else if (p.includes('/admin/refunds')) setActiveTab('refunds')
     else if (p.includes('/admin/coupons')) setActiveTab('coupons')
+    else if (p.includes('/admin/email-security')) setActiveTab('email-security')
     else if (p.includes('/admin/settings')) setActiveTab('offers')
     else if (p.includes('/admin/dashboard')) setActiveTab('dashboard')
     else if (p.includes('/admin/products')) setActiveTab('products')
@@ -267,9 +267,8 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     imageScale: 1,
   })
 
-  // Marquee & Offer edit state
+  // Marquee edit state
   const [tempMarquee, setTempMarquee] = useState(marqueeText)
-  const [tempOffer, setTempOffer] = useState(() => activeOffer)
 
   // Segment Coupon Form State
   const [newCoupon, setNewCoupon] = useState({
@@ -990,12 +989,6 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     alert('Marquee text updated successfully!')
   }
 
-  const handleSaveOffer = (e) => {
-    e.preventDefault()
-    updateOffer(tempOffer)
-    alert('Offer banner updated successfully!')
-  }
-
   const [reviewFilter, setReviewFilter] = useState('all') // 'all', 'displayed', 'hidden'
   const [reviewSearchQuery, setReviewSearchQuery] = useState('')
   const [selectedCollectionFilter, setSelectedCollectionFilter] = useState('all')
@@ -1259,6 +1252,17 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
             }`}
           >
             <Tag size={15} /> Coupons ({coupons.length})
+          </button>
+
+          <button
+            onClick={() => handleTabChange('email-security', '/admin/email-security')}
+            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+              activeTab === 'email-security'
+                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
+                : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
+            }`}
+          >
+            <ShieldCheck size={15} className="text-emerald-600" /> Email Security
           </button>
         </div>
 
@@ -2023,85 +2027,6 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               </button>
             </form>
 
-            <form onSubmit={handleSaveOffer} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3">
-                <h2 className="text-xl font-bold font-[var(--font-display)] uppercase flex items-center gap-2">
-                  🏷️ Active Offer Code & Discount Percentage
-                </h2>
-                <span className={`text-[0.65rem] font-bold uppercase tracking-wider px-2.5 py-1 rounded border ${
-                  tempOffer.isActive !== false ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300'
-                }`}>
-                  {tempOffer.isActive !== false ? 'PROMO ACTIVE' : 'PROMO PAUSED'}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5">Offer Promo Code *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. LILY10 or SUMMER25"
-                    value={tempOffer.code || ''}
-                    onChange={(e) => setTempOffer({ ...tempOffer, code: e.target.value.toUpperCase().trim() })}
-                    className="w-full border border-[var(--color-line)] p-2.5 text-xs font-mono font-bold uppercase focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)]"
-                  />
-                  <p className="text-[0.65rem] text-[var(--color-ink-soft)] mt-1">Customers enter this code at checkout to apply discount.</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5">Offer Discount Percentage (%) *</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    required
-                    placeholder="e.g. 10, 20, 25"
-                    value={tempOffer.discountPercent || ''}
-                    onChange={(e) => setTempOffer({ ...tempOffer, discountPercent: Number(e.target.value) })}
-                    className="w-full border border-[var(--color-line)] p-2.5 text-xs font-bold focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)]"
-                  />
-                  <p className="text-[0.65rem] text-[var(--color-ink-soft)] mt-1">Percentage off the cart subtotal (e.g. 25 = 25% OFF).</p>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5">Offer Title / Description</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 25% OFF Festive Special Offer"
-                  value={tempOffer.title || ''}
-                  onChange={(e) => setTempOffer({ ...tempOffer, title: e.target.value })}
-                  className="w-full border border-[var(--color-line)] p-2.5 text-xs focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)]"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="isActiveOffer"
-                  checked={tempOffer.isActive !== false}
-                  onChange={(e) => setTempOffer({ ...tempOffer, isActive: e.target.checked })}
-                  className="w-4 h-4 accent-[var(--color-primary)] cursor-pointer"
-                />
-                <label htmlFor="isActiveOffer" className="text-xs font-bold uppercase cursor-pointer">
-                  Enable & Activate this offer code on Storefront
-                </label>
-              </div>
-
-              {/* Live Preview Box */}
-              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded text-xs space-y-1">
-                <span className="font-bold text-emerald-900 uppercase text-[0.68rem] tracking-wider block">Storefront Live Preview:</span>
-                <p className="text-emerald-800 font-medium">
-                  Code: <strong className="font-mono font-bold bg-white px-2 py-0.5 border border-emerald-300 rounded text-emerald-900">{tempOffer.code || 'LILY10'}</strong> ➔ <strong className="font-bold text-emerald-900">{tempOffer.discountPercent || 10}% OFF Discount</strong>
-                </p>
-              </div>
-
-              <button type="submit" className="btn-primary py-3 px-6 text-xs uppercase font-bold tracking-wider">
-                Save Main Banner Offer
-              </button>
-            </form>
-
             {/* Shipping Fee & Free Delivery Threshold Manager */}
             <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 space-y-4 shadow-sm md:col-span-2">
               <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3">
@@ -2729,7 +2654,26 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                     return Boolean(uIdStr && oUserId && oUserId === uIdStr)
                   })
 
-                  const totalSpent = userOrdersList.reduce((sum, o) => sum + (o.grandTotal || o.total || 0), 0)
+                  const successOrders = userOrdersList.filter((o) => {
+                    const st = (o.status || '').toLowerCase()
+                    const ps = (o.paymentStatus || '').toLowerCase()
+                    return ps === 'paid' || st === 'paid & confirmed' || st === 'delivered' || st === 'shipped' || st === 'packed & sealed' || st === 'packed & dispatched' || st === 'studio processing' || st === 'handcrafting' || st === 'order confirmed'
+                  })
+
+                  const cancelledOrders = userOrdersList.filter((o) => {
+                    const st = (o.status || '').toLowerCase()
+                    const ps = (o.paymentStatus || '').toLowerCase()
+                    return st.includes('cancel') || st.includes('refund') || st.includes('decline') || ps === 'failed' || ps === 'refunded'
+                  })
+
+                  const pendingOrders = userOrdersList.filter((o) => {
+                    return !successOrders.includes(o) && !cancelledOrders.includes(o)
+                  })
+
+                  const successTotal = successOrders.reduce((sum, o) => sum + (Number(o.grandTotal || o.total) || 0), 0)
+                  const pendingTotal = pendingOrders.reduce((sum, o) => sum + (Number(o.grandTotal || o.total) || 0), 0)
+                  const cancelledTotal = cancelledOrders.reduce((sum, o) => sum + (Number(o.grandTotal || o.total) || 0), 0)
+                  const totalSpent = successTotal
 
                   const userRequestsList = (customRequests || []).filter((r) => {
                     const rUserId = (r.user?._id || r.user)?.toString()
@@ -2773,19 +2717,23 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                           <p className="font-mono text-[0.65rem] pt-1">🕒 Registered: {formatDateTime(u.createdAt)}</p>
                         </div>
 
-                        {/* Summary Chips */}
-                        <div className="pt-2 border-t border-[var(--color-line)] flex flex-wrap gap-2 text-[0.65rem] font-bold uppercase">
-                          <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded font-mono">
-                            📦 {userOrdersList.length} Orders
-                          </span>
-                          <span className="px-2.5 py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded font-mono">
-                            💰 {formatPrice(totalSpent)} Spent
-                          </span>
-                          {userRequestsList.length > 0 && (
-                            <span className="px-2.5 py-1 bg-purple-100 text-purple-800 border border-purple-300 rounded font-mono">
-                              🎨 {userRequestsList.length} Quotes
+                        {/* Summary Chips Split by Status */}
+                        <div className="pt-2 border-t border-[var(--color-line)] space-y-1.5 text-[0.65rem] font-bold uppercase">
+                          <div className="flex flex-wrap gap-1.5 font-mono">
+                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded" title="Successful orders">
+                              ✓ Success ({successOrders.length}): {formatPrice(successTotal)}
                             </span>
-                          )}
+                            {pendingOrders.length > 0 && (
+                              <span className="px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded" title="Pending orders">
+                                ⏳ Pending ({pendingOrders.length}): {formatPrice(pendingTotal)}
+                              </span>
+                            )}
+                            {cancelledOrders.length > 0 && (
+                              <span className="px-2 py-0.5 bg-rose-100 text-rose-900 border border-rose-300 rounded" title="Cancelled orders">
+                                ✕ Cancelled ({cancelledOrders.length}): {formatPrice(cancelledTotal)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -3076,34 +3024,82 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               </button>
             </div>
 
-            {/* Customer Details & Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs bg-[var(--color-bg)] p-4 border border-[var(--color-line)]">
-              <div>
-                <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-ink-soft)]">Shipping Address</span>
-                <p className="font-bold text-xs mt-1">{selectedUserModal.user.address || 'Not specified'}</p>
-                <p className="text-[var(--color-ink-soft)]">{selectedUserModal.user.city ? `${selectedUserModal.user.city} - ${selectedUserModal.user.pincode}` : ''}</p>
-              </div>
+            {(() => {
+              const ordersList = selectedUserModal.userOrdersList || []
 
-              <div>
-                <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-ink-soft)]">Account Registration</span>
-                <p className="font-bold font-mono text-xs mt-1">
-                  {new Date(selectedUserModal.user.createdAt).toLocaleDateString('en-IN', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </p>
-                <span className="inline-block mt-1 px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[0.62rem] font-bold uppercase rounded border border-emerald-300">
-                  Verified Account
-                </span>
-              </div>
+              const successOrders = ordersList.filter((o) => {
+                const st = (o.status || '').toLowerCase()
+                const ps = (o.paymentStatus || '').toLowerCase()
+                return ps === 'paid' || st === 'paid & confirmed' || st === 'delivered' || st === 'shipped' || st === 'packed & sealed' || st === 'packed & dispatched' || st === 'studio processing' || st === 'handcrafting' || st === 'order confirmed'
+              })
 
-              <div>
-                <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-ink-soft)]">Lifetime Value</span>
-                <p className="text-lg font-bold font-mono text-emerald-800 mt-0.5">{formatPrice(selectedUserModal.totalSpent)}</p>
-                <p className="text-[0.68rem] text-[var(--color-ink-soft)] font-mono">{selectedUserModal.userOrdersList.length} Orders Placed</p>
-              </div>
-            </div>
+              const cancelledOrders = ordersList.filter((o) => {
+                const st = (o.status || '').toLowerCase()
+                const ps = (o.paymentStatus || '').toLowerCase()
+                return st.includes('cancel') || st.includes('refund') || st.includes('decline') || ps === 'failed' || ps === 'refunded'
+              })
+
+              const pendingOrders = ordersList.filter((o) => {
+                return !successOrders.includes(o) && !cancelledOrders.includes(o)
+              })
+
+              const successTotal = successOrders.reduce((sum, o) => sum + (Number(o.grandTotal || o.total) || 0), 0)
+              const pendingTotal = pendingOrders.reduce((sum, o) => sum + (Number(o.grandTotal || o.total) || 0), 0)
+              const cancelledTotal = cancelledOrders.reduce((sum, o) => sum + (Number(o.grandTotal || o.total) || 0), 0)
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs bg-[var(--color-bg)] p-4 border border-[var(--color-line)] items-start">
+                  <div>
+                    <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-ink-soft)]">Shipping Address</span>
+                    <p className="font-bold text-xs mt-1">{selectedUserModal.user.address || 'Not specified'}</p>
+                    <p className="text-[var(--color-ink-soft)]">{selectedUserModal.user.city ? `${selectedUserModal.user.city} - ${selectedUserModal.user.pincode}` : ''}</p>
+                  </div>
+
+                  <div>
+                    <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-ink-soft)]">Account Registration</span>
+                    <p className="font-bold font-mono text-xs mt-1">
+                      {new Date(selectedUserModal.user.createdAt).toLocaleDateString('en-IN', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </p>
+                    <span className="inline-block mt-1 px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[0.62rem] font-bold uppercase rounded border border-emerald-300">
+                      Verified Account
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-ink-soft)] uppercase tracking-wider block">Lifetime Value</span>
+                    <p className="text-xl font-bold font-mono text-emerald-800 mt-0.5">{formatPrice(successTotal)}</p>
+                    <p className="text-[0.68rem] text-[var(--color-ink-soft)] font-mono">{ordersList.length} Total Orders Placed</p>
+
+                    <div className="mt-3 space-y-1.5 font-mono text-[0.68rem] border-t border-[var(--color-line)] pt-2">
+                      <div className="flex justify-between items-center bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
+                        <span className="font-bold text-emerald-900 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-600"></span> Success ({successOrders.length})
+                        </span>
+                        <span className="font-bold text-emerald-900 font-mono">{formatPrice(successTotal)}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center bg-amber-50 px-2.5 py-1 rounded border border-amber-200">
+                        <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-500"></span> Pending ({pendingOrders.length})
+                        </span>
+                        <span className="font-bold text-amber-900 font-mono">{formatPrice(pendingTotal)}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center bg-rose-50 px-2.5 py-1 rounded border border-rose-200">
+                        <span className="font-bold text-rose-900 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-rose-600"></span> Cancelled ({cancelledOrders.length})
+                        </span>
+                        <span className="font-bold text-rose-900 font-mono">{formatPrice(cancelledTotal)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* ORDER HISTORY SECTION */}
             <div className="space-y-4">

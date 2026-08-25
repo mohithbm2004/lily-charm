@@ -59,16 +59,6 @@ export function StudioProvider({ children }) {
     return saved || 'FREE DELIVERY ON ORDERS ABOVE ₹2500 • HANDCRAFTED VELVET BOTANICAL FLORALS • USE CODE LILY10 FOR 10% OFF'
   })
 
-  const [activeOffer, setActiveOffer] = useState(() => {
-    const saved = localStorage.getItem('lilycharm_offer')
-    return saved !== null ? JSON.parse(saved) : {
-      code: 'LILY10',
-      discountPercent: 10,
-      bannerText: 'SPECIAL OFFER: 10% OFF ON ALL HANDCRAFTED VELVET BOUQUETS',
-      enabled: true,
-    }
-  })
-
   const refreshProductsFromApi = async () => {
     try {
       const controller = new AbortController()
@@ -487,10 +477,6 @@ export function StudioProvider({ children }) {
     localStorage.setItem('lilycharm_marquee', marqueeText)
   }, [marqueeText])
 
-  useEffect(() => {
-    localStorage.setItem('lilycharm_offer', JSON.stringify(activeOffer))
-  }, [activeOffer])
-
   const addProduct = async (newProduct) => {
     const rawImages = Array.isArray(newProduct.images) && newProduct.images.length > 0
       ? newProduct.images.map(img => typeof img === 'object' ? img.url : img)
@@ -740,25 +726,6 @@ export function StudioProvider({ children }) {
     }
   }
 
-  const updateOffer = async (offerObj) => {
-    setActiveOffer(offerObj)
-    try {
-      await fetch(`${API_URL}/settings`, {
-        method: 'POST',
-        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
-        credentials: 'include',
-        body: JSON.stringify({
-          offerCode: offerObj.code,
-          discountPercent: offerObj.discountPercent,
-          offerTitle: offerObj.title || `${offerObj.discountPercent}% OFF Studio Discount`,
-          isOfferActive: offerObj.isActive !== false,
-        }),
-      })
-    } catch (e) {
-      console.error('Failed to update offer settings on server:', e)
-    }
-  }
-
   const updateCustomRequestStatus = async (id, status, reason = '') => {
     setCustomRequests((prev) =>
       prev.map((r) => (r._id === id ? { ...r, status, ...(reason ? { adminNotes: reason } : {}) } : r))
@@ -986,7 +953,6 @@ export function StudioProvider({ children }) {
         users,
         reviews,
         marqueeText,
-        activeOffer,
         shippingSettings,
         updateShippingSettings,
         addProduct,
@@ -1007,7 +973,6 @@ export function StudioProvider({ children }) {
         deleteReview,
         refreshReviewsFromApi,
         updateMarquee,
-        updateOffer,
         coupons,
         addCoupon,
         toggleCoupon,

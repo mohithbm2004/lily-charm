@@ -377,6 +377,30 @@ export async function processCustomQuotePaymentSuccess({
     pincode: customRequest.pincode || '560001',
   }
 
+  // Atomic lock on CustomRequest to prevent concurrent processing
+  const lockedRequest = await CustomRequest.findOneAndUpdate(
+    {
+      _id: customRequest._id,
+      status: { $nin: ['Paid & Order Placed', 'Paid & Confirmed'] },
+    },
+    {
+      $set: {
+        status: 'Paid & Order Placed',
+        razorpayPaymentId,
+        razorpaySignature,
+        shippingCharge: shipping,
+        totalAmount: total,
+      },
+    },
+    { new: true }
+  )
+
+  if (!lockedRequest) {
+    const currentReq = await CustomRequest.findById(customRequest._id)
+    const existingOrder = currentReq.convertedOrderId ? await Order.findById(currentReq.convertedOrderId) : null
+    return { order: existingOrder, customRequest: currentReq, alreadyProcessed: true }
+  }
+
   const newOrder = await Order.create({
     orderNumber: `LC-CQ-${Date.now().toString().slice(-6)}`,
     user: customRequest.user,
@@ -397,21 +421,15 @@ export async function processCustomQuotePaymentSuccess({
     total: total,
     paymentMethod: 'Razorpay Prepaid (Custom Quote)',
     paymentStatus: 'Paid',
-    status: 'Confirmed',
+    status: 'Order Confirmed',
     razorpayOrderId: razorpayOrderId || customRequest.razorpayOrderId || '',
     razorpayPaymentId: razorpayPaymentId || '',
     razorpaySignature: razorpaySignature || '',
-    statusHistory: [{ status: 'Confirmed', note: 'Custom price quote accepted and paid online via Razorpay.' }],
+    statusHistory: [{ status: 'Order Confirmed', note: 'Custom price quote accepted and paid online via Razorpay.' }],
   })
 
-  customRequest.status = 'Paid & Order Placed'
-  customRequest.convertedOrderId = newOrder._id.toString()
-  customRequest.razorpayOrderId = razorpayOrderId || customRequest.razorpayOrderId
-  customRequest.razorpayPaymentId = razorpayPaymentId
-  customRequest.razorpaySignature = razorpaySignature
-  customRequest.shippingCharge = shipping
-  customRequest.totalAmount = total
-  await customRequest.save()
+  lockedRequest.convertedOrderId = newOrder._id.toString()
+  await lockedRequest.save()
 
   // Update Payment Record
   try {
@@ -423,7 +441,9 @@ export async function processCustomQuotePaymentSuccess({
         orderNumber: newOrder.orderNumber,
         razorpayPaymentId,
         razorpaySignature,
+        amount: total,
         status: 'captured',
+        processedAt: new Date(),
       },
       { upsert: true }
     )
