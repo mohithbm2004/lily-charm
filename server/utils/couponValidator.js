@@ -57,9 +57,10 @@ export async function validateAndCalculateCoupon({ couponCode = '', items = [], 
   let shippingCharge = 0
   try {
     const studioSettings = await Setting.findOne({ key: 'main_studio_settings' })
-    const isShippingEnabled = studioSettings?.shippingFeeEnabled ?? true
-    const standardFee = studioSettings?.standardShippingFee ?? 100
-    const threshold = studioSettings?.freeShippingThreshold ?? 2500
+    const rawEnabled = studioSettings?.shippingFeeEnabled
+    const isShippingEnabled = rawEnabled === true || rawEnabled === 'true' || rawEnabled === undefined || rawEnabled === null
+    const standardFee = Number(studioSettings?.standardShippingFee) || 100
+    const threshold = Number(studioSettings?.freeShippingThreshold) || 2000
 
     if (isShippingEnabled) {
       shippingCharge = cartSubtotal >= threshold ? 0 : standardFee

@@ -48,15 +48,14 @@ export default function Admin() {
   const [savedShippingMsg, setSavedShippingMsg] = useState(false)
 
   useEffect(() => {
-    if (shippingSettings && !hasInitializedShipping) {
+    if (shippingSettings) {
       setTempShipping({
-        shippingFeeEnabled: shippingSettings.shippingFeeEnabled ?? true,
-        standardShippingFee: shippingSettings.standardShippingFee ?? 100,
-        freeShippingThreshold: shippingSettings.freeShippingThreshold ?? 2500,
+        shippingFeeEnabled: shippingSettings.shippingFeeEnabled !== undefined ? Boolean(shippingSettings.shippingFeeEnabled) : true,
+        standardShippingFee: Number(shippingSettings.standardShippingFee) || 100,
+        freeShippingThreshold: Number(shippingSettings.freeShippingThreshold) || 2000,
       })
-      setHasInitializedShipping(true)
     }
-  }, [shippingSettings, hasInitializedShipping])
+  }, [shippingSettings])
 
   const handleSaveShipping = async (e) => {
     e.preventDefault()

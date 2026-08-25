@@ -62,7 +62,7 @@ export function StudioProvider({ children }) {
   const [shippingSettings, setShippingSettings] = useState({
     shippingFeeEnabled: true,
     standardShippingFee: 100,
-    freeShippingThreshold: 2500,
+    freeShippingThreshold: 2000,
   })
 
   const refreshSettingsFromApi = async () => {
@@ -74,7 +74,7 @@ export function StudioProvider({ children }) {
         setShippingSettings({
           shippingFeeEnabled: data?.shippingFeeEnabled !== undefined ? Boolean(data.shippingFeeEnabled) : true,
           standardShippingFee: data?.standardShippingFee !== undefined ? Number(data.standardShippingFee) : 100,
-          freeShippingThreshold: data?.freeShippingThreshold !== undefined ? Number(data.freeShippingThreshold) : 2500,
+          freeShippingThreshold: data?.freeShippingThreshold !== undefined ? Number(data.freeShippingThreshold) : 2000,
         })
       }
     } catch (e) {

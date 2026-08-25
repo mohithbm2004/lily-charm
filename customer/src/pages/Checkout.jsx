@@ -23,7 +23,8 @@ export default function Checkout() {
   const [authInitialMode, setAuthInitialMode] = useState('login')
   const [termsAccepted, setTermsAccepted] = useState(false)
 
-  const isShippingEnabled = shippingSettings?.shippingFeeEnabled !== false
+  const rawEnabled = shippingSettings?.shippingFeeEnabled
+  const isShippingEnabled = rawEnabled === true || rawEnabled === 'true' || rawEnabled === undefined || rawEnabled === null
   const standardShippingFee = Number(shippingSettings?.standardShippingFee) || 100
   const freeThreshold = Number(shippingSettings?.freeShippingThreshold) || 2000
 
