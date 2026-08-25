@@ -909,19 +909,17 @@ export default function Dashboard() {
                                 const authToken = token || localStorage.getItem('lilycharm_token') || ''
 
                                 if (isPaidOrder) {
-                                  const customReason = prompt('Please specify reason for cancellation (97% automatic refund will be processed):', 'Order cancelled by customer')
-                                  if (customReason === null) return // cancelled prompt
+                                  const customReason = 'Order cancelled by customer'
 
                                   showConfirm({
                                     title: 'Cancel Order & Initiate Refund',
                                     type: 'warning',
-                                    message: `Are you sure you want to cancel paid order "${o?.orderNumber || o?._id}"? Reason: "${customReason}". Automatic refund will be processed back to your original payment method.`,
+                                    message: `Are you sure you want to cancel paid order "${o?.orderNumber || o?._id}"? Automatic refund will be processed back to your original payment method.`,
                                     details: [
                                       { label: 'Order Number', value: o?.orderNumber || o?._id },
                                       { label: 'Original Order Total', value: formatPrice(orderTotal) },
                                       { label: 'Processing Fee (3%)', value: `- ${formatPrice(processingFee)}`, color: 'text-rose-700 font-bold' },
                                       { label: 'Net Refund to Customer (97%)', value: formatPrice(netRefund), color: 'text-emerald-800 font-bold text-sm', isTotal: true },
-                                      { label: 'Cancellation Reason', value: customReason },
                                     ],
                                     disclaimer: 'Customer self-cancellation incurs a 3% payment processing fee. The net 97% refund is automatically credited back to your original payment method within 5–7 banking days. (Note: 100% full refund applies if cancelled by Studio).',
                                     confirmText: `Confirm Cancellation (${formatPrice(netRefund)} Refund)`,
@@ -934,7 +932,7 @@ export default function Dashboard() {
                                             'Content-Type': 'application/json',
                                             ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
                                           },
-                                          body: JSON.stringify({ reason: customReason || 'Cancelled by customer via dashboard' }),
+                                          body: JSON.stringify({ reason: customReason }),
                                         })
                                         const data = await res.json()
                                         if (res.ok) {
@@ -961,18 +959,16 @@ export default function Dashboard() {
                                     },
                                   })
                                 } else {
-                                  const customReason = prompt('Please specify reason for cancelling unpaid order:', 'Cancelled before payment')
-                                  if (customReason === null) return
+                                  const customReason = 'Cancelled before payment'
 
                                   showConfirm({
                                     title: 'Cancel Unpaid Order',
                                     type: 'warning',
-                                    message: `Are you sure you want to cancel order "${o?.orderNumber || o?._id}"? Because this order is unpaid, no payment has been charged and no refund will be issued.`,
+                                    message: `Are you sure you want to cancel order "${o?.orderNumber || o?._id}"? Because this order is unpaid, no payment has been charged to your account.`,
                                     details: [
                                       { label: 'Order Number', value: o?.orderNumber || o?._id },
                                       { label: 'Order Total', value: formatPrice(orderTotal) },
                                       { label: 'Payment Status', value: 'Unpaid / Pending' },
-                                      { label: 'Cancellation Reason', value: customReason },
                                     ],
                                     disclaimer: 'This order will be cancelled immediately. No charges were made to your account.',
                                     confirmText: 'Confirm Order Cancellation',
