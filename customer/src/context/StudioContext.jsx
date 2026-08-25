@@ -41,15 +41,6 @@ export function StudioProvider({ children }) {
       if (res.ok) {
         const data = await res.json()
         if (data?.marqueeText) setMarqueeText(data.marqueeText)
-        if (data?.offerCode) {
-          setActiveOffer((prev) => ({
-            ...prev,
-            code: data.offerCode,
-            discountPercent: data.discountPercent ?? prev.discountPercent,
-            bannerText: data.offerTitle || prev.bannerText,
-            enabled: data.isOfferActive ?? prev.enabled,
-          }))
-        }
         const updated = {
           shippingFeeEnabled: data.shippingFeeEnabled !== undefined ? Boolean(data.shippingFeeEnabled) : true,
           standardShippingFee: data.standardShippingFee !== undefined ? Number(data.standardShippingFee) : 100,
@@ -215,15 +206,6 @@ export function StudioProvider({ children }) {
     const handleSettingsUpdated = (data) => {
       if (!data) return
       if (data.marqueeText) setMarqueeText(data.marqueeText)
-      if (data.offerCode) {
-        setActiveOffer((prev) => ({
-          ...prev,
-          code: data.offerCode,
-          discountPercent: data.discountPercent ?? prev.discountPercent,
-          bannerText: data.offerTitle || prev.bannerText,
-          enabled: data.isOfferActive ?? prev.enabled,
-        }))
-      }
       const updatedShipping = {
         shippingFeeEnabled: data.shippingFeeEnabled !== undefined ? Boolean(data.shippingFeeEnabled) : true,
         standardShippingFee: data.standardShippingFee !== undefined ? Number(data.standardShippingFee) : 100,
