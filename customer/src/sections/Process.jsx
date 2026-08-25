@@ -2,7 +2,7 @@ import { Sparkles, Flower2, Layers, Sun, PenTool, Frame, PackageCheck, Truck } f
 import Reveal from '../components/Reveal'
 
 const steps = [
-  { num: '01', icon: Flower2, label: 'Fresh Flowers', desc: 'Handpicked blooms' },
+  { num: '01', icon: Flower2, label: 'Botanical Selection', desc: 'Handpicked & curated' },
   { num: '02', icon: Layers, label: 'Hand Pressing', desc: 'Patience & care' },
   { num: '03', icon: Sun, label: 'Drying', desc: 'Preserving color' },
   { num: '04', icon: PenTool, label: 'Design', desc: 'Artistic styling' },
@@ -28,7 +28,7 @@ export default function Process() {
               From stem to keepsake, in seven steps
             </h2>
             <p className="text-[#E2DACB] text-xs sm:text-sm md:text-base leading-relaxed mt-3 font-normal">
-              Every petal is preserved with patience and curated by hand to create an everlasting memory.
+              Every handcrafted stem and preserved petal is curated with patience to create an everlasting memory.
             </p>
           </div>
         </Reveal>
