@@ -11,9 +11,9 @@ export class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    if (import.meta.env.DEV) {
-      console.error('[STUDIO ERROR BOUNDARY CAUGHT ERROR]:', error, errorInfo)
-    }
+    console.error('[LILY CHARM] Runtime crash — error.message:', error?.message)
+    console.error('[LILY CHARM] error.stack:', error?.stack)
+    console.error('[LILY CHARM] componentStack:', errorInfo?.componentStack)
   }
 
   handleReset = () => {
