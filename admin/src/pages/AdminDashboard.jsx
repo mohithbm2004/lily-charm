@@ -33,6 +33,7 @@ import {
   MapPin,
   Calendar,
   Clock,
+  Activity,
   Receipt,
   GripVertical,
 } from 'lucide-react'
@@ -237,7 +238,8 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
   const [orderDateTo, setOrderDateTo] = useState('')
 
   // Uptime Robot Status
-  const [uptimeStatus, setUptimeStatus] = useState({ lastPing: null, loading: true })
+  const [uptimeStatus, setUptimeStatus] = useState({ lastPing: null, history: [], loading: true })
+  const [showUptimeModal, setShowUptimeModal] = useState(false)
 
   const fetchUptimeStatus = useCallback(async () => {
     const sessionId = localStorage.getItem('lilycharm_admin_session_id') || ''
@@ -249,7 +251,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
       })
       if (res.ok) {
         const data = await res.json()
-        setUptimeStatus({ lastPing: data.lastPing, loading: false })
+        setUptimeStatus({ lastPing: data.lastPing, history: data.history || [], loading: false })
       }
     } catch (err) {
       console.error('Failed to fetch uptime status:', err)
@@ -1419,14 +1421,15 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
           <div className="flex items-center gap-3">
             {/* Uptime Robot Indicator */}
             <div
-              className={`flex items-center gap-1.5 text-[0.68rem] font-mono px-3 py-1 rounded-full border shadow-sm ${
+              onClick={() => setShowUptimeModal(true)}
+              className={`flex items-center gap-1.5 text-[0.68rem] font-mono px-3 py-1 rounded-full border shadow-sm cursor-pointer hover:bg-opacity-95 hover:scale-[1.02] active:scale-95 transition-all select-none ${
                 uptimeStatus.loading
                   ? 'bg-stone-800 text-stone-300 border-stone-700'
                   : isUptimeActive
                   ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/30'
                   : 'bg-rose-950/80 text-rose-300 border-rose-500/30'
               }`}
-              title={uptimeStatus.lastPing ? `Last health check ping received: ${new Date(uptimeStatus.lastPing).toLocaleString('en-IN')}` : 'Awaiting first Uptime Robot request...'}
+              title={uptimeStatus.lastPing ? `Last health check ping received: ${new Date(uptimeStatus.lastPing).toLocaleString('en-IN')} (Click to view rolling logs)` : 'Awaiting first Uptime Robot request... (Click to view rolling logs)'}
             >
               <span className={`w-1.5 h-1.5 rounded-full ${uptimeStatus.loading ? 'bg-stone-500' : isUptimeActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`}></span>
               <span>{getUptimeRobotText()}</span>
@@ -5525,6 +5528,94 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                 className="px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white bg-red-700 hover:bg-red-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm flex items-center gap-1.5"
               >
                 <Trash2 size={13} /> {doubleConfirmModal.actionLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Uptime Robot Health Logs Modal */}
+      {showUptimeModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+          <div className="bg-[var(--color-card-bg)] border border-[var(--color-line)] rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-4 animate-scaleUp text-xs">
+            <div className="flex justify-between items-center border-b border-[var(--color-line)] pb-3">
+              <div className="flex items-center gap-2">
+                <Activity size={18} className="text-[var(--color-primary)]" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-ink)]">Uptime Monitor & Health Logs</h3>
+              </div>
+              <button
+                onClick={() => setShowUptimeModal(false)}
+                className="text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] font-bold text-base"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex justify-between items-center bg-[var(--color-bg)] p-3 rounded-2xl border border-[var(--color-line)]">
+              <div>
+                <p className="font-bold text-[var(--color-ink)]">Current Status</p>
+                <p className="text-[10px] text-[var(--color-ink-soft)] uppercase mt-0.5">
+                  Last Checked: {uptimeStatus.lastPing ? new Date(uptimeStatus.lastPing).toLocaleTimeString('en-IN') : 'Never'}
+                </p>
+              </div>
+              <div className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${
+                isUptimeActive ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-rose-50 text-rose-800 border-rose-300'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isUptimeActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
+                {isUptimeActive ? 'Active' : 'Dormant'}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center px-1">
+                <h4 className="font-bold uppercase text-[10px] text-[var(--color-ink-soft)] tracking-wider">Recent Pings (Last 20)</h4>
+                <button
+                  onClick={() => {
+                    fetchUptimeStatus()
+                  }}
+                  className="text-[var(--color-primary)] font-bold hover:underline flex items-center gap-1"
+                >
+                  🔄 Refresh Logs
+                </button>
+              </div>
+
+              <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
+                {(!uptimeStatus.history || uptimeStatus.history.length === 0) ? (
+                  <div className="p-8 text-center text-[var(--color-ink-soft)] border border-dashed border-[var(--color-line)] rounded-2xl">
+                    No logs recorded yet. Uptime Robot will check in shortly.
+                  </div>
+                ) : (
+                  uptimeStatus.history.map((h, idx) => (
+                    <div key={idx} className="flex justify-between items-center p-2.5 bg-[var(--color-bg)] border border-[var(--color-line)]/55 rounded-xl hover:border-[var(--color-line)] transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span>{h.isUptimeRobot ? '🤖' : '🏥'}</span>
+                        <div className="text-left">
+                          <p className="font-bold text-[var(--color-ink)] text-[11px]">
+                            {h.isUptimeRobot ? 'UptimeRobot Health Check' : 'Manual API Health Check'}
+                          </p>
+                          <p className="text-[9px] text-[var(--color-ink-soft)] font-mono line-clamp-1 max-w-[240px]" title={h.userAgent}>
+                            UA: {h.userAgent}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="font-mono text-[9px] text-[var(--color-ink-soft)] text-right">
+                        {new Date(h.timestamp).toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        <span className="block text-[8px] text-[var(--color-ink-soft)]/70">
+                          {new Date(h.timestamp).toLocaleDateString('en-IN')}
+                        </span>
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-[var(--color-line)] flex justify-end">
+              <button
+                onClick={() => setShowUptimeModal(false)}
+                className="btn-primary py-2 px-4 text-[10px] rounded-full uppercase tracking-wider font-bold"
+              >
+                Close Logs
               </button>
             </div>
           </div>
