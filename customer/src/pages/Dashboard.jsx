@@ -851,54 +851,6 @@ export default function Dashboard() {
                           >
                             {o?.paymentStatus || 'Paid'}
                           </span>
-                        </div>
-                      </div>
-
-                      {/* Timeline Preview */}
-                      <div className="bg-[var(--color-bg)] p-3 border border-[var(--color-line)] rounded-2xl">
-                        <OrderTimeline status={o?.status || 'Order Confirmed'} history={o?.statusHistory || []} notes={o?.notes || ''} refundId={o?.razorpayRefundId || ''} cancellationFee={o?.cancellationFee || 0} refundAmount={o?.refundAmount || 0} />
-                      </div>
-
-                      {/* Items Preview */}
-                      <div className="space-y-2">
-                        {(o?.items || []).map((it, idx) => (
-                          <div key={idx} className="flex items-center justify-between gap-3 p-2 bg-[var(--color-bg)] border border-[var(--color-line)] rounded-2xl">
-                            <div className="flex items-center gap-3">
-                              <img src={it?.image || '/images/products/flower-1-1.jpg'} alt={it?.title || 'Botanical Artwork'} className="w-10 h-12 object-cover border border-[var(--color-line)] rounded-xl" />
-                              <div>
-                                <p className="font-bold text-xs">{it?.title || 'Handcrafted Artwork'}</p>
-                                <p className="text-[0.65rem] text-[var(--color-ink-soft)]">Qty: {it?.qty || 1} × {formatPrice(it?.price || 0)}</p>
-                              </div>
-                            </div>
-                            <span className="font-bold font-mono text-[var(--color-primary)]">{formatPrice((it?.price || 0) * (it?.qty || 1))}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Footer Actions & Total */}
-                      <div className="pt-3 border-t border-[var(--color-line)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 w-full">
-                        <div>
-                          <span className="text-[0.65rem] sm:text-[0.68rem] text-[var(--color-ink-soft)] uppercase font-bold">Total Amount Paid</span>
-                          <p className="text-emerald-800 text-sm sm:text-base font-mono font-bold">{formatPrice(o?.grandTotal || o?.total || 0)}</p>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                          <button
-                            onClick={() => setSelectedOrder(o)}
-                            className="btn-primary py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center rounded-full"
-                          >
-                            <Eye size={12} /> View Details & Timeline
-                          </button>
-
-                          <button
-                            onClick={() => {
-                              const authToken = token || localStorage.getItem('lilycharm_token') || ''
-                              window.open(`${API_URL}/orders/${o?._id}/invoice?token=${encodeURIComponent(authToken)}`, '_blank')
-                            }}
-                            className="btn-outline py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center rounded-full"
-                          >
-                            <Download size={12} /> Invoice PDF
-                          </button>
 
                           {['Pending Payment', 'Pending', 'Order Confirmed', 'Confirmed', 'Paid'].includes(o?.status) && (
                             <button
@@ -1010,11 +962,62 @@ export default function Dashboard() {
                                   })
                                 }
                               }}
-                              className="bg-rose-700 hover:bg-rose-800 text-white font-bold text-[0.65rem] uppercase tracking-wider px-3 py-2 transition-colors flex items-center gap-1 rounded"
+                              className="text-rose-600 border border-rose-300 hover:bg-rose-50 font-bold text-[0.62rem] sm:text-[0.65rem] uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 cursor-pointer transition-colors shrink-0 shadow-sm"
+                              title="Cancel Order"
                             >
-                              <XCircle size={12} /> Cancel Order
+                              <XCircle size={11} /> Cancel Order
                             </button>
                           )}
+                        </div>
+                      </div>
+
+                      {/* Timeline Preview */}
+                      <div className="bg-[var(--color-bg)] p-3 border border-[var(--color-line)] rounded-2xl">
+                        <OrderTimeline status={o?.status || 'Order Confirmed'} history={o?.statusHistory || []} notes={o?.notes || ''} refundId={o?.razorpayRefundId || ''} cancellationFee={o?.cancellationFee || 0} refundAmount={o?.refundAmount || 0} />
+                      </div>
+
+                      {/* Items Preview */}
+                      <div className="space-y-2">
+                        {(o?.items || []).map((it, idx) => (
+                          <div key={idx} className="flex items-center justify-between gap-3 p-2 bg-[var(--color-bg)] border border-[var(--color-line)] rounded-2xl">
+                            <div className="flex items-center gap-3">
+                              <img src={it?.image || '/images/products/flower-1-1.jpg'} alt={it?.title || 'Botanical Artwork'} className="w-10 h-12 object-cover border border-[var(--color-line)] rounded-xl" />
+                              <div>
+                                <p className="font-bold text-xs">{it?.title || 'Handcrafted Artwork'}</p>
+                                <p className="text-[0.65rem] text-[var(--color-ink-soft)]">Qty: {it?.qty || 1} × {formatPrice(it?.price || 0)}</p>
+                              </div>
+                            </div>
+                            <span className="font-bold font-mono text-[var(--color-primary)]">{formatPrice((it?.price || 0) * (it?.qty || 1))}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Footer Actions & Total */}
+                      <div className="pt-3 border-t border-[var(--color-line)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 w-full">
+                        <div>
+                          <span className="text-[0.65rem] sm:text-[0.68rem] text-[var(--color-ink-soft)] uppercase font-bold">Total Amount Paid</span>
+                          <p className="text-emerald-800 text-sm sm:text-base font-mono font-bold">{formatPrice(o?.grandTotal || o?.total || 0)}</p>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                          <button
+                            onClick={() => setSelectedOrder(o)}
+                            className="btn-primary py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center rounded-full"
+                          >
+                            <Eye size={12} /> View Details & Timeline
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              const authToken = token || localStorage.getItem('lilycharm_token') || ''
+                              window.open(`${API_URL}/orders/${o?._id}/invoice?token=${encodeURIComponent(authToken)}`, '_blank')
+                            }}
+                            className="btn-outline py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center rounded-full"
+                          >
+                            <Download size={12} /> Invoice PDF
+                          </button>
+
+
 
                           {['Handcrafting', 'Handcrafting in Studio', 'Processing', 'Studio Processing', 'Packed', 'Packed & Sealed', 'Packed & Dispatched', 'Shipped', 'Out For Delivery'].includes(o?.status) && (
                             <span className="text-[0.62rem] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-300 px-2.5 py-1.5 rounded flex items-center gap-1">
