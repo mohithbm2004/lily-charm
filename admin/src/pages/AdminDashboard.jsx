@@ -410,6 +410,26 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     })
   }
 
+  const handleDeleteSinglePayment = async (id, label) => {
+    if (!confirm(`Are you sure you want to delete payment log entry "${label}"?`)) return
+    try {
+      const res = await fetch(`${API_URL}/payment/admin/logs/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        alert(data.message || 'Payment log deleted successfully.')
+        fetchPaymentsData()
+      } else {
+        alert(data.message || 'Failed to delete payment log.')
+      }
+    } catch (err) {
+      console.error('Error deleting single payment log:', err)
+      alert('Failed to communicate with the server.')
+    }
+  }
+
   useEffect(() => {
     const socket = getSocket()
     if (socket) {
@@ -3863,6 +3883,13 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                                     Reconcile
                                   </button>
                                 )}
+                                <button
+                                  onClick={() => handleDeleteSinglePayment(p._id, p.razorpayPaymentId || p.internalPaymentId)}
+                                  className="text-rose-600 hover:text-rose-800 transition-colors p-1.5 border border-rose-300 hover:bg-rose-50 rounded-lg flex items-center justify-center"
+                                  title="Delete Log Entry"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
                               </div>
                             </td>
                           </tr>

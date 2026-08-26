@@ -607,3 +607,23 @@ export async function clearAllPaymentLogs(req, res, next) {
     next(err)
   }
 }
+
+// DELETE /api/payment/admin/logs/:id — Clear a specific payment log
+export async function deleteSinglePaymentLog(req, res, next) {
+  try {
+    if (!req.admin && req.user?.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required to delete payment logs.' })
+    }
+
+    const deleted = await Payment.findByIdAndDelete(req.params.id)
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Payment log not found.' })
+    }
+    res.json({
+      success: true,
+      message: 'Payment log entry deleted successfully.',
+    })
+  } catch (err) {
+    next(err)
+  }
+}
