@@ -3552,20 +3552,20 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                     <div style={{ width: `${tableScrollWidth}px`, height: '1px' }} />
                   </div>
                 )}
-                <div ref={bottomScrollRef} onScroll={handleBottomScroll} className="overflow-x-auto">
+                <div ref={bottomScrollRef} onScroll={handleBottomScroll} className="overflow-x-auto max-h-[70vh] overflow-y-auto">
                   <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-[var(--color-bg)] border-b border-[var(--color-line)] font-bold text-stone-700">
-                        <th className="p-4">Payment ID</th>
-                        <th className="p-4">Razorpay Order ID</th>
-                        <th className="p-4">Order Number</th>
-                        <th className="p-4">Customer</th>
-                        <th className="p-4 text-right">Amount</th>
-                        <th className="p-4">Status</th>
-                        <th className="p-4">Order Status</th>
-                        <th className="p-4">Reconciliation</th>
-                        <th className="p-4">Created At</th>
-                        <th className="p-4 text-center">Actions</th>
+                    <thead className="sticky top-0 z-10 shadow-[0_1px_0_0_rgba(0,0,0,0.05)]">
+                      <tr className="font-bold text-stone-700">
+                        <th className="p-4 bg-[var(--color-bg)]">Payment ID</th>
+                        <th className="p-4 bg-[var(--color-bg)]">Razorpay Order ID</th>
+                        <th className="p-4 bg-[var(--color-bg)]">Order Number</th>
+                        <th className="p-4 bg-[var(--color-bg)]">Customer</th>
+                        <th className="p-4 text-right bg-[var(--color-bg)]">Amount</th>
+                        <th className="p-4 bg-[var(--color-bg)]">Status</th>
+                        <th className="p-4 bg-[var(--color-bg)]">Order Status</th>
+                        <th className="p-4 bg-[var(--color-bg)]">Reconciliation</th>
+                        <th className="p-4 bg-[var(--color-bg)]">Created At</th>
+                        <th className="p-4 text-center bg-[var(--color-bg)]">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--color-line)]">
