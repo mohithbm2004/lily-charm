@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { CheckCircle2, Clock, Package, Truck, Home, AlertTriangle, RefreshCw } from 'lucide-react'
 
 const STAGES = [
@@ -86,43 +87,122 @@ export default function OrderTimeline({ status = 'Order Confirmed', history = []
   }
 
   const currentIndex = getStageIndex(status)
+  const [expanded, setExpanded] = useState(false)
+
+  const currentStage = STAGES[currentIndex] || STAGES[1]
+  const CurrentIcon = currentStage.icon
+  const currentStageLabel = currentStage.label
+
+  if (!expanded) {
+    return (
+      <div className="w-full">
+        <div
+          onClick={() => setExpanded(true)}
+          className="flex items-center justify-between gap-3 p-3 bg-emerald-50/40 hover:bg-emerald-50/70 border border-emerald-100/80 rounded-2xl cursor-pointer transition-colors shadow-sm"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center shrink-0">
+              <CurrentIcon size={14} />
+            </div>
+            <div>
+              <span className="text-[0.62rem] text-[var(--color-ink-soft)] uppercase font-mono font-bold tracking-wider block">
+                Current Status
+              </span>
+              <span className="text-xs font-bold text-[var(--color-ink)] uppercase tracking-wide">
+                {currentStageLabel}
+              </span>
+            </div>
+          </div>
+          <div className="text-[var(--color-primary)] font-bold text-[0.65rem] uppercase tracking-wider flex items-center gap-1 hover:underline">
+            Track Order ➔
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="py-2 px-1 w-full max-w-full overflow-hidden">
-      {/* Controlled Horizontal Scroller for Small Viewports */}
-      <div className="overflow-x-auto pb-3 pt-2 scrollbar-thin w-full">
-        <div className="min-w-[480px] sm:min-w-0 flex items-center justify-between relative px-2">
-          {/* Background Connecting Line */}
-          <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-gray-200 -translate-y-1/2 z-0" />
-          <div
-            className="absolute top-1/2 left-4 h-0.5 bg-[var(--color-primary)] -translate-y-1/2 z-0 transition-all duration-700"
-            style={{ width: `${(currentIndex / (STAGES.length - 1)) * 92}%` }}
-          />
+    <div className="w-full space-y-4">
+      <div
+        onClick={() => setExpanded(false)}
+        className="flex items-center justify-between gap-3 p-3 bg-stone-50 border border-stone-200/60 rounded-2xl cursor-pointer hover:bg-stone-100 transition-colors shadow-sm"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center shrink-0">
+            <CurrentIcon size={14} />
+          </div>
+          <div>
+            <span className="text-[0.62rem] text-[var(--color-ink-soft)] uppercase font-mono font-bold tracking-wider block">
+              Fulfillment Timeline
+            </span>
+            <span className="text-xs font-bold text-[var(--color-ink)] uppercase tracking-wide">
+              {currentStageLabel}
+            </span>
+          </div>
+        </div>
+        <div className="text-[var(--color-ink-soft)] font-bold text-[0.65rem] uppercase tracking-wider flex items-center gap-1">
+          Collapse ▲
+        </div>
+      </div>
 
+      <div className="bg-stone-50/50 p-4 border border-[var(--color-line)]/50 rounded-2xl">
+        <div className="flex flex-col gap-4 pl-2 pt-1">
           {STAGES.map((stage, idx) => {
             const isPassed = idx <= currentIndex
             const isCurrent = idx === currentIndex
             const Icon = stage.icon
+            
+            // Find if this stage has an entry in history
+            const histEntry = (history || []).find(h => h.status === stage.key)
+            const timestamp = histEntry && histEntry.timestamp
+              ? new Date(histEntry.timestamp).toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: true
+                })
+              : null
 
             return (
-              <div key={stage.key} className="relative z-10 flex flex-col items-center group">
+              <div key={stage.key} className="flex gap-4 items-start relative">
+                {/* Vertical Connector Line */}
+                {idx < STAGES.length - 1 && (
+                  <div
+                    className={`absolute left-3.5 top-7 bottom-0 w-0.5 -translate-x-1/2 z-0 ${
+                      idx < currentIndex ? 'bg-[var(--color-primary)]' : 'bg-gray-200'
+                    }`}
+                    style={{ height: 'calc(100% + 16px)' }}
+                  />
+                )}
+
+                {/* Circle/Icon */}
                 <div
-                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all ${
+                  className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 relative z-10 transition-all ${
                     isPassed
-                      ? 'bg-[var(--color-primary)] text-white shadow-md'
-                      : 'bg-white border-2 border-gray-300 text-gray-400'
-                  } ${isCurrent ? 'ring-4 ring-[var(--color-primary)]/20 scale-110' : ''}`}
+                      ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                      : 'bg-white border border-gray-300 text-gray-400'
+                  } ${isCurrent ? 'ring-4 ring-[var(--color-primary)]/20 scale-105' : ''}`}
                 >
-                  <Icon size={13} />
+                  <Icon size={12} />
                 </div>
 
-                <span
-                  className={`text-[0.58rem] sm:text-[0.65rem] tracking-wider uppercase font-bold mt-1.5 text-center max-w-[65px] sm:max-w-[70px] leading-tight ${
-                    isPassed ? 'text-[var(--color-ink)]' : 'text-gray-400'
-                  }`}
-                >
-                  {stage.label}
-                </span>
+                {/* Text Label & Timestamp */}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-[0.68rem] sm:text-xs uppercase font-bold tracking-wider ${isPassed ? 'text-[var(--color-ink)]' : 'text-gray-400'}`}>
+                    {stage.label}
+                  </p>
+                  {timestamp && (
+                    <p className="text-[0.62rem] sm:text-[0.65rem] text-[var(--color-ink-soft)] font-mono mt-0.5">
+                      🕒 {timestamp}
+                    </p>
+                  )}
+                  {!timestamp && isPassed && (
+                    <p className="text-[0.62rem] sm:text-[0.65rem] text-emerald-800 font-bold font-mono mt-0.5">
+                      ✓ Completed
+                    </p>
+                  )}
+                </div>
               </div>
             )
           })}
