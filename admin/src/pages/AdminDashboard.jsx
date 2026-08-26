@@ -230,6 +230,12 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState(null)
   const [isReconciling, setIsReconciling] = useState(false)
 
+  // Orders filter/search state
+  const [orderSearch, setOrderSearch] = useState('')
+  const [orderDateRange, setOrderDateRange] = useState('all') // 'all' | 'today' | '7days' | '30days' | 'custom'
+  const [orderDateFrom, setOrderDateFrom] = useState('')
+  const [orderDateTo, setOrderDateTo] = useState('')
+
   // Refs and hooks for top/bottom scrollbar synchronization
   const topScrollRef = useRef(null)
   const bottomScrollRef = useRef(null)
@@ -1208,6 +1214,64 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     })
   }, [reviews, reviewFilter, reviewSearchQuery])
 
+  const filteredOrders = useMemo(() => {
+    let result = [...(orders || [])]
+
+    // 1. Filter by Search Query (Order ID / orderNumber, or Payment ID)
+    if (orderSearch.trim()) {
+      const query = orderSearch.toLowerCase().trim()
+      result = result.filter((o) => {
+        const orderNum = (o.orderNumber || '').toLowerCase()
+        const orderId = (o._id || o.id || '').toString().toLowerCase()
+        const paymentId = (o.razorpayPaymentId || '').toLowerCase()
+        return orderNum.includes(query) || orderId.includes(query) || paymentId.includes(query)
+      })
+    }
+
+    // 2. Filter by Date Range
+    if (orderDateRange !== 'all') {
+      let fromDate = null
+      let toDate = new Date()
+      const now = new Date()
+
+      if (orderDateRange === 'today') {
+        fromDate = new Date()
+        fromDate.setHours(0, 0, 0, 0)
+      } else if (orderDateRange === '7days') {
+        fromDate = new Date()
+        fromDate.setDate(now.getDate() - 7)
+        fromDate.setHours(0, 0, 0, 0)
+      } else if (orderDateRange === '30days') {
+        fromDate = new Date()
+        fromDate.setDate(now.getDate() - 30)
+        fromDate.setHours(0, 0, 0, 0)
+      } else if (orderDateRange === 'custom') {
+        if (orderDateFrom) {
+          fromDate = new Date(orderDateFrom)
+          fromDate.setHours(0, 0, 0, 0)
+        }
+        if (orderDateTo) {
+          toDate = new Date(orderDateTo)
+          toDate.setHours(23, 59, 59, 999)
+        }
+      }
+
+      if (fromDate || orderDateTo) {
+        result = result.filter((o) => {
+          const orderDate = new Date(o.createdAt || o.date)
+          if (isNaN(orderDate.getTime())) return true // fallback
+          
+          if (fromDate && orderDate < fromDate) return false
+          if (orderDateTo && orderDate > toDate) return false
+          return true
+        })
+      }
+    }
+
+    return result
+  }, [orders, orderSearch, orderDateRange, orderDateFrom, orderDateTo])
+
+
   const isProductInCollection = (product, colIdentifier) => {
     if (!colIdentifier || colIdentifier === 'all') return true
     const pCat = (product.category || '').toLowerCase().trim()
@@ -1861,7 +1925,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               </div>
               <div className="flex items-center gap-3 self-start flex-wrap">
                 <span className="bg-[var(--color-primary)] text-white text-xs font-bold font-mono px-3 py-1.5 rounded">
-                  {orders.length} Orders
+                  {filteredOrders.length === orders.length ? `${orders.length} Orders` : `${filteredOrders.length} of ${orders.length} Orders`}
                 </span>
 
                 {orders.length > 0 && (
@@ -1907,6 +1971,66 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               </div>
             ) : (
               <div className="space-y-4">
+                {/* Search & Filter Controls */}
+                <div className="bg-[var(--color-card-bg)] border border-[var(--color-line)] p-4 flex flex-col md:flex-row items-stretch md:items-center gap-4 text-xs">
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      placeholder="Search by Order ID / Number or Razorpay Payment ID..."
+                      value={orderSearch}
+                      onChange={(e) => setOrderSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-2 border border-[var(--color-line)] focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)] rounded"
+                    />
+                    <Search className="absolute left-2.5 top-2.5 text-[var(--color-ink-soft)]" size={14} />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <label className="font-bold uppercase tracking-wider text-[var(--color-ink-soft)] whitespace-nowrap">Date Range:</label>
+                    <select
+                      value={orderDateRange}
+                      onChange={(e) => setOrderDateRange(e.target.value)}
+                      className="border border-[var(--color-line)] p-2 focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)] rounded"
+                    >
+                      <option value="all">📅 All Time</option>
+                      <option value="today">Today</option>
+                      <option value="7days">Last 7 Days</option>
+                      <option value="30days">Last 30 Days</option>
+                      <option value="custom">Custom Range...</option>
+                    </select>
+                  </div>
+
+                  {orderDateRange === 'custom' && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <input
+                        type="date"
+                        value={orderDateFrom}
+                        onChange={(e) => setOrderDateFrom(e.target.value)}
+                        className="border border-[var(--color-line)] p-1.5 focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)] rounded"
+                      />
+                      <span className="text-[var(--color-ink-soft)]">to</span>
+                      <input
+                        type="date"
+                        value={orderDateTo}
+                        onChange={(e) => setOrderDateTo(e.target.value)}
+                        className="border border-[var(--color-line)] p-1.5 focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)] rounded"
+                      />
+                    </div>
+                  )}
+
+                  {(orderSearch.trim() || orderDateRange !== 'all') && (
+                    <button
+                      onClick={() => {
+                        setOrderSearch('')
+                        setOrderDateRange('all')
+                        setOrderDateFrom('')
+                        setOrderDateTo('')
+                      }}
+                      className="px-3 py-2 text-[var(--color-primary)] hover:text-white border border-[var(--color-primary)] hover:bg-[var(--color-primary)] transition-colors rounded font-bold"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+                </div>
                 <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] overflow-x-auto shadow-sm">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -1922,7 +2046,15 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--color-line)] text-xs">
-                      {orders.map((o) => (
+                      {filteredOrders.length === 0 ? (
+                        <tr>
+                          <td colSpan="8" className="p-12 text-center text-[var(--color-ink-soft)] space-y-1">
+                            <p className="font-bold uppercase text-sm">No Matching Orders Found</p>
+                            <p className="text-xs">Adjust your search query or date range filters and try again.</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredOrders.map((o) => (
                         <tr key={o.id || o._id} className="hover:bg-[var(--color-bg)]/60 transition-colors">
                           <td className="p-4 align-top space-y-1">
                             <p className="font-mono font-bold text-sm text-[var(--color-primary)]">{o.orderNumber || o.id || o._id}</p>
@@ -2287,7 +2419,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                             )}
                           </td>
                         </tr>
-                      ))}
+                      )))}
                     </tbody>
                   </table>
                 </div>
