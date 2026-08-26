@@ -432,7 +432,8 @@ export async function cancelOrder(req, res, next) {
     }
 
     // 1. Idempotency check: If already cancelled or refunded
-    if (order.status === 'Cancelled' || order.status === 'Cancelled & Refunded') {
+    // Note: If order is Cancelled but refundStatus is Failed, allow retrying to reconcile the refund state.
+    if ((order.status === 'Cancelled' && order.refundStatus !== 'Failed') || order.status === 'Cancelled & Refunded') {
       return res.json({
         success: true,
         message: `Order ${order.orderNumber} is already ${order.status}.`,
