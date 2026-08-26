@@ -232,29 +232,33 @@ export async function handleRazorpayWebhook(req, res, next) {
         const refundId = refundEntity.id
         const amount = (refundEntity.amount || 0) / 100
 
-        const order = await Order.findOne({
-          $or: [{ razorpayPaymentId: paymentId }, { razorpayRefundId: refundId }],
-        })
-
-        if (order) {
-          order.status = 'Cancelled & Refunded'
-          order.paymentStatus = 'Refunded'
-          order.refundStatus = 'Processed'
-          order.razorpayRefundId = refundId
-          if (!order.refundAmount) order.refundAmount = amount
-          order.statusHistory.push({
-            status: 'Cancelled & Refunded',
-            note: `Refund confirmed via Razorpay webhook (${refundId}).`,
+        if (refundId && refundId.startsWith('rfnd_')) {
+          const order = await Order.findOne({
+            $or: [{ razorpayPaymentId: paymentId }, { razorpayRefundId: refundId }],
           })
-          await order.save()
 
-          await Payment.findOneAndUpdate(
-            { $or: [{ razorpayPaymentId: paymentId }, { order: order._id }] },
-            { status: 'refunded', refundId, refundAmount: amount }
-          )
+          if (order) {
+            order.status = 'Cancelled & Refunded'
+            order.paymentStatus = 'Refunded'
+            order.refundStatus = 'Processed'
+            order.razorpayRefundId = refundId
+            if (!order.refundAmount) order.refundAmount = amount
+            order.statusHistory.push({
+              status: 'Cancelled & Refunded',
+              note: `Refund confirmed via Razorpay webhook (${refundId}).`,
+            })
+            await order.save()
 
-          emitOrderUpdated(order)
-          console.log(`[RAZORPAY WEBHOOK RESULT] success=true event=${event.event} orderId=${order._id}`)
+            await Payment.findOneAndUpdate(
+              { $or: [{ razorpayPaymentId: paymentId }, { order: order._id }] },
+              { status: 'refunded', refundId, refundAmount: amount }
+            )
+
+            emitOrderUpdated(order)
+            console.log(`[RAZORPAY WEBHOOK RESULT] success=true event=${event.event} orderId=${order._id}`)
+          }
+        } else {
+          console.warn(`[RAZORPAY WEBHOOK IGNORED] Invalid refund ID format: ${refundId}`)
         }
       }
     }

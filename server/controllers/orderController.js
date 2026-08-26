@@ -574,26 +574,31 @@ export async function cancelOrder(req, res, next) {
       try {
         const paymentInfo = await razorpay.payments.fetch(rzpPaymentId)
         if (paymentInfo && (paymentInfo.status === 'refunded' || paymentInfo.amount_refunded === paymentInfo.amount)) {
-          let rzpRefundId = order.razorpayRefundId
+          let rzpRefundId = order.razorpayRefundId && order.razorpayRefundId.startsWith('rfnd_') ? order.razorpayRefundId : null
           try {
             const refundsObj = await razorpay.payments.fetchRefunds(rzpPaymentId)
-            const firstRefund = refundsObj?.items?.[0] || refundsObj?.[0]
+            const firstRefund = refundsObj?.items?.find(r => r.id && r.id.startsWith('rfnd_')) || 
+                                (Array.isArray(refundsObj) ? refundsObj.find(r => r.id && r.id.startsWith('rfnd_')) : null)
             if (firstRefund?.id) {
               rzpRefundId = firstRefund.id
             }
           } catch {}
 
-          order.razorpayRefundId = rzpRefundId || 'PREVIOUSLY-REFUNDED'
-          order.refundStatus = 'Processed'
-          order.paymentStatus = 'Refunded'
-          order.status = 'Cancelled & Refunded'
-          await order.save()
+          if (rzpRefundId && rzpRefundId.startsWith('rfnd_')) {
+            order.razorpayRefundId = rzpRefundId
+            order.refundStatus = 'Processed'
+            order.paymentStatus = 'Refunded'
+            order.status = 'Cancelled & Refunded'
+            await order.save()
 
-          return res.json({
-            success: true,
-            message: `Order ${order.orderNumber} has already been fully refunded on Razorpay (Refund ID: ${order.razorpayRefundId}).`,
-            order,
-          })
+            return res.json({
+              success: true,
+              message: `Order ${order.orderNumber} has already been fully refunded on Razorpay (Refund ID: ${order.razorpayRefundId}).`,
+              order,
+            })
+          } else {
+            console.warn('[CANCELLATION IDEMPOTENCY CHECK]: Payment status is refunded, but no valid rfnd_... ID could be resolved.')
+          }
         }
       } catch (err) {
         console.warn('[CANCELLATION IDEMPOTENCY CHECK ERROR]:', err.message)
@@ -661,11 +666,25 @@ export async function cancelOrder(req, res, next) {
         lowerError.includes('refunded already') ||
         lowerError.includes('fully refunded')
       ) {
-        refundProcessed = true
-        refundId = order.razorpayRefundId || 'PREVIOUSLY-REFUNDED'
-        order.razorpayRefundId = refundId
-        order.refundStatus = 'Processed'
-        order.paymentStatus = 'Refunded'
+        try {
+          const refundsObj = await razorpay.payments.fetchRefunds(rzpPaymentId)
+          const firstRefund = refundsObj?.items?.find(r => r.id && r.id.startsWith('rfnd_')) || 
+                              (Array.isArray(refundsObj) ? refundsObj.find(r => r.id && r.id.startsWith('rfnd_')) : null)
+          if (firstRefund && firstRefund.id) {
+            refundProcessed = true
+            refundId = firstRefund.id
+            order.razorpayRefundId = refundId
+            order.refundStatus = 'Processed'
+            order.paymentStatus = 'Refunded'
+          } else {
+            order.refundStatus = 'Failed'
+            order.notes = `${order.notes || ''} | Refund Attempt Failed: ${refundErrorMsg} (Razorpay API confirmed no refunds exist)`.trim().replace(/^\| /, '')
+          }
+        } catch (fetchErr) {
+          console.error('[RAZORPAY AUTOMATED REFUND FETCH ERROR ON FAILURE]:', fetchErr.message)
+          order.refundStatus = 'Failed'
+          order.notes = `${order.notes || ''} | Refund Attempt Failed: ${refundErrorMsg} (Failed to verify refund status: ${fetchErr.message})`.trim().replace(/^\| /, '')
+        }
       } else {
         order.refundStatus = 'Failed'
         order.notes = `${order.notes || ''} | Refund Attempt Failed: ${refundErrorMsg}`.trim().replace(/^\| /, '')
@@ -819,7 +838,29 @@ export async function processRefund(req, res, next) {
             lowerError.includes('refunded already') ||
             lowerError.includes('fully refunded')
           ) {
-            refundId = order.razorpayRefundId || 'PREVIOUSLY-REFUNDED'
+            try {
+              const refundsObj = await razorpay.payments.fetchRefunds(order.razorpayPaymentId)
+              const firstRefund = refundsObj?.items?.find(r => r.id && r.id.startsWith('rfnd_')) || 
+                                  (Array.isArray(refundsObj) ? refundsObj.find(r => r.id && r.id.startsWith('rfnd_')) : null)
+              if (firstRefund && firstRefund.id) {
+                refundId = firstRefund.id
+              } else {
+                order.refundStatus = 'Failed'
+                order.notes = `${order.notes || ''} | Admin Refund Error: ${errorMsg} (Razorpay API confirmed no refunds exist)`.trim().replace(/^\| /, '')
+                await order.save()
+                return res.status(500).json({
+                  message: `Razorpay refund failed: ${errorMsg} (No verified refund found on Razorpay).`,
+                })
+              }
+            } catch (fetchErr) {
+              console.error('[ADMIN REFUND FETCH ERROR ON FAILURE]:', fetchErr.message)
+              order.refundStatus = 'Failed'
+              order.notes = `${order.notes || ''} | Admin Refund Error: ${errorMsg} (Failed to verify refund status: ${fetchErr.message})`.trim().replace(/^\| /, '')
+              await order.save()
+              return res.status(500).json({
+                message: `Razorpay refund failed: ${errorMsg} (Failed to verify refund status: ${fetchErr.message}).`,
+              })
+            }
           } else {
             order.refundStatus = 'Failed'
             order.notes = `${order.notes || ''} | Admin Refund Error: ${errorMsg}`.trim().replace(/^\| /, '')

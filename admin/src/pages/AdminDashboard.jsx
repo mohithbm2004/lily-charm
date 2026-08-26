@@ -2008,22 +2008,24 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                             ) : o.status === 'Cancelled' || o.status === 'Cancelled & Refunded' ? (
                               <div className="space-y-1">
                                 <span className="inline-flex items-center gap-1 text-xs font-bold font-mono bg-rose-50 text-rose-900 border border-rose-300 px-2.5 py-1 rounded">
-                                  {o.refundStatus === 'Failed' ? '❌ Cancellation: Failed Refund' : o.status === 'Cancelled & Refunded' ? '💸 Cancelled & Refunded' : '❌ Cancelled'}
+                                  {o.refundStatus === 'Failed' ? '❌ Cancellation: Refund Failed' : o.status === 'Cancelled & Refunded' ? '💸 Cancelled & Refunded' : '❌ Cancelled'}
                                 </span>
                                 {o.refundStatus === 'Failed' && (
-                                  <p className="text-[0.6rem] text-rose-900 font-mono font-semibold">
-                                    Refund: Failed
-                                  </p>
+                                  <div className="text-[0.6rem] text-rose-900 font-mono font-semibold">
+                                    <p>Refund: Failed</p>
+                                  </div>
                                 )}
                                 {o.notes && (
                                   <p className="text-[0.62rem] text-rose-900 font-medium break-words max-w-[200px]" title={o.notes}>
                                     {o.notes}
                                   </p>
                                 )}
-                                {o.refundStatus === 'Processed' && (
-                                  <p className="text-[0.6rem] text-emerald-800 font-mono font-semibold">
-                                    Refund Ref: {o.razorpayRefundId || 'Processed'} ({o.refundAmount ? `₹${o.refundAmount}` : '100%'})
-                                  </p>
+                                {(o.refundStatus === 'Processed' || o.refundStatus === 'Approved') && (
+                                  <div className="text-[0.6rem] text-emerald-800 font-mono font-semibold space-y-0.5">
+                                    <p>Refund: {o.refundStatus === 'Approved' ? 'Approved' : 'Processed'}</p>
+                                    <p>Refund ID: {o.razorpayRefundId || 'N/A'}</p>
+                                    {o.refundAmount && <p>Amount: ₹{o.refundAmount}</p>}
+                                  </div>
                                 )}
                               </div>
                             ) : o.status === 'Delivered' ? (
