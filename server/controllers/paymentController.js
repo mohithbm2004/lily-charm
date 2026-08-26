@@ -56,6 +56,7 @@ export async function handleRazorpayWebhook(req, res, next) {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || ENV.RAZORPAY.WEBHOOK_SECRET
 
     if (!webhookSecret || !signature) {
+      console.error('[RAZORPAY WEBHOOK ERROR] Missing signature or secret configuration.')
       return res.status(400).json({ success: false, message: 'Missing Razorpay webhook signature configuration.' })
     }
 
@@ -71,23 +72,29 @@ export async function handleRazorpayWebhook(req, res, next) {
         Buffer.from(signature, 'utf-8'),
         Buffer.from(expectedSignature, 'utf-8')
       )
-    } catch {
+    } catch (sigErr) {
       isMatch = false
     }
 
     if (!isMatch) {
-      console.error('[RAZORPAY WEBHOOK ERROR]: Invalid webhook signature.')
+      console.error('[RAZORPAY WEBHOOK ERROR] Invalid webhook signature verification.')
       return res.status(400).json({ success: false, message: 'Invalid webhook signature.' })
     }
 
     const event = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString('utf8')) : req.body
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[RAZORPAY WEBHOOK EVENT]:', event.event)
-    }
+    
+    // Extract parameters for production-safe logging
+    const webhookEvent = event.event || 'unknown'
+    const paymentEntity = event.payload?.payment?.entity || event.payload?.refund?.entity || {}
+    const paymentId = paymentEntity.id || ''
+    const razorpayOrderId = paymentEntity.order_id || ''
+
+    console.log(`[RAZORPAY WEBHOOK RECEIVED] event=${webhookEvent} paymentId=${paymentId} razorpayOrderId=${razorpayOrderId}`)
 
     if (event.event === 'payment.captured' || event.event === 'order.paid') {
       const paymentEntity = event.payload?.payment?.entity
       if (!paymentEntity) {
+        console.warn(`[RAZORPAY WEBHOOK ERROR] No payment entity in payload for event ${event.event}`)
         return res.status(200).json({ status: 'ok', note: 'No payment entity' })
       }
 
@@ -99,6 +106,8 @@ export async function handleRazorpayWebhook(req, res, next) {
       if (paymentEntity.currency && paymentEntity.currency !== 'INR') {
         console.warn(`[WEBHOOK WARNING]: Unexpected currency ${paymentEntity.currency}`)
       }
+
+      console.log(`[RAZORPAY WEBHOOK PROCESSING] event=${event.event} razorpayOrderId=${razorpayOrderId}`)
 
       // Check if this payment belongs to a Custom Quote
       const isCustomQuote =
@@ -126,6 +135,7 @@ export async function handleRazorpayWebhook(req, res, next) {
             razorpaySignature: signature,
           })
 
+          console.log(`[RAZORPAY WEBHOOK RESULT] success=true type=custom_quote customRequestId=${customRequest._id}`)
           return res.status(200).json({
             status: 'ok',
             type: 'custom_quote',
@@ -143,6 +153,8 @@ export async function handleRazorpayWebhook(req, res, next) {
         amountInRupees: (paymentEntity.amount || 0) / 100,
         source: 'Razorpay Webhook',
       })
+
+      console.log(`[RAZORPAY WEBHOOK RESULT] success=${result.success} reason=${result.reason || 'none'} alreadyProcessed=${result.alreadyProcessed || false} orderId=${result.order?._id || ''}`)
 
       if (result.success) {
         return res.status(200).json({
@@ -166,7 +178,27 @@ export async function handleRazorpayWebhook(req, res, next) {
           },
           { upsert: true }
         )
+        return res.status(200).json({
+          status: 'ok',
+          message: 'Order not found. Recorded as orphan/reconciliation payment.',
+        })
       }
+
+      if (result.reason === 'AMOUNT_MISMATCH') {
+        return res.status(200).json({
+          status: 'error',
+          reason: 'AMOUNT_MISMATCH',
+          message: 'Authoritative database amount did not match captured payment amount.',
+        })
+      }
+
+      // Return a non-2xx response so Razorpay retries if processing failed due to database or concurrency errors
+      console.error(`[RAZORPAY WEBHOOK FAILURE] processing failed: ${result.reason}`)
+      return res.status(500).json({
+        success: false,
+        message: `Webhook processing failed: ${result.reason}`,
+      })
+
     } else if (event.event === 'payment.failed') {
       const paymentEntity = event.payload?.payment?.entity
       if (paymentEntity) {
@@ -190,6 +222,7 @@ export async function handleRazorpayWebhook(req, res, next) {
             },
             { upsert: true }
           )
+          console.log(`[RAZORPAY WEBHOOK RESULT] success=true event=payment.failed razorpayOrderId=${razorpayOrderId}`)
         }
       }
     } else if (event.event === 'refund.created' || event.event === 'refund.processed') {
@@ -221,6 +254,7 @@ export async function handleRazorpayWebhook(req, res, next) {
           )
 
           emitOrderUpdated(order)
+          console.log(`[RAZORPAY WEBHOOK RESULT] success=true event=${event.event} orderId=${order._id}`)
         }
       }
     }
