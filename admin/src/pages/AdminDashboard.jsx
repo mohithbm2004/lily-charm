@@ -44,6 +44,7 @@ import { formatPrice, formatDateTime, formatDateOnly } from '../lib/format'
 import { exportOrdersToCSV, exportUsersToCSV, exportCustomRequestsToCSV, exportReviewsToCSV } from '../lib/exportCSV'
 import ImageFocusPicker from '../components/ImageFocusPicker'
 import { API_URL, STOREFRONT_URL } from '../config/api'
+import { getSocket } from '../services/socket'
 const FULFILLMENT_OPTIONS = [
   { value: 'Order Confirmed', label: '✅ Order Confirmed' },
   { value: 'Handcrafting in Studio', label: '🎨 Handcrafting in Studio' },
@@ -199,6 +200,164 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
   const [securityMsg, setSecurityMsg] = useState('')
   const [securityErr, setSecurityErr] = useState('')
   const [changingPass, setChangingPass] = useState(false)
+
+  // Payments state
+  const [payments, setPayments] = useState([])
+  const [paymentsLoading, setPaymentsLoading] = useState(false)
+  const [paymentMetrics, setPaymentMetrics] = useState({
+    totalRevenue: 0,
+    totalPayments: 0,
+    capturedPayments: 0,
+    pendingPayments: 0,
+    failedPayments: 0,
+    refundedPayments: 0,
+    reconciledPayments: 0,
+    attentionRequiredPayments: 0,
+  })
+  const [paymentPagination, setPaymentPagination] = useState({
+    totalCount: 0,
+    page: 1,
+    limit: 50,
+    totalPages: 1,
+  })
+
+  // Filters state
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all')
+  const [paymentSearch, setPaymentSearch] = useState('')
+  const [paymentDateRange, setPaymentDateRange] = useState('all') // 'all' | 'today' | '7days' | '30days' | 'custom'
+  const [paymentDateFrom, setPaymentDateFrom] = useState('')
+  const [paymentDateTo, setPaymentDateTo] = useState('')
+  const [selectedPaymentDetail, setSelectedPaymentDetail] = useState(null)
+  const [isReconciling, setIsReconciling] = useState(false)
+
+  const getHeaders = (extra = {}) => {
+    const sessionId = localStorage.getItem('lilycharm_admin_session_id')
+    const headers = { ...extra }
+    if (sessionId) {
+      headers['x-admin-session-id'] = sessionId
+    }
+    return headers
+  }
+
+  const fetchPaymentsData = useCallback(async () => {
+    if (activeTab !== 'payments') return
+
+    setPaymentsLoading(true)
+    try {
+      let url = `${API_URL}/payment/admin/tracking?page=${paymentPagination.page}&limit=${paymentPagination.limit}&status=${paymentStatusFilter}`
+
+      if (paymentSearch.trim()) {
+        url += `&search=${encodeURIComponent(paymentSearch.trim())}`
+      }
+
+      if (paymentDateRange !== 'all') {
+        let fromDate = ''
+        let toDate = new Date().toISOString()
+        const now = new Date()
+
+        if (paymentDateRange === 'today') {
+          now.setHours(0, 0, 0, 0)
+          fromDate = now.toISOString()
+        } else if (paymentDateRange === '7days') {
+          now.setDate(now.getDate() - 7)
+          fromDate = now.toISOString()
+        } else if (paymentDateRange === '30days') {
+          now.setDate(now.getDate() - 30)
+          fromDate = now.toISOString()
+        } else if (paymentDateRange === 'custom') {
+          if (paymentDateFrom) fromDate = new Date(paymentDateFrom).toISOString()
+          if (paymentDateTo) toDate = new Date(paymentDateTo).toISOString()
+        }
+
+        if (fromDate) url += `&from=${fromDate}`
+        if (toDate) url += `&to=${toDate}`
+      }
+
+      const res = await fetch(url, {
+        headers: getHeaders(),
+        credentials: 'include',
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setPayments(data.payments || [])
+        setPaymentMetrics(data.metrics || {})
+        setPaymentPagination(prev => ({
+          ...prev,
+          totalCount: data.pagination?.totalCount || 0,
+          totalPages: data.pagination?.totalPages || 1,
+        }))
+      }
+    } catch (err) {
+      console.error('Failed to fetch payments data:', err)
+    } finally {
+      setPaymentsLoading(false)
+    }
+  }, [
+    activeTab,
+    paymentPagination.page,
+    paymentPagination.limit,
+    paymentStatusFilter,
+    paymentSearch,
+    paymentDateRange,
+    paymentDateFrom,
+    paymentDateTo,
+  ])
+
+  useEffect(() => {
+    fetchPaymentsData()
+  }, [fetchPaymentsData])
+
+  useEffect(() => {
+    const socket = getSocket()
+    if (socket) {
+      const handleUpdate = () => {
+        fetchPaymentsData()
+      }
+      socket.on('ORDER_UPDATED', handleUpdate)
+      socket.on('ORDER_STATUS_UPDATED', handleUpdate)
+      socket.on('ORDER_CREATED', handleUpdate)
+      
+      return () => {
+        socket.off('ORDER_UPDATED', handleUpdate)
+        socket.off('ORDER_STATUS_UPDATED', handleUpdate)
+        socket.off('ORDER_CREATED', handleUpdate)
+      }
+    }
+  }, [fetchPaymentsData])
+
+  const handleReconcile = async (payment) => {
+    if (isReconciling) return
+    setIsReconciling(true)
+    try {
+      const res = await fetch(`${API_URL}/payment/admin/reconcile`, {
+        method: 'POST',
+        headers: getHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          razorpayOrderId: payment.razorpayOrderId,
+          razorpayPaymentId: payment.razorpayPaymentId || `manual-rec-${Date.now()}`,
+          amountInRupees: payment.amount,
+        }),
+        credentials: 'include',
+      })
+
+      const data = await res.json()
+      if (res.ok) {
+        alert(data.message || 'Payment reconciled successfully.')
+        fetchPaymentsData()
+        if (selectedPaymentDetail) {
+          setSelectedPaymentDetail(null)
+        }
+      } else {
+        alert(data.message || 'Failed to reconcile payment.')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('An error occurred while reconciling the payment.')
+    } finally {
+      setIsReconciling(false)
+    }
+  }
 
   const handleChangePassword = async (e) => {
     e.preventDefault()
@@ -1273,6 +1432,17 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
             }`}
           >
             <ShieldCheck size={15} className="text-emerald-600" /> Email Security
+          </button>
+
+          <button
+            onClick={() => handleTabChange('payments', '/admin/payments')}
+            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+              activeTab === 'payments'
+                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
+                : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
+            }`}
+          >
+            <CreditCard size={15} className="text-indigo-600" /> Payment Tracking
           </button>
         </div>
 
@@ -3071,6 +3241,329 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
             )}
           </div>
         )}
+
+        {activeTab === 'payments' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-bold font-[var(--font-display)] uppercase tracking-wider text-[var(--color-ink)]">
+                Payment Tracking & Auditing
+              </h2>
+              <p className="text-xs text-[var(--color-ink-soft)] mt-1">
+                Monitor captured Razorpay payments, identify discrepancies, and manually reconcile orphan logs.
+              </p>
+            </div>
+
+            {/* Metrics Analytics Summary */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4 rounded-2xl shadow-xs">
+                <span className="eyebrow text-[0.62rem] block mb-1">Total Revenue</span>
+                <p className="text-lg font-bold font-mono text-emerald-800">{formatPrice(paymentMetrics.totalRevenue)}</p>
+              </div>
+              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4 rounded-2xl shadow-xs">
+                <span className="eyebrow text-[0.62rem] block mb-1">Total Logs</span>
+                <p className="text-lg font-bold font-mono">{paymentMetrics.totalPayments}</p>
+              </div>
+              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4 rounded-2xl shadow-xs">
+                <span className="eyebrow text-[0.62rem] block mb-1">Captured</span>
+                <p className="text-lg font-bold font-mono text-emerald-700">{paymentMetrics.capturedPayments}</p>
+              </div>
+              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4 rounded-2xl shadow-xs">
+                <span className="eyebrow text-[0.62rem] block mb-1">Pending</span>
+                <p className="text-lg font-bold font-mono text-stone-600">{paymentMetrics.pendingPayments}</p>
+              </div>
+              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4 rounded-2xl shadow-xs">
+                <span className="eyebrow text-[0.62rem] block mb-1">Failed</span>
+                <p className="text-lg font-bold font-mono text-rose-600">{paymentMetrics.failedPayments}</p>
+              </div>
+              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4 rounded-2xl shadow-xs">
+                <span className="eyebrow text-[0.62rem] block mb-1">Refunded</span>
+                <p className="text-lg font-bold font-mono text-amber-600">{paymentMetrics.refundedPayments}</p>
+              </div>
+              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4 rounded-2xl shadow-xs">
+                <span className="eyebrow text-[0.62rem] block mb-1">Reconciled</span>
+                <p className="text-lg font-bold font-mono text-indigo-700">{paymentMetrics.reconciledPayments}</p>
+              </div>
+              <div className="border border-rose-200 bg-rose-50/50 p-4 rounded-2xl shadow-xs ring-1 ring-rose-100">
+                <span className="eyebrow text-[0.62rem] block mb-1 text-rose-900 font-bold">Needs Attention</span>
+                <p className="text-lg font-bold font-mono text-rose-800">{paymentMetrics.attentionRequiredPayments}</p>
+              </div>
+            </div>
+
+            {/* Mismatch & Mismatched captured payments panel */}
+            {payments.filter(p => p.reconciliationStatus === 'attention_required').length > 0 && (
+              <div className="border border-rose-300 bg-rose-50/70 p-5 rounded-2xl space-y-3">
+                <h3 className="font-bold text-rose-900 text-xs uppercase tracking-wider flex items-center gap-2">
+                  ⚠️ Action Required: Payments Requiring Attention ({payments.filter(p => p.reconciliationStatus === 'attention_required').length})
+                </h3>
+                <div className="space-y-3">
+                  {payments.filter(p => p.reconciliationStatus === 'attention_required').map((p) => {
+                    const hasOrderDoc = Boolean(p.orderDoc)
+                    const isMismatched = hasOrderDoc && p.orderDoc.paymentStatus !== 'Paid'
+                    return (
+                      <div key={p._id} className="bg-white border border-rose-200 p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded uppercase font-mono text-[0.62rem]">
+                              {!hasOrderDoc ? 'Orphan Payment' : 'Payment Status Mismatch'}
+                            </span>
+                            <span className="font-semibold text-stone-700 font-mono">Payment ID: {p.razorpayPaymentId || 'N/A'}</span>
+                            <span className="font-semibold text-stone-700 font-mono">Order ID: {p.razorpayOrderId}</span>
+                          </div>
+                          <p className="text-stone-600">
+                            {isMismatched ? (
+                              <>
+                                Captured payment of <strong>₹{p.amount}</strong> exists, but Order <strong>{p.orderNumber}</strong> has paymentStatus = <strong>"{p.orderDoc.paymentStatus}"</strong> (Fulfillment Status: {p.orderDoc.status}).
+                              </>
+                            ) : (
+                              <>
+                                Captured payment of <strong>₹{p.amount}</strong> exists, but no internal Order matches Razorpay Order ID <strong>"{p.razorpayOrderId}"</strong>.
+                              </>
+                            )}
+                          </p>
+                        </div>
+                        {hasOrderDoc && (
+                          <button
+                            onClick={() => handleReconcile(p)}
+                            disabled={isReconciling}
+                            className="btn-primary py-2 px-4 rounded-full text-[0.68rem] bg-rose-700 hover:bg-rose-800 disabled:opacity-50 text-white font-bold uppercase tracking-wider whitespace-nowrap"
+                          >
+                            {isReconciling ? 'Reconciling...' : 'Reconcile Order'}
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Filter and Search Panel */}
+            <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Search Bar */}
+                <div className="relative w-full md:w-80">
+                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[var(--color-ink-soft)] pointer-events-none">
+                    <Search size={14} />
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Search Order, Payment, Customer Email..."
+                    value={paymentSearch}
+                    onChange={(e) => {
+                      setPaymentSearch(e.target.value)
+                      setPaymentPagination(prev => ({ ...prev, page: 1 }))
+                    }}
+                    className="w-full pl-9 pr-4 py-2 border border-[var(--color-line)] rounded-xl text-xs bg-white text-[var(--color-ink)]"
+                  />
+                </div>
+
+                {/* Status Filter */}
+                <select
+                  value={paymentStatusFilter}
+                  onChange={(e) => {
+                    setPaymentStatusFilter(e.target.value)
+                    setPaymentPagination(prev => ({ ...prev, page: 1 }))
+                  }}
+                  className="px-3.5 py-2 border border-[var(--color-line)] rounded-xl text-xs bg-white text-stone-750"
+                >
+                  <option value="all">All Transactions</option>
+                  <option value="captured">Captured / Success</option>
+                  <option value="pending">Pending Only</option>
+                  <option value="failed">Failed Only</option>
+                  <option value="refunded">Refunded Only</option>
+                  <option value="reconciled">Reconciled Only</option>
+                  <option value="attention_required">Attention Required</option>
+                </select>
+
+                {/* Date Filter */}
+                <select
+                  value={paymentDateRange}
+                  onChange={(e) => {
+                    setPaymentDateRange(e.target.value)
+                    setPaymentPagination(prev => ({ ...prev, page: 1 }))
+                  }}
+                  className="px-3.5 py-2 border border-[var(--color-line)] rounded-xl text-xs bg-white text-stone-750"
+                >
+                  <option value="all">All Dates</option>
+                  <option value="today">Today</option>
+                  <option value="7days">Last 7 Days</option>
+                  <option value="30days">Last 30 Days</option>
+                  <option value="custom">Custom Date Range</option>
+                </select>
+
+                {/* Custom Date Range Picker Inputs */}
+                {paymentDateRange === 'custom' && (
+                  <div className="flex items-center gap-2 font-mono text-xs">
+                    <input
+                      type="date"
+                      value={paymentDateFrom}
+                      onChange={(e) => {
+                        setPaymentDateFrom(e.target.value)
+                        setPaymentPagination(prev => ({ ...prev, page: 1 }))
+                      }}
+                      className="px-2 py-1.5 border border-[var(--color-line)] rounded bg-white text-stone-750"
+                    />
+                    <span>to</span>
+                    <input
+                      type="date"
+                      value={paymentDateTo}
+                      onChange={(e) => {
+                        setPaymentDateTo(e.target.value)
+                        setPaymentPagination(prev => ({ ...prev, page: 1 }))
+                      }}
+                      className="px-2 py-1.5 border border-[var(--color-line)] rounded bg-white text-stone-750"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Refresh button */}
+              <button
+                onClick={() => fetchPaymentsData()}
+                className="btn-outline px-4 py-2 rounded-xl text-xs flex items-center gap-2 border-[var(--color-line)] hover:bg-[var(--color-primary)] hover:text-white transition-colors"
+              >
+                <RefreshCw size={13} className={paymentsLoading ? 'animate-spin' : ''} />
+                Refresh Data
+              </button>
+            </div>
+
+            {/* Payments Table */}
+            {paymentsLoading ? (
+              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-2xl p-12 text-center">
+                <RefreshCw size={24} className="mx-auto animate-spin text-[var(--color-primary)]" />
+                <p className="text-xs text-[var(--color-ink-soft)] mt-2 font-semibold">Loading payment transactions...</p>
+              </div>
+            ) : payments.length === 0 ? (
+              <div className="border border-dashed border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-2xl p-12 text-center space-y-2">
+                <CreditCard size={32} className="mx-auto text-[var(--color-primary)] opacity-50" />
+                <p className="font-bold uppercase text-xs">No Payments Found</p>
+                <p className="text-xs text-[var(--color-ink-soft)]">
+                  Adjust your search queries or active filters to view records.
+                </p>
+              </div>
+            ) : (
+              <div className="border border-[var(--color-line)] bg-white rounded-2xl overflow-hidden shadow-xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[var(--color-bg)] border-b border-[var(--color-line)] font-bold text-stone-700">
+                        <th className="p-4">Payment ID</th>
+                        <th className="p-4">Razorpay Order ID</th>
+                        <th className="p-4">Order Number</th>
+                        <th className="p-4">Customer</th>
+                        <th className="p-4 text-right">Amount</th>
+                        <th className="p-4">Status</th>
+                        <th className="p-4">Order Status</th>
+                        <th className="p-4">Reconciliation</th>
+                        <th className="p-4">Created At</th>
+                        <th className="p-4 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--color-line)]">
+                      {payments.map((p) => {
+                        const recStatus = p.reconciliationStatus || 'pending'
+                        return (
+                          <tr key={p._id} className="hover:bg-stone-50 transition-colors">
+                            <td className="p-4 font-mono font-semibold">{p.razorpayPaymentId || 'N/A'}</td>
+                            <td className="p-4 font-mono text-[0.68rem] text-stone-600">{p.razorpayOrderId}</td>
+                            <td className="p-4 font-mono">
+                              {p.orderDoc ? (
+                                <button
+                                  onClick={() => setSelectedUserOrderDetail({ ...p.orderDoc, mongoId: p.orderDoc._id })}
+                                  className="text-[var(--color-primary)] font-bold hover:underline"
+                                >
+                                  {p.orderNumber}
+                                </button>
+                              ) : (
+                                <span className="text-rose-600 italic">Orphan Payment</span>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              <p className="font-semibold text-stone-900">{p.userDoc?.name || 'Guest Checkout'}</p>
+                              {p.userDoc?.email && <p className="text-[0.68rem] text-[var(--color-primary)] font-semibold">{p.userDoc.email}</p>}
+                            </td>
+                            <td className="p-4 text-right font-mono font-bold text-stone-900">₹{p.amount}</td>
+                            <td className="p-4 uppercase">
+                              <span className={`px-2 py-0.5 rounded text-[0.62rem] font-bold border ${
+                                p.status === 'captured'
+                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                  : p.status === 'refunded'
+                                  ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                  : 'bg-stone-100 text-stone-700 border-stone-300'
+                              }`}>
+                                {p.status}
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              {p.orderDoc ? (
+                                <span className="font-semibold text-stone-700">{p.orderDoc.status}</span>
+                              ) : (
+                                <span className="text-rose-500 italic">None</span>
+                              )}
+                            </td>
+                            <td className="p-4 font-semibold">
+                              {recStatus === 'normal' && <span className="text-emerald-700">🟢 Normal</span>}
+                              {recStatus === 'reconciled' && <span className="text-indigo-700">🟡 Reconciled</span>}
+                              {recStatus === 'attention_required' && <span className="text-rose-700">🔴 Attention Required</span>}
+                              {recStatus === 'pending' && <span className="text-stone-500">⚪ Pending</span>}
+                              {recStatus === 'failed' && <span className="text-rose-600">Failed</span>}
+                              {recStatus === 'refunded' && <span className="text-amber-700">Refunded</span>}
+                            </td>
+                            <td className="p-4 text-[0.68rem] text-stone-600 font-mono whitespace-nowrap">{formatDateTime(p.createdAt)}</td>
+                            <td className="p-4 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => setSelectedPaymentDetail(p)}
+                                  className="btn-outline px-3 py-1.5 rounded-lg text-[0.68rem] font-bold uppercase tracking-wider"
+                                >
+                                  Details
+                                </button>
+                                {recStatus === 'attention_required' && p.orderDoc && (
+                                  <button
+                                    onClick={() => handleReconcile(p)}
+                                    disabled={isReconciling}
+                                    className="px-3 py-1.5 rounded-lg text-[0.68rem] bg-rose-700 text-white font-bold uppercase tracking-wider hover:bg-rose-800 transition-colors disabled:opacity-50"
+                                  >
+                                    Reconcile
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination Footer */}
+                {paymentPagination.totalPages > 1 && (
+                  <div className="p-4 border-t border-[var(--color-line)] bg-[var(--color-bg)] flex justify-between items-center text-xs">
+                    <span className="font-mono text-stone-600">
+                      Showing page {paymentPagination.page} of {paymentPagination.totalPages} ({paymentPagination.totalCount} total)
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        disabled={paymentPagination.page <= 1}
+                        onClick={() => setPaymentPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                        className="btn-outline px-3 py-1 rounded-lg hover:bg-[var(--color-primary)] hover:text-white transition-colors disabled:opacity-50"
+                      >
+                        Prev
+                      </button>
+                      <button
+                        disabled={paymentPagination.page >= paymentPagination.totalPages}
+                        onClick={() => setPaymentPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                        className="btn-outline px-3 py-1 rounded-lg hover:bg-[var(--color-primary)] hover:text-white transition-colors disabled:opacity-50"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       {/* FULL PHOTO LIGHTBOX MODAL */}
@@ -3088,6 +3581,148 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
             <p className="text-white text-xs font-mono text-center py-2 bg-black/80">
               Reference Photo (Click anywhere to close)
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* PAYMENT DETAILS DRAWERS/MODAL */}
+      {selectedPaymentDetail && (
+        <div className="fixed inset-0 bg-black/80 z-[150] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] max-w-2xl w-full p-6 space-y-6 shadow-2xl relative rounded-3xl text-[var(--color-ink)]">
+            {/* Header */}
+            <div className="border-b border-[var(--color-line)] pb-4 flex justify-between items-start">
+              <div>
+                <span className="eyebrow block mb-1 text-[var(--color-primary)] font-bold">Transaction Record</span>
+                <h2 className="text-xl font-bold font-[var(--font-display)] uppercase tracking-wider text-[var(--color-ink)]">
+                  Payment Detail
+                </h2>
+              </div>
+              <button
+                onClick={() => setSelectedPaymentDetail(null)}
+                className="p-2 hover:bg-black/10 text-[var(--color-ink-soft)] font-bold uppercase text-xs cursor-pointer rounded-full"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            {/* Info list */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
+              <div className="space-y-1">
+                <span className="eyebrow text-[0.62rem] text-stone-500 block">Payment ID</span>
+                <p className="font-mono text-stone-800">{selectedPaymentDetail.razorpayPaymentId || 'N/A'}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="eyebrow text-[0.62rem] text-stone-500 block">Razorpay Order ID</span>
+                <p className="font-mono text-stone-800">{selectedPaymentDetail.razorpayOrderId}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="eyebrow text-[0.62rem] text-stone-500 block">Order Number</span>
+                <p className="font-mono text-stone-800">{selectedPaymentDetail.orderNumber || 'N/A'}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="eyebrow text-[0.62rem] text-stone-500 block">Customer</span>
+                <p className="text-stone-800">
+                  {selectedPaymentDetail.userDoc?.name || 'Guest Checkout'}
+                  {selectedPaymentDetail.userDoc?.email && ` (${selectedPaymentDetail.userDoc.email})`}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <span className="eyebrow text-[0.62rem] text-stone-500 block">Amount / Currency</span>
+                <p className="text-stone-800 font-bold">₹{selectedPaymentDetail.amount} {selectedPaymentDetail.currency || 'INR'}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="eyebrow text-[0.62rem] text-stone-500 block">Payment Status</span>
+                <p className="text-stone-800 uppercase">{selectedPaymentDetail.status}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="eyebrow text-[0.62rem] text-stone-500 block">Order Status</span>
+                <p className="text-stone-800">{selectedPaymentDetail.orderDoc?.status || 'No Order Connected'}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="eyebrow text-[0.62rem] text-stone-500 block">Method</span>
+                <p className="text-stone-800">{selectedPaymentDetail.paymentMethod || 'Razorpay Prepaid'}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="eyebrow text-[0.62rem] text-stone-500 block">Created At</span>
+                <p className="text-stone-800 font-mono">{formatDateTime(selectedPaymentDetail.createdAt)}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="eyebrow text-[0.62rem] text-stone-500 block">Processed At</span>
+                <p className="text-stone-800 font-mono">
+                  {selectedPaymentDetail.processedAt ? formatDateTime(selectedPaymentDetail.processedAt) : 'N/A'}
+                </p>
+              </div>
+            </div>
+
+            {/* Reconciliation Warning Banner */}
+            {selectedPaymentDetail.reconciliationStatus === 'attention_required' && (
+              <div className="border border-rose-300 bg-rose-50/50 p-4 rounded-xl space-y-2">
+                <p className="text-xs text-rose-900 font-bold flex items-center gap-1.5">
+                  ⚠️ Payment captured but order is not marked Paid
+                </p>
+                <div className="text-[0.68rem] text-rose-800 space-y-1 font-mono">
+                  <p>Razorpay Payment ID: {selectedPaymentDetail.razorpayPaymentId || 'N/A'}</p>
+                  <p>Razorpay Order ID: {selectedPaymentDetail.razorpayOrderId}</p>
+                  <p>Order Number: {selectedPaymentDetail.orderNumber || 'N/A'}</p>
+                  <p>Amount: ₹{selectedPaymentDetail.amount}</p>
+                  <p>Current Order Status: {selectedPaymentDetail.orderDoc?.status || 'Orphan Payment'}</p>
+                </div>
+                {selectedPaymentDetail.orderDoc && (
+                  <button
+                    onClick={() => handleReconcile(selectedPaymentDetail)}
+                    disabled={isReconciling}
+                    className="mt-2 px-3.5 py-1.5 rounded-lg bg-rose-700 hover:bg-rose-800 disabled:opacity-50 text-white font-bold uppercase text-[0.68rem] tracking-wider"
+                  >
+                    {isReconciling ? 'Reconciling...' : 'Reconcile Payment'}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Timeline */}
+            <div className="space-y-3">
+              <h3 className="font-bold text-xs uppercase text-stone-700 tracking-wider">
+                Transaction Timeline
+              </h3>
+              <div className="relative border-l-2 border-stone-200 pl-4 space-y-4 text-xs font-semibold">
+                <div className="relative">
+                  <div className="absolute -left-[23px] top-1 w-3.5 h-3.5 bg-indigo-600 rounded-full border-2 border-white" />
+                  <p className="text-stone-800">Payment Created</p>
+                  <p className="text-[0.68rem] text-stone-500 font-mono mt-0.5">{formatDateTime(selectedPaymentDetail.createdAt)}</p>
+                </div>
+
+                {selectedPaymentDetail.status === 'captured' && (
+                  <div className="relative">
+                    <div className="absolute -left-[23px] top-1 w-3.5 h-3.5 bg-emerald-600 rounded-full border-2 border-white" />
+                    <p className="text-stone-800">Razorpay Payment Captured</p>
+                    <p className="text-[0.68rem] text-stone-500 font-mono mt-0.5">
+                      {selectedPaymentDetail.processedAt ? formatDateTime(selectedPaymentDetail.processedAt) : 'Webhook Confirmed'}
+                    </p>
+                  </div>
+                )}
+
+                {selectedPaymentDetail.orderDoc && selectedPaymentDetail.orderDoc.paymentStatus === 'Paid' && (
+                  <>
+                    <div className="relative">
+                      <div className="absolute -left-[23px] top-1 w-3.5 h-3.5 bg-emerald-600 rounded-full border-2 border-white" />
+                      <p className="text-stone-800">Webhook Received & Verified</p>
+                    </div>
+
+                    <div className="relative">
+                      <div className="absolute -left-[23px] top-1 w-3.5 h-3.5 bg-emerald-600 rounded-full border-2 border-white" />
+                      <p className="text-stone-800">Order Marked Paid</p>
+                    </div>
+
+                    {selectedPaymentDetail.orderDoc.status !== 'Pending Payment' && (
+                      <div className="relative">
+                        <div className="absolute -left-[23px] top-1 w-3.5 h-3.5 bg-emerald-600 rounded-full border-2 border-white" />
+                        <p className="text-stone-800">Order Confirmed & Stock Adjusted</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

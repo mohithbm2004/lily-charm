@@ -31,5 +31,7 @@ const paymentSchema = new mongoose.Schema(
 )
 
 paymentSchema.index({ razorpayOrderId: 1, status: 1 })
+paymentSchema.index({ order: 1 })
+paymentSchema.index({ createdAt: -1 })
 
 export default mongoose.model('Payment', paymentSchema)

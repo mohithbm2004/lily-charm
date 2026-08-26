@@ -265,3 +265,324 @@ export async function handleRazorpayWebhook(req, res, next) {
     res.status(500).json({ message: 'Webhook processing error' })
   }
 }
+
+// GET /api/payment/admin/tracking — Admin Payment Tracking list with metrics & filters
+export async function getPaymentTracking(req, res, next) {
+  try {
+    if (!req.admin && req.user?.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required to view the payment tracking.' })
+    }
+
+    const { page = 1, limit = 50, status = 'all', search = '', from = '', to = '' } = req.query
+
+    const pageNum = Number(page) || 1
+    const limitNum = Number(limit) || 50
+    const skipNum = (pageNum - 1) * limitNum
+
+    // 1. Base counts & metrics
+    const totalPayments = await Payment.countDocuments()
+    const capturedPayments = await Payment.countDocuments({ status: 'captured' })
+    const pendingPayments = await Payment.countDocuments({ status: 'pending' })
+    const failedPayments = await Payment.countDocuments({ status: 'failed' })
+    const refundedPayments = await Payment.countDocuments({ status: 'refunded' })
+
+    const totalRevenueAgg = await Payment.aggregate([
+      { $match: { status: 'captured' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ])
+    const totalRevenue = totalRevenueAgg[0]?.total || 0
+
+    // Fetch dynamic reconciliation counts using lookup aggregation
+    const reconciliationMetrics = await Payment.aggregate([
+      {
+        $lookup: {
+          from: 'orders',
+          localField: 'order',
+          foreignField: '_id',
+          as: 'orderDoc'
+        }
+      },
+      {
+        $unwind: {
+          path: '$orderDoc',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $addFields: {
+          reconciliationStatus: {
+            $cond: {
+              if: { $ne: ["$status", "captured"] },
+              then: "$status",
+              else: {
+                $cond: {
+                  if: { $eq: [{ $ifNull: ["$orderDoc", null] }, null] },
+                  then: "attention_required",
+                  else: {
+                    $cond: {
+                      if: { $ne: ["$orderDoc.paymentStatus", "Paid"] },
+                      then: "attention_required",
+                      else: {
+                        $cond: {
+                          if: {
+                            $gt: [
+                              {
+                                $size: {
+                                  $filter: {
+                                    input: { $ifNull: ["$orderDoc.statusHistory", []] },
+                                    as: "history",
+                                    cond: {
+                                      $or: [
+                                        { $regexMatch: { input: { $ifNull: ["$$history.note", ""] }, regex: "Automated Reconciliation Worker", options: "i" } },
+                                        { $regexMatch: { input: { $ifNull: ["$$history.note", ""] }, regex: "Webhook", options: "i" } },
+                                        { $regexMatch: { input: { $ifNull: ["$$history.note", ""] }, regex: "Reconciliation", options: "i" } }
+                                      ]
+                                    }
+                                  }
+                                }
+                              },
+                              0
+                            ]
+                          },
+                          then: "reconciled",
+                          else: "normal"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        $group: {
+          _id: '$reconciliationStatus',
+          count: { $sum: 1 }
+        }
+      }
+    ])
+
+    let reconciledPayments = 0
+    let attentionRequiredPayments = 0
+
+    reconciliationMetrics.forEach(m => {
+      if (m._id === 'reconciled') reconciledPayments = m.count
+      if (m._id === 'attention_required') attentionRequiredPayments = m.count
+    })
+
+    // 2. Query Pipeline
+    const pipeline = []
+
+    // Date range filter
+    if (from || to) {
+      const dateFilter = {}
+      if (from) dateFilter.$gte = new Date(from)
+      if (to) dateFilter.$lte = new Date(to)
+      pipeline.push({ $match: { createdAt: dateFilter } })
+    }
+
+    // Lookups
+    pipeline.push(
+      {
+        $lookup: {
+          from: 'orders',
+          localField: 'order',
+          foreignField: '_id',
+          as: 'orderDoc'
+        }
+      },
+      {
+        $unwind: {
+          path: '$orderDoc',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'userDoc'
+        }
+      },
+      {
+        $unwind: {
+          path: '$userDoc',
+          preserveNullAndEmptyArrays: true
+        }
+      }
+    )
+
+    // Add reconciliationStatus
+    pipeline.push({
+      $addFields: {
+        reconciliationStatus: {
+          $cond: {
+            if: { $ne: ["$status", "captured"] },
+            then: "$status",
+            else: {
+              $cond: {
+                if: { $eq: [{ $ifNull: ["$orderDoc", null] }, null] },
+                then: "attention_required",
+                else: {
+                  $cond: {
+                    if: { $ne: ["$orderDoc.paymentStatus", "Paid"] },
+                    then: "attention_required",
+                    else: {
+                      $cond: {
+                        if: {
+                          $gt: [
+                            {
+                              $size: {
+                                $filter: {
+                                  input: { $ifNull: ["$orderDoc.statusHistory", []] },
+                                  as: "history",
+                                  cond: {
+                                    $or: [
+                                      { $regexMatch: { input: { $ifNull: ["$$history.note", ""] }, regex: "Automated Reconciliation Worker", options: "i" } },
+                                      { $regexMatch: { input: { $ifNull: ["$$history.note", ""] }, regex: "Webhook", options: "i" } },
+                                      { $regexMatch: { input: { $ifNull: ["$$history.note", ""] }, regex: "Reconciliation", options: "i" } }
+                                    ]
+                                  }
+                                }
+                              },
+                              0
+                            ]
+                          },
+                          then: "reconciled",
+                          else: "normal"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+
+    // Search query
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), 'i')
+      pipeline.push({
+        $match: {
+          $or: [
+            { orderNumber: searchRegex },
+            { razorpayPaymentId: searchRegex },
+            { razorpayOrderId: searchRegex },
+            { 'userDoc.email': searchRegex },
+            { 'userDoc.name': searchRegex }
+          ]
+        }
+      })
+    }
+
+    // Status filter matching
+    if (status && status !== 'all') {
+      if (status === 'reconciled') {
+        pipeline.push({ $match: { reconciliationStatus: 'reconciled' } })
+      } else if (status === 'attention_required') {
+        pipeline.push({ $match: { reconciliationStatus: 'attention_required' } })
+      } else if (status === 'captured') {
+        pipeline.push({ $match: { status: 'captured' } })
+      } else {
+        pipeline.push({ $match: { status } })
+      }
+    }
+
+    // Count match total
+    const countPipeline = [...pipeline, { $count: 'total' }]
+    const countResult = await Payment.aggregate(countPipeline)
+    const totalCount = countResult[0]?.total || 0
+
+    // Paginate results
+    pipeline.push(
+      { $sort: { createdAt: -1 } },
+      { $skip: skipNum },
+      { $limit: limitNum }
+    )
+
+    const payments = await Payment.aggregate(pipeline)
+
+    res.json({
+      payments,
+      metrics: {
+        totalRevenue,
+        totalPayments,
+        capturedPayments,
+        pendingPayments,
+        failedPayments,
+        refundedPayments,
+        reconciledPayments,
+        attentionRequiredPayments,
+      },
+      pagination: {
+        totalCount,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(totalCount / limitNum),
+      }
+    })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// POST /api/payment/admin/reconcile — Admin Manual Reconcile Action trigger
+export async function reconcilePaymentManual(req, res, next) {
+  try {
+    if (!req.admin && req.user?.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required to manually reconcile payments.' })
+    }
+
+    const { razorpayOrderId, razorpayPaymentId, amountInRupees } = req.body
+
+    if (!razorpayOrderId) {
+      return res.status(400).json({ success: false, message: 'Missing razorpayOrderId.' })
+    }
+
+    // Try Custom Quote first
+    const customRequest = await CustomRequest.findOne({ razorpayOrderId })
+    if (customRequest) {
+      const result = await processCustomQuotePaymentSuccess({
+        customRequestId: customRequest._id,
+        razorpayOrderId,
+        razorpayPaymentId: razorpayPaymentId || `manual-rec-${Date.now()}`,
+      })
+
+      return res.json({
+        success: true,
+        message: 'Custom Quote payment reconciled successfully.',
+        alreadyProcessed: result?.alreadyProcessed,
+      })
+    }
+
+    // Reconcile Standard Order
+    const result = await processOrderPaymentSuccess({
+      razorpayOrderId,
+      razorpayPaymentId: razorpayPaymentId || `manual-rec-${Date.now()}`,
+      amountInRupees: amountInRupees || null,
+      source: 'Admin Portal Manual Reconciliation',
+    })
+
+    if (result.success) {
+      return res.json({
+        success: true,
+        message: 'Order payment reconciled successfully.',
+        alreadyProcessed: result.alreadyProcessed,
+        order: result.order,
+      })
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: `Failed to reconcile payment: ${result.reason}`,
+    })
+  } catch (err) {
+    next(err)
+  }
+}
