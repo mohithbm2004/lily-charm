@@ -381,6 +381,35 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     fetchPaymentsData()
   }, [fetchPaymentsData])
 
+  const handleClearPaymentLogs = async () => {
+    setDoubleConfirmModal({
+      isOpen: true,
+      title: 'Clear All Payment Tracking Logs',
+      message: 'Are you sure you want to permanently delete all payment tracking logs from the database? This action is irreversible and will delete all payment reconciliation audit data.',
+      expectedPhrase: 'DELETE LOGS',
+      inputText: '',
+      actionLabel: 'Clear All Logs',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`${API_URL}/payment/admin/logs/clear`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+          })
+          const data = await res.json()
+          if (res.ok) {
+            alert(data.message || 'All payment tracking logs deleted successfully.')
+            fetchPaymentsData()
+          } else {
+            alert(data.message || 'Failed to clear payment logs.')
+          }
+        } catch (err) {
+          console.error('Error clearing payment logs:', err)
+          alert('Failed to communicate with the server.')
+        }
+      },
+    })
+  }
+
   useEffect(() => {
     const socket = getSocket()
     if (socket) {
@@ -3532,13 +3561,21 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
 
         {activeTab === 'payments' && (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold font-[var(--font-display)] uppercase tracking-wider text-[var(--color-ink)]">
-                Payment Tracking & Auditing
-              </h2>
-              <p className="text-xs text-[var(--color-ink-soft)] mt-1">
-                Monitor captured Razorpay payments, identify discrepancies, and manually reconcile orphan logs.
-              </p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-xl font-bold font-[var(--font-display)] uppercase tracking-wider text-[var(--color-ink)]">
+                  Payment Tracking & Auditing
+                </h2>
+                <p className="text-xs text-[var(--color-ink-soft)] mt-1">
+                  Monitor captured Razorpay payments, identify discrepancies, and manually reconcile orphan logs.
+                </p>
+              </div>
+              <button
+                onClick={handleClearPaymentLogs}
+                className="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs uppercase tracking-wider rounded-full transition-colors flex items-center gap-1.5 shadow-sm"
+              >
+                <Trash2 size={13} /> Clear Payment Logs
+              </button>
             </div>
 
             {/* Metrics Analytics Summary */}

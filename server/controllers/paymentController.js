@@ -590,3 +590,20 @@ export async function reconcilePaymentManual(req, res, next) {
     next(err)
   }
 }
+
+// DELETE /api/payment/admin/logs/clear — Clear all payment tracking logs
+export async function clearAllPaymentLogs(req, res, next) {
+  try {
+    if (!req.admin && req.user?.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required to clear payment logs.' })
+    }
+
+    const deleteResult = await Payment.deleteMany({})
+    res.json({
+      success: true,
+      message: `All payment logs have been deleted successfully. (${deleteResult.deletedCount} logs cleared)`,
+    })
+  } catch (err) {
+    next(err)
+  }
+}
