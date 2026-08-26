@@ -417,6 +417,28 @@ function getRazorpayErrorMessage(err) {
   return msg || JSON.stringify(err)
 }
 
+// Helper function to restore stock when an order is cancelled
+async function restoreOrderStock(order) {
+  if (order.stockRestored) return
+
+  if (order.items && order.items.length > 0) {
+    for (const item of order.items) {
+      if (item.product && item.qty > 0) {
+        try {
+          await Product.updateOne(
+            { _id: item.product },
+            { $inc: { stock: item.qty } }
+          )
+          console.log(`[STOCK RESTORE] Restored ${item.qty} units for product ${item.product}`)
+        } catch (err) {
+          console.error(`[STOCK RESTORE ERROR] Could not restore stock for product ${item.product}:`, err.message)
+        }
+      }
+    }
+  }
+  order.stockRestored = true
+}
+
 // PATCH /api/orders/:id/cancel — Customer or Admin Order Cancellation with Strict Ownership & Payment State Verification
 export async function cancelOrder(req, res, next) {
   try {
@@ -540,6 +562,7 @@ export async function cancelOrder(req, res, next) {
         note: `${reason} — Unpaid order cancelled. No payment was charged.`,
       })
 
+      order.stockRestored = true
       await order.save()
 
       // Send simple Cancellation Email (not refund email)
@@ -589,6 +612,7 @@ export async function cancelOrder(req, res, next) {
             order.refundStatus = 'Processed'
             order.paymentStatus = 'Refunded'
             order.status = 'Cancelled & Refunded'
+            await restoreOrderStock(order)
             await order.save()
 
             return res.json({
@@ -713,6 +737,7 @@ export async function cancelOrder(req, res, next) {
         console.warn('[PAYMENT LEDGER UPDATE NOTICE]:', e.message)
       }
 
+      await restoreOrderStock(order)
       await order.save()
 
       // Send Refund Notice Email
@@ -733,6 +758,7 @@ export async function cancelOrder(req, res, next) {
     } else {
       // Refund failed: Keep paymentStatus as Paid and set status to Cancelled.
       order.status = 'Cancelled'
+      await restoreOrderStock(order)
       await order.save()
       emitOrderUpdated(order)
       emitOrderCancelled(order)

@@ -102,6 +102,7 @@ const orderSchema = new mongoose.Schema(
     refundAmount: { type: Number, default: 0 },
     cancellationFee: { type: Number, default: 0 },
     refundStatus: { type: String, default: 'None' },
+    stockRestored: { type: Boolean, default: false },
     termsAccepted: { type: Boolean, default: false },
     termsAcceptedAt: { type: Date, default: null },
     termsVersion: { type: String, default: null },

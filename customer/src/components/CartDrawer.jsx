@@ -40,6 +40,7 @@ export default function CartDrawer() {
 
   const shipping = items.length === 0 ? 0 : isShippingEnabled ? (subtotal >= freeThreshold ? 0 : standardShippingFee) : 0
   const grandTotal = Math.max(0, subtotal - discountAmount + shipping)
+  const hasOutOfStockItems = items.some((item) => item.stock === 0)
 
   const handleApplyCoupon = async (e) => {
     e.preventDefault()
@@ -94,25 +95,32 @@ export default function CartDrawer() {
                   <img src={item.image} alt={item.title} className="w-16 h-20 sm:w-20 sm:h-24 object-cover shrink-0 border border-[var(--color-line)] rounded-xl bg-[var(--color-card-bg)]" />
                   <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <div>
-                      <p className="font-[var(--font-display)] text-sm sm:text-base font-bold leading-tight truncate">{item.title}</p>
+                      <div className="flex items-center flex-wrap gap-1.5">
+                        <p className="font-[var(--font-display)] text-sm sm:text-base font-bold leading-tight truncate">{item.title}</p>
+                        {item.stock === 0 && (
+                          <span className="text-[0.58rem] text-rose-700 font-bold uppercase bg-rose-50 border border-rose-200 px-1.5 py-0.2 rounded shrink-0">
+                            Out of Stock
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs sm:text-sm text-[var(--color-ink-soft)] mt-0.5">{formatPrice(item.price)}</p>
                     </div>
                     <div className="flex items-center justify-between gap-2 mt-2">
                       <div className="flex items-center gap-2">
                         <div className="flex items-center border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-full overflow-hidden px-1">
                           <button onClick={() => setQty(item.id, item.qty - 1)} className="w-7 h-7 flex items-center justify-center hover:bg-black/5 rounded-full cursor-pointer" aria-label="Decrease"><Minus size={11} /></button>
-                          <span className="w-7 text-center text-xs font-bold font-mono">{item.qty}</span>
+                          <span className="w-7 text-center text-xs font-bold font-mono">{item.stock === 0 ? 0 : item.qty}</span>
                           <button
                             onClick={() => setQty(item.id, item.qty + 1)}
-                            disabled={item.qty >= maxQtyPerProduct}
+                            disabled={item.qty >= maxQtyPerProduct || item.stock === 0}
                             className="w-7 h-7 flex items-center justify-center hover:bg-black/5 rounded-full disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                             aria-label="Increase"
-                            title={item.qty >= maxQtyPerProduct ? `Studio limit of ${maxQtyPerProduct} per design reached` : 'Increase quantity'}
+                            title={item.stock === 0 ? 'Item is out of stock' : item.qty >= maxQtyPerProduct ? `Studio limit of ${maxQtyPerProduct} per design reached` : 'Increase quantity'}
                           >
                             <Plus size={11} />
                           </button>
                         </div>
-                        {item.qty >= maxQtyPerProduct && (
+                        {item.qty >= maxQtyPerProduct && item.stock !== 0 && (
                           <span className="text-[0.62rem] text-amber-800 font-mono font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                             Max {maxQtyPerProduct} / order
                           </span>
@@ -201,13 +209,27 @@ export default function CartDrawer() {
                   </div>
                 </div>
 
-                <Link
-                  to="/checkout"
-                  onClick={closeCart}
-                  className="btn-primary w-full text-center block py-3 uppercase text-xs font-bold tracking-widest"
-                >
-                  Checkout ({formatPrice(grandTotal)})
-                </Link>
+                {hasOutOfStockItems ? (
+                  <button
+                    disabled
+                    className="w-full bg-rose-600/10 border border-rose-300 text-rose-700/60 text-center py-3 uppercase text-xs font-bold tracking-widest rounded-full cursor-not-allowed"
+                  >
+                    Checkout Blocked (Stock Issue)
+                  </button>
+                ) : (
+                  <Link
+                    to="/checkout"
+                    onClick={closeCart}
+                    className="btn-primary w-full text-center block py-3 uppercase text-xs font-bold tracking-widest"
+                  >
+                    Checkout ({formatPrice(grandTotal)})
+                  </Link>
+                )}
+                {hasOutOfStockItems && (
+                  <p className="text-[0.62rem] text-rose-800 bg-rose-50 border border-rose-200 p-2 rounded-2xl text-center leading-tight">
+                    ⚠️ <strong>Unable to Checkout:</strong> One or more items in your bag are out of stock. Please remove them to proceed.
+                  </p>
+                )}
                 <p className="text-[0.6rem] text-amber-900 bg-amber-50/80 border border-amber-200 p-1.5 rounded text-center leading-tight">
                   ℹ️ <strong>Cancellation Policy:</strong> Customer cancellations incur a 3% fee (97% refund). Studio Admin cancellations = 100% full refund.
                 </p>

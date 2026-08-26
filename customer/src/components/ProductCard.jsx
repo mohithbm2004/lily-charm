@@ -84,6 +84,13 @@ function ProductCard({ product, index = 0 }) {
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-xs text-[var(--color-ink-soft)] font-mono">No Image</div>
               )}
+              {product.stock === 0 && (
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center">
+                  <span className="bg-stone-900/90 text-white font-bold text-[0.62rem] sm:text-xs uppercase tracking-widest px-3 py-1.5 rounded-lg border border-white/20">
+                    Out of Stock
+                  </span>
+                </div>
+              )}
             </div>
 
             <span className="absolute top-2 left-2 sm:top-3 sm:left-3 specimen-tag bg-[var(--color-bg)] border border-[var(--color-line)] rounded-full px-2 sm:px-2.5 py-0.5 font-medium text-[0.58rem] sm:text-[0.65rem] uppercase tracking-wider">
@@ -118,7 +125,7 @@ function ProductCard({ product, index = 0 }) {
             onClick={async (e) => {
               e.preventDefault()
               e.stopPropagation()
-              if (loading || isMaxQty) return
+              if (loading || isMaxQty || product.stock === 0) return
               setLoading(true)
               const res = await addItemAsync(product)
               if (!res || !res.success) {
@@ -130,8 +137,9 @@ function ProductCard({ product, index = 0 }) {
               }
               setLoading(false)
             }}
-            disabled={loading || isMaxQty}
+            disabled={loading || isMaxQty || product.stock === 0}
             className={`w-full btn-outline rounded-full py-2 px-1 text-[0.6rem] sm:text-[0.68rem] tracking-wider uppercase font-bold flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis shadow-sm ${
+              product.stock === 0 ? 'border-rose-400/40 text-rose-700/60 bg-rose-50/20' :
               isMaxQty ? 'border-amber-600/40 text-amber-700/60 bg-amber-50/20' : ''
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
@@ -139,6 +147,8 @@ function ProductCard({ product, index = 0 }) {
               <>
                 <Loader2 size={12} className="animate-spin" /> ADDING...
               </>
+            ) : product.stock === 0 ? (
+              <>OUT OF STOCK</>
             ) : isMaxQty ? (
               <>LIMIT REACHED (4)</>
             ) : (

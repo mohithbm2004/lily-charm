@@ -38,7 +38,8 @@ export default function Product() {
         (product._id && String(i.id) === String(product._id)))
   )
   const cartQty = cartItem ? cartItem.qty : 0
-  const maxAllowedQty = Math.max(0, 4 - cartQty)
+  const availableStock = product && product.stock !== undefined ? Math.max(0, product.stock - cartQty) : 10
+  const maxAllowedQty = Math.min(Math.max(0, 4 - cartQty), availableStock)
   const isMaxQty = cartQty >= 4
 
   useEffect(() => {
@@ -181,16 +182,16 @@ export default function Product() {
                 <div className="flex items-center border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-full shrink-0 overflow-hidden px-1">
                   <button
                     onClick={() => setQty((q) => Math.max(1, q - 1))}
-                    disabled={maxAllowedQty <= 0}
+                    disabled={maxAllowedQty <= 0 || product.stock === 0}
                     className="w-10 h-11 flex items-center justify-center hover:bg-black/5 rounded-full disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                     aria-label="Decrease quantity"
                   >
                     <Minus size={13} />
                   </button>
-                  <span className="w-10 text-center text-sm font-bold font-mono">{qty}</span>
+                  <span className="w-10 text-center text-sm font-bold font-mono">{product.stock === 0 ? 0 : qty}</span>
                   <button
                     onClick={() => setQty((q) => Math.min(maxAllowedQty, q + 1))}
-                    disabled={qty >= maxAllowedQty || maxAllowedQty <= 0}
+                    disabled={qty >= maxAllowedQty || maxAllowedQty <= 0 || product.stock === 0}
                     className="w-10 h-11 flex items-center justify-center hover:bg-black/5 rounded-full disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                     aria-label="Increase quantity"
                     title={qty >= maxAllowedQty ? `Maximum limit of 4 units (you already have ${cartQty} in cart)` : 'Increase quantity'}
@@ -201,7 +202,7 @@ export default function Product() {
 
                 <button
                   onClick={async () => {
-                    if (loadingCart || isMaxQty) return
+                    if (loadingCart || isMaxQty || product.stock === 0) return
                     setLoadingCart(true)
                     const res = await addItemAsync(product, qty)
                     if (!res || !res.success) {
@@ -213,8 +214,9 @@ export default function Product() {
                     }
                     setLoadingCart(false)
                   }}
-                  disabled={loadingCart || isMaxQty}
+                  disabled={loadingCart || isMaxQty || product.stock === 0}
                   className={`btn-primary flex-1 py-3 text-xs uppercase font-bold tracking-widest text-center rounded-full shadow-md cursor-pointer flex items-center justify-center gap-2 ${
+                    product.stock === 0 ? 'bg-rose-600/10 border border-rose-300 text-rose-700/60 shadow-none cursor-not-allowed' :
                     isMaxQty ? 'bg-amber-600/10 border border-amber-600/20 text-amber-800/60 shadow-none cursor-not-allowed' : ''
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
@@ -222,10 +224,12 @@ export default function Product() {
                     <>
                       <Loader2 size={13} className="animate-spin" /> ADDING...
                     </>
+                  ) : product.stock === 0 ? (
+                    <>OUT OF STOCK</>
                   ) : isMaxQty ? (
                     <>LIMIT REACHED (4 IN CART)</>
                   ) : (
-                    <>Add to Cart • {formatPrice(product.price * qty)}</>
+                    <>Add to Cart • {formatPrice(product.price * (product.stock === 0 ? 0 : qty))}</>
                   )}
                 </button>
 
