@@ -222,9 +222,15 @@ export default function Checkout() {
       })
 
       if (!res.ok) {
-        const errText = await res.text()
-        console.error('Failed to create order:', res.status, errText)
-        alert('We could not place your order. Please try again.')
+        let errorMsg = 'We could not place your order. Please try again.'
+        try {
+          const errData = await res.json()
+          if (errData && errData.message) {
+            errorMsg = errData.message
+          }
+        } catch {}
+        console.error('Failed to create order:', res.status, errorMsg)
+        alert(errorMsg)
         setProcessing(false)
         return
       }
