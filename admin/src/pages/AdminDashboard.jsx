@@ -1150,6 +1150,8 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
   const [reviewFilter, setReviewFilter] = useState('all') // 'all', 'displayed', 'hidden'
   const [reviewSearchQuery, setReviewSearchQuery] = useState('')
   const [selectedCollectionFilter, setSelectedCollectionFilter] = useState('all')
+  const [productSortField, setProductSortField] = useState('createdAt') // 'createdAt' | 'price' | 'stock' | 'title'
+  const [productSortOrder, setProductSortOrder] = useState('desc') // 'asc' | 'desc'
 
   const filteredReviews = useMemo(() => {
     return reviews.filter((r) => {
@@ -1199,7 +1201,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
   }
 
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+    const list = products.filter((p) => {
       // 1. Collection / Series Filter
       if (selectedCollectionFilter !== 'all') {
         if (selectedCollectionFilter === 'uncategorized') {
@@ -1223,7 +1225,27 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
 
       return true
     })
-  }, [products, selectedCollectionFilter, searchQuery, collections])
+
+    // 3. Sorting
+    list.sort((a, b) => {
+      let valA = a[productSortField]
+      let valB = b[productSortField]
+
+      if (productSortField === 'price' || productSortField === 'stock') {
+        valA = Number(valA) || 0
+        valB = Number(valB) || 0
+      } else {
+        valA = String(valA || '').toLowerCase()
+        valB = String(valB || '').toLowerCase()
+      }
+
+      if (valA < valB) return productSortOrder === 'asc' ? -1 : 1
+      if (valA > valB) return productSortOrder === 'asc' ? 1 : -1
+      return 0
+    })
+
+    return list
+  }, [products, selectedCollectionFilter, searchQuery, collections, productSortField, productSortOrder])
 
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0)
   const pendingOrdersCount = orders.filter((o) => o.orderStatus !== 'Delivered').length
@@ -1488,6 +1510,32 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                   </select>
                 </div>
 
+                {/* Sort Field Select */}
+                <div className="relative w-full sm:w-44">
+                  <select
+                    value={productSortField}
+                    onChange={(e) => setProductSortField(e.target.value)}
+                    className="w-full border border-[var(--color-line)] px-3 py-2 text-xs bg-[var(--color-card-bg)] rounded-xl font-medium focus:outline-none focus:border-[var(--color-primary)] cursor-pointer"
+                  >
+                    <option value="createdAt">📅 Sort by Date Added</option>
+                    <option value="title">🔤 Sort by Title</option>
+                    <option value="price">💰 Sort by Price</option>
+                    <option value="stock">📦 Sort by Qty (Stock)</option>
+                  </select>
+                </div>
+
+                {/* Sort Order Select */}
+                <div className="relative w-full sm:w-36">
+                  <select
+                    value={productSortOrder}
+                    onChange={(e) => setProductSortOrder(e.target.value)}
+                    className="w-full border border-[var(--color-line)] px-3 py-2 text-xs bg-[var(--color-card-bg)] rounded-xl font-medium focus:outline-none focus:border-[var(--color-primary)] cursor-pointer"
+                  >
+                    <option value="desc">⬇️ Descending</option>
+                    <option value="asc">⬆️ Ascending</option>
+                  </select>
+                </div>
+
                 {(selectedCollectionFilter !== 'all' || searchQuery) && (
                   <button
                     onClick={() => {
@@ -1586,6 +1634,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                       <th className="p-4">Creation Title</th>
                       <th className="p-4">Collection / Category</th>
                       <th className="p-4">Price (₹)</th>
+                      <th className="p-4">Stock</th>
                       <th className="p-4 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -1615,6 +1664,9 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                           </button>
                         </td>
                         <td className="p-4 font-semibold text-emerald-800">{formatPrice(p.price)}</td>
+                        <td className={`p-4 font-mono font-bold ${p.stock === 0 ? 'text-rose-600' : p.stock < 5 ? 'text-amber-600' : 'text-stone-700'}`}>
+                          {p.stock !== undefined ? p.stock : 10}
+                        </td>
                         <td className="p-4 text-right space-x-2">
                           <button
                             onClick={() => handleStartEdit(p)}
@@ -4385,6 +4437,22 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                 </div>
                 <div>
                   <label className="block font-bold uppercase mb-1">
+                    Stock / Quantity <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    aria-required="true"
+                    min="0"
+                    value={newFlower.stock !== undefined ? newFlower.stock : 10}
+                    onChange={(e) => {
+                      setNewFlower({ ...newFlower, stock: Math.max(0, parseInt(e.target.value) || 0) })
+                    }}
+                    className="w-full border border-[var(--color-line)] p-2.5 bg-[var(--color-bg)] font-mono transition-colors focus:outline-none focus:border-[var(--color-primary)] text-xs rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold uppercase mb-1">
                     Product Description
                   </label>
                   <textarea
@@ -4608,6 +4676,22 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                       ⚠️ Price field is empty! Please enter a valid price.
                     </p>
                   )}
+                </div>
+                <div>
+                  <label className="block font-bold uppercase mb-1">
+                    Stock / Quantity <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    aria-required="true"
+                    min="0"
+                    value={editingProduct.stock !== undefined ? editingProduct.stock : 10}
+                    onChange={(e) => {
+                      setEditingProduct({ ...editingProduct, stock: Math.max(0, parseInt(e.target.value) || 0) })
+                    }}
+                    className="w-full border border-[var(--color-line)] p-2.5 bg-[var(--color-bg)] font-mono transition-colors focus:outline-none focus:border-[var(--color-primary)] text-xs rounded-lg"
+                  />
                 </div>
                 <div>
                   <label className="block font-bold uppercase mb-1">
