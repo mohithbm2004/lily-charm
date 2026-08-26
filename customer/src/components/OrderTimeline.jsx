@@ -13,7 +13,7 @@ const STAGES = [
   { key: 'Delivered', label: 'Delivered', icon: Home },
 ]
 
-export default function OrderTimeline({ status = 'Order Confirmed', history = [], notes = '', refundId = '', cancellationFee = 0, refundAmount = 0 }) {
+export default function OrderTimeline({ status = 'Order Confirmed', history = [], notes = '', refundId = '', cancellationFee = 0, refundAmount = 0, expanded = false, onToggle }) {
   if (['Cancelled', 'Cancelled & Refunded', 'Refund Requested', 'Refund Approved', 'Refund Rejected', 'Returned', 'Payment Failed'].includes(status)) {
     const cancelEntry = (history || []).slice().reverse().find(h => h.status?.includes('Cancel') || h.note)
     const rawReason = cancelEntry?.note || notes || ''
@@ -87,7 +87,6 @@ export default function OrderTimeline({ status = 'Order Confirmed', history = []
   }
 
   const currentIndex = getStageIndex(status)
-  const [expanded, setExpanded] = useState(false)
 
   const currentStage = STAGES[currentIndex] || STAGES[1]
   const CurrentIcon = currentStage.icon
@@ -97,7 +96,7 @@ export default function OrderTimeline({ status = 'Order Confirmed', history = []
     return (
       <div className="w-full">
         <div
-          onClick={() => setExpanded(true)}
+          onClick={onToggle || (() => {})}
           className="flex items-center justify-between gap-3 p-3 bg-emerald-50/40 hover:bg-emerald-50/70 border border-emerald-100/80 rounded-2xl cursor-pointer transition-colors shadow-sm"
         >
           <div className="flex items-center gap-3">
@@ -124,7 +123,7 @@ export default function OrderTimeline({ status = 'Order Confirmed', history = []
   return (
     <div className="w-full space-y-4">
       <div
-        onClick={() => setExpanded(false)}
+        onClick={onToggle || (() => {})}
         className="flex items-center justify-between gap-3 p-3 bg-stone-50 border border-stone-200/60 rounded-2xl cursor-pointer hover:bg-stone-100 transition-colors shadow-sm"
       >
         <div className="flex items-center gap-3">

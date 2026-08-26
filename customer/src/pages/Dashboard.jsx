@@ -34,6 +34,7 @@ export default function Dashboard() {
 
   const [tab, setTab] = useState(() => resolveTab(requestedTab))
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const [expandedOrderId, setExpandedOrderId] = useState(null)
   const justOrdered = params.get('order') === 'confirmed'
 
   useEffect(() => {
@@ -856,7 +857,16 @@ export default function Dashboard() {
 
                       {/* Timeline Preview */}
                       <div className="bg-[var(--color-bg)] p-3 border border-[var(--color-line)] rounded-2xl">
-                        <OrderTimeline status={o?.status || 'Order Confirmed'} history={o?.statusHistory || []} notes={o?.notes || ''} refundId={o?.razorpayRefundId || ''} cancellationFee={o?.cancellationFee || 0} refundAmount={o?.refundAmount || 0} />
+                        <OrderTimeline
+                          status={o?.status || 'Order Confirmed'}
+                          history={o?.statusHistory || []}
+                          notes={o?.notes || ''}
+                          refundId={o?.razorpayRefundId || ''}
+                          cancellationFee={o?.cancellationFee || 0}
+                          refundAmount={o?.refundAmount || 0}
+                          expanded={expandedOrderId === o?._id}
+                          onToggle={() => setExpandedOrderId(expandedOrderId === o?._id ? null : o?._id)}
+                        />
                       </div>
 
                       {/* Items Preview */}
