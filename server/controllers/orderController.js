@@ -395,6 +395,28 @@ export async function downloadInvoice(req, res, next) {
   }
 }
 
+function getRazorpayErrorMessage(err) {
+  if (!err) return 'Unknown error'
+  if (typeof err === 'string') return err
+  
+  let msg = ''
+  if (err.error && typeof err.error === 'object') {
+    const rzpErr = err.error
+    if (rzpErr.description) msg += rzpErr.description
+    if (rzpErr.code) msg += ` (Code: ${rzpErr.code})`
+  }
+  
+  if (!msg && err.message) {
+    msg = err.message
+  }
+  
+  if (err.statusCode) {
+    msg += ` [HTTP ${err.statusCode}]`
+  }
+  
+  return msg || JSON.stringify(err)
+}
+
 // PATCH /api/orders/:id/cancel — Customer or Admin Order Cancellation with Strict Ownership & Payment State Verification
 export async function cancelOrder(req, res, next) {
   try {
@@ -438,31 +460,68 @@ export async function cancelOrder(req, res, next) {
       })
     }
 
-    // 2. Resolve Razorpay Payment ID from order or payment ledger
+    // 2. Resolve Razorpay Payment ID from order, payment ledger, or Razorpay API
     let rzpPaymentId =
       order.razorpayPaymentId ||
       order.paymentInfo?.paymentId ||
       order.razorpay_payment_id ||
       order.paymentId
+
     if (!rzpPaymentId) {
       try {
         const paymentDoc = await Payment.findOne({
-          order: order._id,
+          $or: [
+            { order: order._id },
+            { razorpayOrderId: order.razorpayOrderId }
+          ],
           status: 'captured',
           razorpayPaymentId: { $exists: true, $ne: '' },
         })
         if (paymentDoc?.razorpayPaymentId) {
           rzpPaymentId = paymentDoc.razorpayPaymentId
         }
-      } catch {}
+      } catch (err) {
+        console.warn('[CANCELLATION RESOLVE PAYMENT LEDGER ERROR]:', err.message)
+      }
     }
 
-    // 3. Determine if payment was actually captured / paid
+    if (!rzpPaymentId && order.razorpayOrderId && razorpay && razorpay.orders) {
+      try {
+        const payments = await razorpay.orders.fetchPayments(order.razorpayOrderId)
+        const capturedPayment = (payments?.items || []).find((p) => p.status === 'captured') || payments?.items?.[0]
+        if (capturedPayment?.id) {
+          rzpPaymentId = capturedPayment.id
+        }
+      } catch (err) {
+        console.warn('[CANCELLATION RESOLVE RAZORPAY ORDER PAYMENTS ERROR]:', err.message)
+      }
+    }
+
+    // 3. Confirm captured status and actual captured amount directly from Razorpay
+    let rzpConfirmedCaptured = false
+    let actualCapturedAmount = 0
+    if (rzpPaymentId && razorpay && razorpay.payments) {
+      try {
+        const paymentInfo = await razorpay.payments.fetch(rzpPaymentId)
+        if (paymentInfo) {
+          if (paymentInfo.status === 'captured' || paymentInfo.status === 'refunded') {
+            rzpConfirmedCaptured = true
+          }
+          if (paymentInfo.amount) {
+            actualCapturedAmount = Number(paymentInfo.amount) / 100 // Convert paise to rupees
+          }
+        }
+      } catch (err) {
+        console.warn('[CANCELLATION RAZORPAY PAYMENT FETCH ERROR]:', err.message)
+      }
+    }
+
     const isPaid =
-      (order.paymentStatus === 'Paid' ||
-        order.status === 'Confirmed' ||
-        order.status === 'Order Confirmed' ||
-        order.status === 'Paid') &&
+      order.paymentStatus === 'Paid' ||
+      order.status === 'Confirmed' ||
+      order.status === 'Order Confirmed' ||
+      order.status === 'Paid' ||
+      rzpConfirmedCaptured ||
       Boolean(rzpPaymentId && rzpPaymentId.startsWith('pay_'))
 
     // =========================================================================
@@ -500,13 +559,44 @@ export async function cancelOrder(req, res, next) {
     // =========================================================================
     // CASE B: SUCCESSFULLY CAPTURED PREPAID ORDER
     // =========================================================================
-    // Idempotency: If already refunded
+    // Idempotency: If already marked refunded on DB
     if (order.paymentStatus === 'Refunded' || order.razorpayRefundId || order.refundStatus === 'Processed') {
       return res.json({
         success: true,
         message: `Order ${order.orderNumber} has already been refunded (Refund ID: ${order.razorpayRefundId || 'Processed'}).`,
         order,
       })
+    }
+
+    // Idempotency: Check if already fully refunded on Razorpay API
+    if (rzpPaymentId && razorpay && razorpay.payments) {
+      try {
+        const paymentInfo = await razorpay.payments.fetch(rzpPaymentId)
+        if (paymentInfo && (paymentInfo.status === 'refunded' || paymentInfo.amount_refunded === paymentInfo.amount)) {
+          let rzpRefundId = order.razorpayRefundId
+          try {
+            const refundsObj = await razorpay.payments.fetchRefunds(rzpPaymentId)
+            const firstRefund = refundsObj?.items?.[0] || refundsObj?.[0]
+            if (firstRefund?.id) {
+              rzpRefundId = firstRefund.id
+            }
+          } catch {}
+
+          order.razorpayRefundId = rzpRefundId || 'PREVIOUSLY-REFUNDED'
+          order.refundStatus = 'Processed'
+          order.paymentStatus = 'Refunded'
+          order.status = 'Cancelled & Refunded'
+          await order.save()
+
+          return res.json({
+            success: true,
+            message: `Order ${order.orderNumber} has already been fully refunded on Razorpay (Refund ID: ${order.razorpayRefundId}).`,
+            order,
+          })
+        }
+      } catch (err) {
+        console.warn('[CANCELLATION IDEMPOTENCY CHECK ERROR]:', err.message)
+      }
     }
 
     const grandTotal = Number(order.grandTotal || order.total || 0)
@@ -518,9 +608,9 @@ export async function cancelOrder(req, res, next) {
       cancellationFee = Math.round(grandTotal * 0.03)
       netRefund = Math.max(0, grandTotal - cancellationFee)
     } else {
-      // Admin cancellation: 0% fee (100% full refund)
+      // Admin cancellation: 100% full refund of actual captured amount
       cancellationFee = 0
-      netRefund = grandTotal
+      netRefund = actualCapturedAmount || grandTotal
     }
 
     order.cancellationFee = cancellationFee
@@ -528,9 +618,10 @@ export async function cancelOrder(req, res, next) {
 
     let refundProcessed = false
     let refundId = null
+    let refundErrorMsg = ''
 
     try {
-      if (razorpay && razorpay.payments) {
+      if (razorpay && razorpay.payments && rzpPaymentId) {
         const refundAmountPaise = Math.round(netRefund * 100)
         let refund = null
         try {
@@ -560,8 +651,10 @@ export async function cancelOrder(req, res, next) {
         }
       }
     } catch (rzpErr) {
-      console.error('[RAZORPAY AUTOMATED REFUND ERROR]:', rzpErr.message || rzpErr)
-      if (rzpErr.message && rzpErr.message.toLowerCase().includes('already refunded')) {
+      console.error('[RAZORPAY AUTOMATED REFUND ERROR]:', rzpErr)
+      refundErrorMsg = getRazorpayErrorMessage(rzpErr)
+      
+      if (refundErrorMsg.toLowerCase().includes('already refunded')) {
         refundProcessed = true
         refundId = order.razorpayRefundId || 'PREVIOUSLY-REFUNDED'
         order.razorpayRefundId = refundId
@@ -569,7 +662,7 @@ export async function cancelOrder(req, res, next) {
         order.paymentStatus = 'Refunded'
       } else {
         order.refundStatus = 'Failed'
-        order.notes = `${order.notes || ''} | Refund Attempt Failed: ${rzpErr.message}`
+        order.notes = `${order.notes || ''} | Refund Attempt Failed: ${refundErrorMsg}`.trim().replace(/^\| /, '')
       }
     }
 
@@ -613,6 +706,7 @@ export async function cancelOrder(req, res, next) {
         order,
       })
     } else {
+      // Refund failed: Keep paymentStatus as Paid and set status to Cancelled.
       order.status = 'Cancelled'
       await order.save()
       emitOrderUpdated(order)
@@ -620,7 +714,7 @@ export async function cancelOrder(req, res, next) {
 
       return res.status(500).json({
         success: false,
-        message: 'Order cancelled, but automated Razorpay refund failed. Studio admin has been notified for manual processing.',
+        message: `Order cancelled, but automated Razorpay refund failed: ${refundErrorMsg}. Studio admin has been notified for manual processing.`,
         order,
       })
     }
