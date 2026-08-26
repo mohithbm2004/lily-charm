@@ -22,6 +22,38 @@ export default function Dashboard() {
   const [params, setParams] = useSearchParams()
   const requestedTab = params.get('tab')
 
+  const getStatusDesc = (st, paymentSt) => {
+    const s = st || 'Confirmed'
+    if (s.includes('Cancel') || s === 'Refunded' || s === 'Cancelled & Refunded') {
+      return 'If you have been charged, a refund is automatically processed back to your original payment method.'
+    }
+    if (s === 'Pending Payment' || paymentSt === 'Pending' || s === 'Payment Failed') {
+      return 'Awaiting payment. Please complete checkout to begin crafting your bespoke order.'
+    }
+    if (s === 'Order Confirmed' || s === 'Confirmed' || s === 'Paid') {
+      return 'Order confirmed. Handcrafting in Studio will start shortly!'
+    }
+    if (s === 'Handcrafting' || s === 'Handcrafting in Studio') {
+      return 'Our artisans are meticulously detailing your botanical creation in the studio.'
+    }
+    if (s === 'Studio Processing' || s === 'Processing') {
+      return 'Your order is undergoing final quality inspection and finishing touches.'
+    }
+    if (s === 'Packed' || s === 'Packed & Sealed') {
+      return 'Your flower charm is safely packed in our gift casing and sealed for dispatch.'
+    }
+    if (s === 'Packed & Dispatched' || s === 'Shipped') {
+      return 'Dispatched! Your package is in transit with our logistics partner.'
+    }
+    if (s === 'Out For Delivery') {
+      return 'Your package is out for delivery with the courier and will arrive today!'
+    }
+    if (s === 'Delivered') {
+      return 'Delivered successfully. We hope this bespoke piece brings elegance to your space!'
+    }
+    return 'Your order is being processed by our studio.'
+  }
+
   const resolveTab = (param) => {
     if (!param) return 'Profile Details'
     const lower = param.toLowerCase()
@@ -820,230 +852,288 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {(userOrders || []).map((o, orderIdx) => (
-                    <div key={o?._id || o?.orderNumber || orderIdx} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow">
-                      {/* Order Header */}
-                      <div className="flex flex-wrap justify-between items-start border-b border-[var(--color-line)] pb-3 gap-2">
-                        <div>
-                          <p className="font-mono font-bold text-sm text-[var(--color-primary)]">{o?.orderNumber || o?._id || 'Order'}</p>
-                          <p className="text-[0.68rem] text-[var(--color-ink-soft)]">Placed on: {o?.createdAt && !isNaN(new Date(o.createdAt)) ? new Date(o.createdAt).toLocaleDateString('en-IN') : 'Recently Placed'}</p>
+                  {(userOrders || []).map((o, orderIdx) => {
+                    const isExpanded = expandedOrderId === o?._id
+                    const items = o?.items || []
+                    const maxThumbnails = 3
+                    const extraItemsCount = items.length - maxThumbnails
+                    const statusDesc = getStatusDesc(o?.status, o?.paymentStatus)
+
+                    return (
+                      <div
+                        key={o?._id || o?.orderNumber || orderIdx}
+                        className={`border rounded-3xl p-5 space-y-4 shadow-sm transition-all duration-300 ${
+                          isExpanded
+                            ? 'border-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-md'
+                            : 'border-[var(--color-line)] bg-[var(--color-card-bg)] hover:shadow-md cursor-pointer hover:bg-stone-50/20'
+                        }`}
+                      >
+                        {/* Compact Header (Always Visible, Clickable to Toggle) */}
+                        <div
+                          onClick={() => setExpandedOrderId(isExpanded ? null : o?._id)}
+                          className="flex items-center gap-4 w-full select-none"
+                        >
+                          {/* Item Thumbnails Strip (Left) */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {items.slice(0, maxThumbnails).map((it, idx) => (
+                              <img
+                                key={idx}
+                                src={it?.image || '/images/products/flower-1-1.jpg'}
+                                alt={it?.title || 'Thumbnail'}
+                                className="w-10 h-12 object-cover border border-[var(--color-line)] rounded-lg shadow-sm"
+                              />
+                            ))}
+                            {extraItemsCount > 0 && (
+                              <div className="w-10 h-12 flex items-center justify-center bg-stone-100 border border-[var(--color-line)] rounded-lg text-[0.68rem] font-bold text-[var(--color-ink-soft)] font-mono">
+                                +{extraItemsCount}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Status and Placed Date (Right) */}
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                              <h3
+                                className={`text-sm sm:text-base font-bold uppercase tracking-wide ${
+                                  o?.status?.includes('Cancel') || o?.status === 'Refunded'
+                                    ? 'text-rose-700'
+                                    : o?.status === 'Delivered'
+                                    ? 'text-emerald-700'
+                                    : o?.status?.includes('Shipped') || o?.status?.includes('Delivery') || o?.status?.includes('Dispatch')
+                                    ? 'text-blue-700'
+                                    : 'text-[var(--color-ink)]'
+                                }`}
+                              >
+                                {o?.status || 'Confirmed'}
+                              </h3>
+                              <span className="text-[0.65rem] sm:text-[0.68rem] text-[var(--color-ink-soft)] font-mono font-semibold">
+                                • Placed on {o?.createdAt && !isNaN(new Date(o.createdAt)) ? new Date(o.createdAt).toLocaleDateString('en-IN') : 'Recently'}
+                              </span>
+                            </div>
+                            <p className="text-[0.7rem] sm:text-xs text-[var(--color-ink-soft)] leading-normal line-clamp-2 pr-4">
+                              {statusDesc}
+                            </p>
+                          </div>
+
+                          {/* Expansion Indicator Arrow */}
+                          <div className="shrink-0 text-[var(--color-ink-soft)] font-mono text-sm pr-1">
+                            {isExpanded ? '▲' : '▼'}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`font-mono font-bold uppercase px-3 py-1 text-[0.65rem] rounded-full tracking-wider shadow-sm border ${
-                              o?.status === 'Cancelled'
-                                ? 'bg-rose-800 text-white border-rose-950'
-                                : o?.status === 'Delivered'
-                                ? 'bg-emerald-800 text-white border-emerald-950'
-                                : o?.status === 'Shipped' || o?.status === 'Out For Delivery'
-                                ? 'bg-blue-800 text-white border-blue-950'
-                                : 'bg-[#212B1C] text-[#F5E8D0] border-[#141A11]'
-                            }`}
-                          >
-                            {o?.status || 'Confirmed'}
-                          </span>
 
-                          <span
-                            className={`font-mono font-bold uppercase px-3 py-1 text-[0.65rem] rounded-full tracking-wider shadow-sm border ${
-                              o?.paymentStatus === 'Failed'
-                                ? 'bg-rose-800 text-white border-rose-950'
-                                : 'bg-emerald-800 text-white border-emerald-950'
-                            }`}
-                          >
-                            {o?.paymentStatus || 'Paid'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Timeline Preview */}
-                      <div className="bg-[var(--color-bg)] p-3 border border-[var(--color-line)] rounded-2xl">
-                        <OrderTimeline
-                          status={o?.status || 'Order Confirmed'}
-                          history={o?.statusHistory || []}
-                          notes={o?.notes || ''}
-                          refundId={o?.razorpayRefundId || ''}
-                          cancellationFee={o?.cancellationFee || 0}
-                          refundAmount={o?.refundAmount || 0}
-                          expanded={expandedOrderId === o?._id}
-                          onToggle={() => setExpandedOrderId(expandedOrderId === o?._id ? null : o?._id)}
-                        />
-                      </div>
-
-                      {/* Items Preview */}
-                      <div className="space-y-2">
-                        {(o?.items || []).map((it, idx) => (
-                          <div key={idx} className="flex items-center justify-between gap-3 p-2 bg-[var(--color-bg)] border border-[var(--color-line)] rounded-2xl">
-                            <div className="flex items-center gap-3">
-                              <img src={it?.image || '/images/products/flower-1-1.jpg'} alt={it?.title || 'Botanical Artwork'} className="w-10 h-12 object-cover border border-[var(--color-line)] rounded-xl" />
+                        {/* Collapsible Details Panel (Visible Only When Expanded) */}
+                        {isExpanded && (
+                          <div className="pt-4 border-t border-[var(--color-line)] space-y-4 animate-fadeIn">
+                            {/* Metadata Details Row */}
+                            <div className="flex flex-wrap justify-between items-center gap-2 bg-[var(--color-bg)]/40 p-3 rounded-2xl border border-[var(--color-line)]/50">
                               <div>
-                                <p className="font-bold text-xs">{it?.title || 'Handcrafted Artwork'}</p>
-                                <p className="text-[0.65rem] text-[var(--color-ink-soft)]">Qty: {it?.qty || 1} × {formatPrice(it?.price || 0)}</p>
+                                <span className="text-[0.62rem] text-[var(--color-ink-soft)] uppercase font-mono font-bold tracking-wider block">Order ID</span>
+                                <span className="font-mono font-bold text-xs text-[var(--color-primary)]">{o?.orderNumber || o?._id}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`font-mono font-bold uppercase px-3 py-1 text-[0.65rem] rounded-full tracking-wider border shadow-sm ${
+                                    o?.paymentStatus === 'Failed'
+                                      ? 'bg-rose-800 text-white border-rose-950'
+                                      : 'bg-emerald-800 text-white border-emerald-950'
+                                  }`}
+                                >
+                                  Payment: {o?.paymentStatus || 'Paid'}
+                                </span>
                               </div>
                             </div>
-                            <span className="font-bold font-mono text-[var(--color-primary)]">{formatPrice((it?.price || 0) * (it?.qty || 1))}</span>
+
+                            {/* Timeline Preview */}
+                            <div className="bg-[var(--color-bg)] p-3 border border-[var(--color-line)] rounded-2xl">
+                              <OrderTimeline
+                                status={o?.status || 'Order Confirmed'}
+                                history={o?.statusHistory || []}
+                                notes={o?.notes || ''}
+                                refundId={o?.razorpayRefundId || ''}
+                                cancellationFee={o?.cancellationFee || 0}
+                                refundAmount={o?.refundAmount || 0}
+                                expanded={true}
+                                onToggle={() => setExpandedOrderId(null)}
+                              />
+                            </div>
+
+                            {/* Items Details List */}
+                            <div className="space-y-2">
+                              <h4 className="text-[0.65rem] text-[var(--color-ink-soft)] uppercase font-bold tracking-wider pl-1">Order Items</h4>
+                              {(o?.items || []).map((it, idx) => (
+                                <div key={idx} className="flex items-center justify-between gap-3 p-2 bg-[var(--color-bg)] border border-[var(--color-line)] rounded-2xl">
+                                  <div className="flex items-center gap-3">
+                                    <img src={it?.image || '/images/products/flower-1-1.jpg'} alt={it?.title || 'Botanical Artwork'} className="w-10 h-12 object-cover border border-[var(--color-line)] rounded-xl" />
+                                    <div>
+                                      <p className="font-bold text-xs">{it?.title || 'Handcrafted Artwork'}</p>
+                                      <p className="text-[0.65rem] text-[var(--color-ink-soft)] font-mono">Qty: {it?.qty || 1} × {formatPrice(it?.price || 0)}</p>
+                                    </div>
+                                  </div>
+                                  <span className="font-bold font-mono text-[var(--color-primary)]">{formatPrice((it?.price || 0) * (it?.qty || 1))}</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Footer Actions & Total */}
+                            <div className="pt-3 border-t border-[var(--color-line)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 w-full">
+                              <div>
+                                <span className="text-[0.65rem] sm:text-[0.68rem] text-[var(--color-ink-soft)] uppercase font-bold">Total Amount Paid</span>
+                                <p className="text-emerald-800 text-sm sm:text-base font-mono font-bold">{formatPrice(o?.grandTotal || o?.total || 0)}</p>
+                              </div>
+
+                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto mt-2">
+                                <button
+                                  onClick={() => setSelectedOrder(o)}
+                                  className="btn-primary py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center rounded-full"
+                                >
+                                  <Eye size={12} /> View Details & Timeline
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    const authToken = token || localStorage.getItem('lilycharm_token') || ''
+                                    window.open(`${API_URL}/orders/${o?._id}/invoice?token=${encodeURIComponent(authToken)}`, '_blank')
+                                  }}
+                                  className="btn-outline py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center rounded-full"
+                                >
+                                  <Download size={12} /> Invoice PDF
+                                </button>
+
+                                {['Pending Payment', 'Pending', 'Order Confirmed', 'Confirmed', 'Paid'].includes(o?.status) && (
+                                  <button
+                                    onClick={() => {
+                                      const isPaidOrder = o?.paymentStatus === 'Paid' || o?.status === 'Order Confirmed' || o?.status === 'Confirmed' || o?.status === 'Paid'
+                                      const orderTotal = o?.grandTotal ?? o?.total ?? 0
+                                      const processingFee = Math.round(orderTotal * 0.03)
+                                      const netRefund = Math.max(0, orderTotal - processingFee)
+                                      const authToken = token || localStorage.getItem('lilycharm_token') || ''
+
+                                      if (isPaidOrder) {
+                                        const customReason = 'Order cancelled by customer'
+
+                                        showConfirm({
+                                          title: 'Cancel Order & Initiate Refund',
+                                          type: 'warning',
+                                          message: `Are you sure you want to cancel paid order "${o?.orderNumber || o?._id}"? Automatic refund will be processed back to your original payment method.`,
+                                          details: [
+                                            { label: 'Order Number', value: o?.orderNumber || o?._id },
+                                            { label: 'Original Order Total', value: formatPrice(orderTotal) },
+                                            { label: 'Processing Fee (3%)', value: `- ${formatPrice(processingFee)}`, color: 'text-rose-700 font-bold' },
+                                            { label: 'Net Refund to Customer (97%)', value: formatPrice(netRefund), color: 'text-emerald-800 font-bold text-sm', isTotal: true },
+                                          ],
+                                          disclaimer: 'Customer self-cancellation incurs a 3% payment processing fee. The net 97% refund is automatically credited back to your original payment method within 5–7 banking days. (Note: 100% full refund applies if cancelled by Studio).',
+                                          confirmText: `Confirm Cancellation (${formatPrice(netRefund)} Refund)`,
+                                          cancelText: 'Keep Order',
+                                          onConfirm: async () => {
+                                            try {
+                                              const res = await fetch(`${API_URL}/orders/${o?._id}/cancel`, {
+                                                method: 'PATCH',
+                                                headers: {
+                                                  'Content-Type': 'application/json',
+                                                  ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+                                                },
+                                                body: JSON.stringify({ reason: customReason }),
+                                              })
+                                              const data = await res.json()
+                                              if (res.ok) {
+                                                showAlert({
+                                                  title: 'Order Cancelled & Refund Initiated',
+                                                  type: 'success',
+                                                  message: `✨ Order ${o?.orderNumber || o?._id} has been cancelled. Net refund of ${formatPrice(netRefund)} (97%) has been sent to your original payment method.`,
+                                                })
+                                                fetchUserOrdersAndRequests()
+                                              } else {
+                                                showAlert({
+                                                  title: 'Cancellation Failed',
+                                                  type: 'error',
+                                                  message: data.message || 'Failed to cancel order.',
+                                                })
+                                              }
+                                            } catch {
+                                              showAlert({
+                                                title: 'Connection Error',
+                                                type: 'error',
+                                                message: 'Network error attempting order cancellation.',
+                                              })
+                                            }
+                                          },
+                                        })
+                                      } else {
+                                        const customReason = 'Cancelled before payment'
+
+                                        showConfirm({
+                                          title: 'Cancel Unpaid Order',
+                                          type: 'warning',
+                                          message: `Are you sure you want to cancel order "${o?.orderNumber || o?._id}"? Because this order is unpaid, no payment has been charged to your account.`,
+                                          details: [
+                                            { label: 'Order Number', value: o?.orderNumber || o?._id },
+                                            { label: 'Order Total', value: formatPrice(orderTotal) },
+                                            { label: 'Payment Status', value: 'Unpaid / Pending' },
+                                          ],
+                                          disclaimer: 'This order will be cancelled immediately. No charges were made to your account.',
+                                          confirmText: 'Confirm Order Cancellation',
+                                          cancelText: 'Keep Order',
+                                          onConfirm: async () => {
+                                            try {
+                                              const res = await fetch(`${API_URL}/orders/${o?._id}/cancel`, {
+                                                method: 'PATCH',
+                                                headers: {
+                                                  'Content-Type': 'application/json',
+                                                  ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+                                                },
+                                                body: JSON.stringify({ reason: customReason || 'Cancelled by customer before payment' }),
+                                              })
+                                              const data = await res.json()
+                                              if (res.ok) {
+                                                showAlert({
+                                                  title: 'Order Cancelled',
+                                                  type: 'success',
+                                                  message: `✨ Order ${o?.orderNumber || o?._id} has been cancelled. No payment was charged.`,
+                                                })
+                                                fetchUserOrdersAndRequests()
+                                              } else {
+                                                showAlert({
+                                                  title: 'Cancellation Failed',
+                                                  type: 'error',
+                                                  message: data.message || 'Failed to cancel order.',
+                                                })
+                                              }
+                                            } catch {
+                                              showAlert({
+                                                title: 'Connection Error',
+                                                type: 'error',
+                                                message: 'Network error attempting order cancellation.',
+                                              })
+                                            }
+                                          },
+                                        })
+                                      }
+                                    }}
+                                    className="text-rose-600 border border-rose-300 hover:bg-rose-50 font-bold text-[0.62rem] sm:text-[0.65rem] uppercase tracking-wider px-3 py-2 transition-colors flex items-center justify-center gap-1 rounded-full cursor-pointer transition-colors shadow-sm self-end sm:self-auto"
+                                    title="Cancel Order"
+                                  >
+                                    <XCircle size={11} /> Cancel Order
+                                  </button>
+                                )}
+
+                                {['Handcrafting', 'Handcrafting in Studio', 'Processing', 'Studio Processing', 'Packed', 'Packed & Sealed', 'Packed & Dispatched', 'Shipped', 'Out For Delivery'].includes(o?.status) && (
+                                  <span className="text-[0.62rem] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-300 px-2.5 py-1.5 rounded flex items-center gap-1">
+                                    🎨 Handcrafting/Dispatch Started — Cannot Cancel Online
+                                  </span>
+                                )}
+
+                                {o?.razorpayRefundId && (
+                                  <span className="text-[0.62rem] font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-300 px-2.5 py-1.5 rounded flex items-center gap-1">
+                                    ✨ Refund Ref: {o.razorpayRefundId}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        ))}
+                        )}
                       </div>
-
-                      {/* Footer Actions & Total */}
-                      <div className="pt-3 border-t border-[var(--color-line)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 w-full">
-                        <div>
-                          <span className="text-[0.65rem] sm:text-[0.68rem] text-[var(--color-ink-soft)] uppercase font-bold">Total Amount Paid</span>
-                          <p className="text-emerald-800 text-sm sm:text-base font-mono font-bold">{formatPrice(o?.grandTotal || o?.total || 0)}</p>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                          <button
-                            onClick={() => setSelectedOrder(o)}
-                            className="btn-primary py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center rounded-full"
-                          >
-                            <Eye size={12} /> View Details & Timeline
-                          </button>
-
-                          <button
-                            onClick={() => {
-                              const authToken = token || localStorage.getItem('lilycharm_token') || ''
-                              window.open(`${API_URL}/orders/${o?._id}/invoice?token=${encodeURIComponent(authToken)}`, '_blank')
-                            }}
-                            className="btn-outline py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center rounded-full"
-                          >
-                            <Download size={12} /> Invoice PDF
-                          </button>
-
-                          {['Pending Payment', 'Pending', 'Order Confirmed', 'Confirmed', 'Paid'].includes(o?.status) && (
-                            <button
-                              onClick={() => {
-                                const isPaidOrder = o?.paymentStatus === 'Paid' || o?.status === 'Order Confirmed' || o?.status === 'Confirmed' || o?.status === 'Paid'
-                                const orderTotal = o?.grandTotal ?? o?.total ?? 0
-                                const processingFee = Math.round(orderTotal * 0.03)
-                                const netRefund = Math.max(0, orderTotal - processingFee)
-                                const authToken = token || localStorage.getItem('lilycharm_token') || ''
-
-                                if (isPaidOrder) {
-                                  const customReason = 'Order cancelled by customer'
-
-                                  showConfirm({
-                                    title: 'Cancel Order & Initiate Refund',
-                                    type: 'warning',
-                                    message: `Are you sure you want to cancel paid order "${o?.orderNumber || o?._id}"? Automatic refund will be processed back to your original payment method.`,
-                                    details: [
-                                      { label: 'Order Number', value: o?.orderNumber || o?._id },
-                                      { label: 'Original Order Total', value: formatPrice(orderTotal) },
-                                      { label: 'Processing Fee (3%)', value: `- ${formatPrice(processingFee)}`, color: 'text-rose-700 font-bold' },
-                                      { label: 'Net Refund to Customer (97%)', value: formatPrice(netRefund), color: 'text-emerald-800 font-bold text-sm', isTotal: true },
-                                    ],
-                                    disclaimer: 'Customer self-cancellation incurs a 3% payment processing fee. The net 97% refund is automatically credited back to your original payment method within 5–7 banking days. (Note: 100% full refund applies if cancelled by Studio).',
-                                    confirmText: `Confirm Cancellation (${formatPrice(netRefund)} Refund)`,
-                                    cancelText: 'Keep Order',
-                                    onConfirm: async () => {
-                                      try {
-                                        const res = await fetch(`${API_URL}/orders/${o?._id}/cancel`, {
-                                          method: 'PATCH',
-                                          headers: {
-                                            'Content-Type': 'application/json',
-                                            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-                                          },
-                                          body: JSON.stringify({ reason: customReason }),
-                                        })
-                                        const data = await res.json()
-                                        if (res.ok) {
-                                          showAlert({
-                                            title: 'Order Cancelled & Refund Initiated',
-                                            type: 'success',
-                                            message: `✨ Order ${o?.orderNumber || o?._id} has been cancelled. Net refund of ${formatPrice(netRefund)} (97%) has been sent to your original payment method.`,
-                                          })
-                                          fetchUserOrdersAndRequests()
-                                        } else {
-                                          showAlert({
-                                            title: 'Cancellation Failed',
-                                            type: 'error',
-                                            message: data.message || 'Failed to cancel order.',
-                                          })
-                                        }
-                                      } catch {
-                                        showAlert({
-                                          title: 'Connection Error',
-                                          type: 'error',
-                                          message: 'Network error attempting order cancellation.',
-                                        })
-                                      }
-                                    },
-                                  })
-                                } else {
-                                  const customReason = 'Cancelled before payment'
-
-                                  showConfirm({
-                                    title: 'Cancel Unpaid Order',
-                                    type: 'warning',
-                                    message: `Are you sure you want to cancel order "${o?.orderNumber || o?._id}"? Because this order is unpaid, no payment has been charged to your account.`,
-                                    details: [
-                                      { label: 'Order Number', value: o?.orderNumber || o?._id },
-                                      { label: 'Order Total', value: formatPrice(orderTotal) },
-                                      { label: 'Payment Status', value: 'Unpaid / Pending' },
-                                    ],
-                                    disclaimer: 'This order will be cancelled immediately. No charges were made to your account.',
-                                    confirmText: 'Confirm Order Cancellation',
-                                    cancelText: 'Keep Order',
-                                    onConfirm: async () => {
-                                      try {
-                                        const res = await fetch(`${API_URL}/orders/${o?._id}/cancel`, {
-                                          method: 'PATCH',
-                                          headers: {
-                                            'Content-Type': 'application/json',
-                                            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-                                          },
-                                          body: JSON.stringify({ reason: customReason || 'Cancelled by customer before payment' }),
-                                        })
-                                        const data = await res.json()
-                                        if (res.ok) {
-                                          showAlert({
-                                            title: 'Order Cancelled',
-                                            type: 'success',
-                                            message: `✨ Order ${o?.orderNumber || o?._id} has been cancelled. No payment was charged.`,
-                                          })
-                                          fetchUserOrdersAndRequests()
-                                        } else {
-                                          showAlert({
-                                            title: 'Cancellation Failed',
-                                            type: 'error',
-                                            message: data.message || 'Failed to cancel order.',
-                                          })
-                                        }
-                                      } catch {
-                                        showAlert({
-                                          title: 'Connection Error',
-                                          type: 'error',
-                                          message: 'Network error attempting order cancellation.',
-                                        })
-                                      }
-                                    },
-                                  })
-                                }
-                              }}
-                              className="text-rose-600 border border-rose-300 hover:bg-rose-50 font-bold text-[0.62rem] sm:text-[0.65rem] uppercase tracking-wider px-3 py-2 transition-colors flex items-center justify-center gap-1 rounded-full cursor-pointer transition-colors shadow-sm self-end sm:self-auto"
-                              title="Cancel Order"
-                            >
-                              <XCircle size={11} /> Cancel Order
-                            </button>
-                          )}
-
-
-
-                          {['Handcrafting', 'Handcrafting in Studio', 'Processing', 'Studio Processing', 'Packed', 'Packed & Sealed', 'Packed & Dispatched', 'Shipped', 'Out For Delivery'].includes(o?.status) && (
-                            <span className="text-[0.62rem] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-300 px-2.5 py-1.5 rounded flex items-center gap-1">
-                              🎨 Handcrafting/Dispatch Started — Cannot Cancel Online
-                            </span>
-                          )}
-
-                          {o?.razorpayRefundId && (
-                            <span className="text-[0.62rem] font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-300 px-2.5 py-1.5 rounded flex items-center gap-1">
-                              ✨ Refund Ref: {o.razorpayRefundId}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
