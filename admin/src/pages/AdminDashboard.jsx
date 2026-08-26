@@ -230,6 +230,45 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState(null)
   const [isReconciling, setIsReconciling] = useState(false)
 
+  // Refs and hooks for top/bottom scrollbar synchronization
+  const topScrollRef = useRef(null)
+  const bottomScrollRef = useRef(null)
+  const isScrollingRef = useRef(null)
+  const [tableScrollWidth, setTableScrollWidth] = useState(0)
+
+  const handleTopScroll = () => {
+    if (isScrollingRef.current === 'bottom') return
+    isScrollingRef.current = 'top'
+    if (topScrollRef.current && bottomScrollRef.current) {
+      bottomScrollRef.current.scrollLeft = topScrollRef.current.scrollLeft
+    }
+    setTimeout(() => {
+      if (isScrollingRef.current === 'top') isScrollingRef.current = null
+    }, 50)
+  }
+
+  const handleBottomScroll = () => {
+    if (isScrollingRef.current === 'top') return
+    isScrollingRef.current = 'bottom'
+    if (bottomScrollRef.current && topScrollRef.current) {
+      topScrollRef.current.scrollLeft = bottomScrollRef.current.scrollLeft
+    }
+    setTimeout(() => {
+      if (isScrollingRef.current === 'bottom') isScrollingRef.current = null
+    }, 50)
+  }
+
+  useEffect(() => {
+    if (activeTab === 'payments' && bottomScrollRef.current) {
+      const timer = setTimeout(() => {
+        if (bottomScrollRef.current) {
+          setTableScrollWidth(bottomScrollRef.current.scrollWidth)
+        }
+      }, 150)
+      return () => clearTimeout(timer)
+    }
+  }, [payments, activeTab, paymentsLoading])
+
   const getHeaders = (extra = {}) => {
     const sessionId = localStorage.getItem('lilycharm_admin_session_id')
     const headers = { ...extra }
@@ -3502,7 +3541,18 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               </div>
             ) : (
               <div className="border border-[var(--color-line)] bg-white rounded-2xl overflow-hidden shadow-xs">
-                <div className="overflow-x-auto">
+                {/* Upper Horizontal Scrollbar */}
+                {tableScrollWidth > 0 && (
+                  <div
+                    ref={topScrollRef}
+                    onScroll={handleTopScroll}
+                    className="overflow-x-auto border-b border-[var(--color-line)] bg-[var(--color-bg)] scrollbar-thin"
+                    style={{ height: '14px' }}
+                  >
+                    <div style={{ width: `${tableScrollWidth}px`, height: '1px' }} />
+                  </div>
+                )}
+                <div ref={bottomScrollRef} onScroll={handleBottomScroll} className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="bg-[var(--color-bg)] border-b border-[var(--color-line)] font-bold text-stone-700">
