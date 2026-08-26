@@ -653,8 +653,13 @@ export async function cancelOrder(req, res, next) {
     } catch (rzpErr) {
       console.error('[RAZORPAY AUTOMATED REFUND ERROR]:', rzpErr)
       refundErrorMsg = getRazorpayErrorMessage(rzpErr)
+      const lowerError = refundErrorMsg.toLowerCase()
       
-      if (refundErrorMsg.toLowerCase().includes('already refunded')) {
+      if (
+        lowerError.includes('already refunded') ||
+        lowerError.includes('refunded already') ||
+        lowerError.includes('fully refunded')
+      ) {
         refundProcessed = true
         refundId = order.razorpayRefundId || 'PREVIOUSLY-REFUNDED'
         order.razorpayRefundId = refundId
@@ -805,15 +810,21 @@ export async function processRefund(req, res, next) {
             refundId = refund?.id
           }
         } catch (e) {
-          console.error('[ADMIN REFUND PROCESS ERROR]:', e.message)
-          if (e.message && e.message.toLowerCase().includes('already refunded')) {
+          console.error('[ADMIN REFUND PROCESS ERROR]:', e)
+          const errorMsg = getRazorpayErrorMessage(e)
+          const lowerError = errorMsg.toLowerCase()
+          if (
+            lowerError.includes('already refunded') ||
+            lowerError.includes('refunded already') ||
+            lowerError.includes('fully refunded')
+          ) {
             refundId = order.razorpayRefundId || 'PREVIOUSLY-REFUNDED'
           } else {
             order.refundStatus = 'Failed'
-            order.notes = `${order.notes || ''} | Admin Refund Error: ${e.message}`
+            order.notes = `${order.notes || ''} | Admin Refund Error: ${errorMsg}`.trim().replace(/^\| /, '')
             await order.save()
             return res.status(500).json({
-              message: `Razorpay refund failed: ${e.message}`,
+              message: `Razorpay refund failed: ${errorMsg}`,
             })
           }
         }
