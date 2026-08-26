@@ -368,12 +368,57 @@ export async function sendRefundRejected(order, reason = '') {
 }
 
 /**
+ * ZeptoMail: Send Order Cancelled & Refunded Email (From: orders@lilycharm.in)
+ */
+export async function sendOrderCancelledRefunded(order, reason = '') {
+  const recipientEmail = await getCustomerTransactionalEmail(order)
+  if (!recipientEmail) return null
+
+  const refundAmount = order.refundAmount || order.grandTotal || order.total
+  const originalAmount = order.grandTotal || order.total || refundAmount
+  
+  // Extract cancellation reason from order notes or history note if reason not passed
+  let cleanReason = reason
+  if (!cleanReason || cleanReason.includes('Reason:')) {
+    cleanReason = order.notes || 'Order cancelled by studio administration'
+  }
+  if (cleanReason.includes('Cancellation Reason:')) {
+    cleanReason = cleanReason.replace('Cancellation Reason:', '').trim()
+  }
+  if (cleanReason.includes('[')) {
+    cleanReason = cleanReason.split('[')[0].trim()
+  }
+
+  const html = compileTemplate('orderCancelledRefunded.html', {
+    customerName: order.shippingAddress?.name || 'Valued Customer',
+    orderNumber: order.orderNumber,
+    originalAmount: formatPrice(originalAmount),
+    refundAmount: formatPrice(refundAmount),
+    refundId: order.refundId || order.razorpayRefundId || 'REFUND-PROCESSED',
+    cancellationReason: cleanReason,
+  })
+
+  return await sendEmail({
+    type: 'order-cancelled-refunded',
+    to: recipientEmail,
+    subject: `Your Lily Charm Order Has Been Cancelled & Refunded`,
+    text: `Your order ${order.orderNumber} has been cancelled by the studio. A full refund of ₹${refundAmount} has been processed.`,
+    html,
+  })
+}
+
+/**
  * ZeptoMail: Send Refund Notice Wrapper
  */
 export async function sendRefundNotice(order, isApproved = true, amount = 0, reason = '') {
   if (isApproved) {
     order.refundAmount = amount || order.refundAmount
-    return await sendRefundApproved(order)
+    // Differentiate customer-initiated refund approval (Approved) vs direct cancellation (Processed)
+    if (order.refundStatus === 'Approved') {
+      return await sendRefundApproved(order)
+    } else {
+      return await sendOrderCancelledRefunded(order, reason)
+    }
   } else {
     return await sendRefundRejected(order, reason)
   }
