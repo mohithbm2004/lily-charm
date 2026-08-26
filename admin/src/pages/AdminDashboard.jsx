@@ -236,6 +236,32 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
   const [orderDateFrom, setOrderDateFrom] = useState('')
   const [orderDateTo, setOrderDateTo] = useState('')
 
+  // Uptime Robot Status
+  const [uptimeStatus, setUptimeStatus] = useState({ lastPing: null, loading: true })
+
+  const fetchUptimeStatus = useCallback(async () => {
+    const sessionId = localStorage.getItem('lilycharm_admin_session_id') || ''
+    try {
+      const res = await fetch(`${API_URL}/admin/uptime-status`, {
+        headers: {
+          ...(sessionId ? { 'x-admin-session-id': sessionId } : {}),
+        },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setUptimeStatus({ lastPing: data.lastPing, loading: false })
+      }
+    } catch (err) {
+      console.error('Failed to fetch uptime status:', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchUptimeStatus()
+    const interval = setInterval(fetchUptimeStatus, 60000)
+    return () => clearInterval(interval)
+  }, [fetchUptimeStatus])
+
   // Refs and hooks for top/bottom scrollbar synchronization
   const topScrollRef = useRef(null)
   const bottomScrollRef = useRef(null)
@@ -1353,6 +1379,20 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0)
   const pendingOrdersCount = orders.filter((o) => o.orderStatus !== 'Delivered').length
 
+  const getUptimeRobotText = () => {
+    if (uptimeStatus.loading) return 'Checking Uptime...'
+    if (!uptimeStatus.lastPing) return 'UptimeRobot: Waiting...'
+    
+    const diffMs = Date.now() - new Date(uptimeStatus.lastPing).getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    
+    if (diffMins < 1) return 'UptimeRobot: Active (just now)'
+    if (diffMins < 60) return `UptimeRobot: Active (${diffMins}m ago)`
+    return `UptimeRobot: Dormant (${Math.floor(diffMins / 60)}h ago)`
+  }
+
+  const isUptimeActive = !uptimeStatus.loading && uptimeStatus.lastPing && (Date.now() - new Date(uptimeStatus.lastPing).getTime() < 15 * 60000)
+
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">
       {/* Dedicated Admin Header */}
@@ -1377,6 +1417,21 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Uptime Robot Indicator */}
+            <div
+              className={`flex items-center gap-1.5 text-[0.68rem] font-mono px-3 py-1 rounded-full border shadow-sm ${
+                uptimeStatus.loading
+                  ? 'bg-stone-800 text-stone-300 border-stone-700'
+                  : isUptimeActive
+                  ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/30'
+                  : 'bg-rose-950/80 text-rose-300 border-rose-500/30'
+              }`}
+              title={uptimeStatus.lastPing ? `Last health check ping received: ${new Date(uptimeStatus.lastPing).toLocaleString('en-IN')}` : 'Awaiting first Uptime Robot request...'}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${uptimeStatus.loading ? 'bg-stone-500' : isUptimeActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`}></span>
+              <span>{getUptimeRobotText()}</span>
+            </div>
+
             <div className="hidden md:flex items-center gap-2 text-xs text-emerald-200 font-mono bg-emerald-900/60 px-3 py-1 rounded-full border border-emerald-500/30">
               <ShieldCheck size={14} />
               <span>{admin?.email || 'keerthanabm@lilycharm.in'}</span>

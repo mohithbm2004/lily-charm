@@ -67,6 +67,7 @@ import {
 import { getSettings, updateSettings } from '../controllers/settingController.js'
 import { uploadAnyImages } from '../middleware/upload.js'
 import Product from '../models/Product.js'
+import { getLastPing } from '../utils/uptimeTracker.js'
 
 const router = Router()
 
@@ -184,6 +185,16 @@ router.delete('/coupons/:id', deleteCoupon)
 // ==========================================
 router.get('/settings', getSettings)
 router.put('/settings', updateSettings)
+
+// ==========================================
+// 10.5. UPTIME ROBOT STATUS
+// ==========================================
+router.get('/uptime-status', (req, res) => {
+  res.status(200).json({
+    success: true,
+    lastPing: getLastPing(),
+  })
+})
 
 // ==========================================
 // 11. ZEPTOMAIL EMAIL SECURITY & BOUNCE MONITORING

@@ -1,6 +1,8 @@
 import { getZeptoMailAgent, DEFAULT_API_URL } from '../config/zeptomail.js'
+import { recordPing } from '../utils/uptimeTracker.js'
 
-export const checkHealth = (_req, res) => {
+export const checkHealth = (req, res) => {
+  recordPing(req.headers['user-agent'])
   res.status(200).json({
     success: true,
     message: 'Bloom Atelier API is healthy',
