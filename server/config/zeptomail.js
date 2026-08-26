@@ -1,4 +1,3 @@
-import nodemailer from 'nodemailer'
 import ENV from './env.js'
 
 function getOverriddenMailOptions(options) {
@@ -58,11 +57,11 @@ export const SENDER_ADDRESSES = {
   },
 }
 
-// Transporter Cache
+// Transporter Cache (API Config Wrappers)
 const transporterCache = {}
 
 /**
- * Creates or retrieves a cached Nodemailer SMTP Transporter for the designated channel
+ * Creates or retrieves a cached stateless API Config Wrapper for the designated channel
  */
 export function getZeptoTransporter(purpose = 'otp') {
   const p = (purpose || '').toLowerCase()
@@ -95,9 +94,6 @@ export function getZeptoTransporter(purpose = 'otp') {
   }
 
   const config = ENV.ZEPTO[channel] || ENV.ZEPTO.OTP
-  const host = config.HOST || 'smtp.zeptomail.in'
-  const port = Number(config.PORT || 587)
-  const user = config.USER || 'emailapikey'
   const pass = config.PASS || ''
 
   const sender =
@@ -111,7 +107,7 @@ export function getZeptoTransporter(purpose = 'otp') {
 
   if (!pass) {
     console.warn(
-      `[ZEPTOMAIL NOTICE]: ZeptoMail credentials are not configured for [${channel}] channel (ZEPTO_${channel}_PASSWORD is empty). Email service will run in simulated mode for ${channel}.`
+      `[ZEPTOMAIL NOTICE]: ZeptoMail API credentials are not configured for [${channel}] channel. Email service will run in simulated mode for ${channel}.`
     )
     const mockTransporter = {
       channel,
@@ -120,64 +116,33 @@ export function getZeptoTransporter(purpose = 'otp') {
       sendMail: async (options) => {
         const finalOptions = getOverriddenMailOptions(options)
         console.log(`\n=================== [SIMULATED ZEPTOMAIL DISPATCH] ===================`)
-        console.log(`[CHANNEL]: ZeptoMail ${channel} SMTP (${host}:${port})`)
+        console.log(`[CHANNEL]: ZeptoMail ${channel} HTTP API`)
         console.log(`[FROM]: ${finalOptions.from || sender.full}`)
         console.log(`[TO]: ${finalOptions.to}`)
         console.log(`[SUBJECT]: ${finalOptions.subject}`)
         console.log(`[STATUS]: SIMULATED (ZeptoMail credentials are not configured)`)
         console.log(`======================================================================\n`)
-        return { success: true, messageId: `mock-zepto-${channel.toLowerCase()}-${Date.now()}`, simulated: true }
+        return { success: true, messageId: `mock-zepto-http-${channel.toLowerCase()}-${Date.now()}`, simulated: true }
       },
     }
     transporterCache[channel] = mockTransporter
     return mockTransporter
   }
 
-  try {
-    const transport = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      requireTLS: port === 587,
-      auth: {
-        user,
-        pass,
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
-      tls: {
-        rejectUnauthorized: false,
-      },
-    })
-
-    const wrapper = {
-      channel,
-      configured: true,
-      sender,
-      transport,
-      sendMail: async (options) => {
-        const finalOptions = getOverriddenMailOptions(options)
-        return await transport.sendMail({
-          from: sender.full,
-          ...finalOptions,
-        })
-      },
-      verify: async () => {
-        return await transport.verify()
-      },
-    }
-
-    transporterCache[channel] = wrapper
-    return wrapper
-  } catch (err) {
-    console.error(`[ZEPTOMAIL ERROR]: Failed to initialize ${channel} SMTP transporter:`, err.message)
-    return null
+  const wrapper = {
+    channel,
+    configured: true,
+    sender,
+    apiKey: pass,
+    getOverriddenMailOptions,
   }
+
+  transporterCache[channel] = wrapper
+  return wrapper
 }
 
 /**
- * Verifies active ZeptoMail SMTP connections for configured channels
+ * Verifies active ZeptoMail API configuration status
  */
 export async function verifyZeptoMailConnections() {
   const channels = ['OTP', 'ORDER', 'SUPPORT', 'CONTACT']
@@ -185,15 +150,8 @@ export async function verifyZeptoMailConnections() {
 
   for (const ch of channels) {
     const transporter = getZeptoTransporter(ch.toLowerCase())
-    if (transporter && transporter.configured && transporter.verify) {
-      try {
-        await transporter.verify()
-        console.log(`[ZEPTOMAIL SUCCESS]: Verified ${ch} SMTP connection.`)
-        results[ch] = true
-      } catch (err) {
-        console.error(`[ZEPTOMAIL ERROR]: ${ch} SMTP connection failed:`, err.message)
-        results[ch] = false
-      }
+    if (transporter && transporter.configured) {
+      results[ch] = true
     } else {
       results[ch] = false
     }

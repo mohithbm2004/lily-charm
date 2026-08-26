@@ -109,83 +109,140 @@ export async function sendEmail({
     })
   }
 
-  // 5. Retry Loop for SMTP Dispatch
+  // 5. Retry Loop for HTTP API Dispatch
   let attempt = 0
   let lastError = null
 
   while (attempt < retries) {
     attempt++
     try {
-      const mailOptions = {
-        from: from || transporterWrapper.sender.full,
-        to: cleanTo,
-        subject: subject || 'Notification from Lily Charm',
-        html: html || `<p>${text || ''}</p>`,
-        text: text || '',
-        attachments,
-        ...(replyTo ? { replyTo } : {}),
+      console.log(`[EMAIL API] Sending email`)
+      console.log(`[EMAIL API] Provider: ZeptoMail API`)
+      console.log(`[EMAIL API] Recipient: ${cleanTo}`)
+
+      const finalToName = toName || cleanTo.split('@')[0]
+      const finalSubject = subject || 'Notification from Lily Charm'
+      const finalHtml = html || `<p>${text || ''}</p>`
+
+      // Handle override in test mode if active
+      let targetRecipient = cleanTo
+      let targetSubject = finalSubject
+      if (transporterWrapper.getOverriddenMailOptions) {
+        const overridden = transporterWrapper.getOverriddenMailOptions({ to: cleanTo, subject: finalSubject })
+        targetRecipient = overridden.to
+        targetSubject = overridden.subject
       }
 
-      const info = await transporterWrapper.sendMail(mailOptions)
-      console.log(`[EMAIL SUCCESS] [ZeptoMail SMTP] [Channel: ${transporterWrapper.channel}] Sent to ${cleanTo} (ID: ${info.messageId})`)
+      const payload = {
+        from: {
+          address: transporterWrapper.sender.address,
+          name: transporterWrapper.sender.name,
+        },
+        to: [
+          {
+            email_address: {
+              address: targetRecipient,
+              name: finalToName,
+            },
+          },
+        ],
+        subject: targetSubject,
+        htmlbody: finalHtml,
+      }
 
-      // Record success in Circuit Breaker
+      if (text) {
+        payload.textbody = text
+      }
+
+      if (replyTo) {
+        payload.reply_to = [
+          {
+            address: replyTo,
+            name: '',
+          },
+        ]
+      }
+
+      const apiUrl = process.env.ZEPTO_API_URL || 'https://api.zeptomail.in/v1.1/email'
+      
+      const authHeader = transporterWrapper.apiKey.trim().toLowerCase().startsWith('zoho-enczapikey')
+        ? transporterWrapper.apiKey.trim()
+        : `Zoho-enczapikey ${transporterWrapper.apiKey.trim()}`
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authHeader,
+        },
+        body: JSON.stringify(payload),
+      })
+
+      console.log(`[EMAIL API] Request sent`)
+      console.log(`[EMAIL API] Response status: ${response.status}`)
+
+      const responseData = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        const errorMsg = responseData.error?.message || `HTTP error status ${response.status}`
+        console.error(`[EMAIL API ERROR] Status: ${response.status}`)
+        console.error(`[EMAIL API ERROR] Message: ${errorMsg}`)
+        
+        const isHardBounce = 
+          response.status === 400 ||
+          response.status === 422 ||
+          errorMsg.toLowerCase().includes('invalid recipient') ||
+          errorMsg.toLowerCase().includes('suppressed') ||
+          errorMsg.toLowerCase().includes('bounce') ||
+          errorMsg.toLowerCase().includes('not verified')
+
+        if (isHardBounce) {
+          console.error(`🚨 [ZEPTOMAIL HARD BOUNCE DETECTED] [To: ${cleanTo}]: ${errorMsg}`)
+          
+          await SuppressedEmail.suppressEmail({
+            email: cleanTo,
+            reason: errorMsg,
+            bounceType: 'hard',
+            bounceCode: String(response.status),
+            source: 'zeptomail-api',
+          }).catch(console.error)
+
+          await EmailBounceLog.create({
+            email: cleanTo,
+            bounceType: 'hard',
+            bounceCode: String(response.status),
+            reason: errorMsg,
+            channel: transporterWrapper.channel,
+          }).catch(console.error)
+
+          emailCircuitBreaker.recordHardBounce(cleanTo, errorMsg)
+          
+          const hardBounceErr = new Error('This email address was reported as undeliverable. Please check or enter a different email address.')
+          hardBounceErr.isHardBounce = true
+          throw hardBounceErr
+        } else {
+          throw new Error(errorMsg)
+        }
+      }
+
+      console.log(`[EMAIL API] Email accepted`)
+      
+      const messageId = responseData.data?.[0]?.request_id || `zepto-http-${Date.now()}`
+
       emailCircuitBreaker.recordSuccess()
 
       return {
         success: true,
-        messageId: info.messageId,
-        provider: 'zeptomail-smtp',
+        messageId,
+        provider: 'zeptomail-api',
         channel: transporterWrapper.channel,
         attempts: attempt,
       }
     } catch (err) {
       lastError = err
-      const errMsg = (err.message || '').toLowerCase()
-
-      // Detect Hard Bounce SMTP response codes (550, 551, 552, 553, 554, invalid recipient, user unknown)
-      const isHardBounce =
-        errMsg.includes('550') ||
-        errMsg.includes('551') ||
-        errMsg.includes('552') ||
-        errMsg.includes('553') ||
-        errMsg.includes('554') ||
-        errMsg.includes('recipient rejected') ||
-        errMsg.includes('invalid recipient') ||
-        errMsg.includes('user unknown') ||
-        errMsg.includes('mailbox not found') ||
-        errMsg.includes('address rejected')
-
-      if (isHardBounce) {
-        console.error(`🚨 [ZEPTOMAIL HARD BOUNCE DETECTED] [To: ${cleanTo}]: ${err.message}`)
-
-        // Instantly add to SuppressedEmail database
-        await SuppressedEmail.suppressEmail({
-          email: cleanTo,
-          reason: err.message,
-          bounceType: 'hard',
-          bounceCode: '550',
-          source: 'zeptomail-smtp',
-        }).catch(console.error)
-
-        // Record in Bounce Log
-        await EmailBounceLog.create({
-          email: cleanTo,
-          bounceType: 'hard',
-          bounceCode: '550',
-          reason: err.message,
-          channel: transporterWrapper.channel,
-        }).catch(console.error)
-
-        // Inform Circuit Breaker of Hard Bounce
-        emailCircuitBreaker.recordHardBounce(cleanTo, err.message)
-
-        const hardBounceErr = new Error('This email address was reported as undeliverable. Please check or enter a different email address.')
-        hardBounceErr.isHardBounce = true
-        throw hardBounceErr
-      } else {
-        // Soft Bounce / Temporary Transport Failure
-        console.warn(`[ZEPTOMAIL SOFT BOUNCE / RETRY] [Attempt ${attempt}/${retries}] Failed to send to ${cleanTo}: ${err.message}`)
+      
+      // Do not log retry messages if we already threw hard bounces
+      if (!err.isHardBounce) {
         await EmailBounceLog.create({
           email: cleanTo,
           bounceType: 'soft',
@@ -196,6 +253,8 @@ export async function sendEmail({
         if (attempt < retries) {
           await new Promise((resolve) => setTimeout(resolve, 1000 * attempt))
         }
+      } else {
+        throw err
       }
     }
   }
@@ -203,8 +262,8 @@ export async function sendEmail({
   // Record transport failure in Circuit Breaker if all retries failed
   emailCircuitBreaker.recordTransportFailure(cleanTo, lastError?.message)
 
-  console.error(`[EMAIL DISPATCH FAILURE] Exhausted ${retries} attempts to ${cleanTo} via ZeptoMail SMTP. Error: ${lastError?.message}`)
-  throw new Error(`Email dispatch failed via ZeptoMail SMTP: ${lastError?.message}`)
+  console.error(`[EMAIL DISPATCH FAILURE] Exhausted ${retries} attempts to ${cleanTo} via ZeptoMail API. Error: ${lastError?.message}`)
+  throw new Error(`Email dispatch failed via ZeptoMail API: ${lastError?.message}`)
 }
 
 export default {

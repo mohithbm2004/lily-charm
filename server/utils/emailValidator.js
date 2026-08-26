@@ -37,7 +37,7 @@ export function detectDomainTypo(email) {
 
   const [username, domain] = parts
 
-  if (domain !== 'gmail.com') {
+  if (domain !== 'gmail.com' && domain !== 'lilycharm.in') {
     const suggestedEmail = `${username}@gmail.com`
     return {
       originalDomain: domain,
