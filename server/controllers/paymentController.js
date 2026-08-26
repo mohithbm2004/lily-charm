@@ -447,7 +447,8 @@ export async function getPaymentTracking(req, res, next) {
                                     ]
                                   }
                                 }
-                              },
+                              }
+                            },
                               0
                             ]
                           },
@@ -462,8 +463,7 @@ export async function getPaymentTracking(req, res, next) {
             }
           }
         }
-      }
-    })
+      })
 
     // Search query
     if (search && search.trim()) {
