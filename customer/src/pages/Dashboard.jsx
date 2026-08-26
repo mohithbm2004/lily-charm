@@ -489,6 +489,45 @@ export default function Dashboard() {
     }
   }
 
+  const handleDeleteAddress = async () => {
+    if (!confirm('Are you sure you want to delete your saved shipping address?')) return
+
+    try {
+      const currentToken = token || localStorage.getItem('lilycharm_token')
+      const updatedProfile = {
+        ...userProfile,
+        address: '',
+        city: '',
+        pincode: '',
+      }
+
+      const res = await fetch(`${API_URL}/auth/profile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${currentToken}`,
+        },
+        body: JSON.stringify({
+          ...updatedProfile,
+          image: avatarPreview,
+        }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setUserProfile(data.user)
+        updateUserProfile(data.user)
+        localStorage.setItem('lilycharm_user_profile', JSON.stringify(data.user))
+        alert('✨ Saved shipping address has been deleted.')
+      } else {
+        alert('Unable to delete address. Please try again.')
+      }
+    } catch (err) {
+      console.error('Failed to delete user address:', err)
+      alert('Connection interrupted. Please try again.')
+    }
+  }
+
   // Exact Order Confirmed Page Matching Image 2
   if (confirmedCustomOrder) {
     return (
@@ -1254,14 +1293,33 @@ export default function Dashboard() {
 
           {/* TAB 4: SAVED ADDRESSES */}
           {tab === 'Saved Addresses' && (
-            <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 space-y-2 max-w-md text-xs">
+            <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 space-y-4 max-w-md text-xs rounded-3xl shadow-sm">
               <div className="flex items-center gap-2 font-bold uppercase text-sm border-b border-[var(--color-line)] pb-2">
                 <MapPin size={16} className="text-[var(--color-primary)]" /> Primary Shipping Address
               </div>
-              <p className="font-bold text-sm">{userProfile?.name || 'Valued Customer'}</p>
-              <p className="text-[var(--color-ink-soft)]">{userProfile?.address || '123 Atelier Studio Street'}</p>
-              <p className="text-[var(--color-ink-soft)]">{userProfile?.city || 'Bengaluru'} - {userProfile?.pincode || '560001'}</p>
-              <p className="text-[var(--color-primary)] font-mono">{userProfile?.phone || '+91 98765 43210'}</p>
+              {!userProfile?.address?.trim() ? (
+                <div className="py-4 text-center text-[var(--color-ink-soft)] space-y-2">
+                  <p className="font-bold uppercase">No Saved Address Found</p>
+                  <p className="text-[0.7rem]">You can add your primary shipping address under the <strong>Profile Details</strong> tab.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <p className="font-bold text-sm text-[var(--color-ink)]">{userProfile?.name || 'Valued Customer'}</p>
+                    <p className="text-[var(--color-ink-soft)] text-xs mt-1 leading-relaxed">{userProfile?.address}</p>
+                    <p className="text-[var(--color-ink-soft)] text-xs leading-relaxed">{userProfile?.city} - {userProfile?.pincode}</p>
+                    <p className="text-[var(--color-primary)] font-mono text-[0.75rem] font-bold mt-1">📞 {userProfile?.phone || '+91 98765 43210'}</p>
+                  </div>
+                  <div className="pt-2 border-t border-[var(--color-line)] flex justify-end">
+                    <button
+                      onClick={handleDeleteAddress}
+                      className="px-3.5 py-1.5 border border-rose-300 text-rose-600 hover:bg-rose-50 text-[0.65rem] font-bold uppercase tracking-wider rounded-full transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
+                    >
+                      <Trash2 size={12} /> Delete Saved Address
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
