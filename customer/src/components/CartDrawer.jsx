@@ -72,16 +72,16 @@ export default function CartDrawer() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed top-0 right-0 h-full w-full sm:w-[440px] max-w-full bg-[var(--color-bg)] z-[1101] flex flex-col shadow-2xl rounded-l-3xl overflow-hidden border-l border-white/20"
+            className="fixed top-0 right-0 h-full w-full sm:w-[440px] max-w-full bg-[var(--color-bg)] z-[1101] flex flex-col shadow-2xl rounded-none sm:rounded-l-3xl overflow-hidden border-l border-black/10"
           >
-            <div className="flex items-center justify-between px-5 sm:px-6 h-16 sm:h-20 border-b border-black/10 shrink-0 bg-[var(--color-card-bg)]/60 backdrop-blur-md">
-              <h2 className="font-[var(--font-display)] text-lg sm:text-xl font-bold uppercase tracking-tight">Your Bag ({items.length})</h2>
+            <div className="flex items-center justify-between px-4 sm:px-6 h-14 sm:h-20 border-b border-black/10 shrink-0 bg-[var(--color-card-bg)]">
+              <h2 className="font-[var(--font-display)] text-base sm:text-xl font-bold uppercase tracking-tight">Your Bag ({items.length})</h2>
               <button onClick={closeCart} aria-label="Close cart" className="p-2 hover:bg-black/5 rounded-full cursor-pointer transition-colors">
                 <X size={20} strokeWidth={1.5} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 sm:py-6 space-y-4 sm:space-y-6">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-3.5 sm:space-y-6">
               {items.length === 0 && (
                 <div className="text-center py-16 text-[var(--color-ink-soft)] space-y-4">
                   <p className="text-xs sm:text-sm leading-relaxed">Your bag is empty — every piece here starts as a single fresh bloom.</p>
@@ -91,42 +91,42 @@ export default function CartDrawer() {
                 </div>
               )}
               {items.map((item) => (
-                <div key={item.id} className="flex gap-3.5 sm:gap-4 border-b border-black/10 pb-4">
-                  <img src={item.image} alt={item.title} className="w-18 h-22 sm:w-20 sm:h-24 object-cover shrink-0 rounded-2xl bg-[var(--color-card-bg)] shadow-2xs" />
+                <div key={item.id} className="flex gap-3 sm:gap-4 border-b border-black/10 pb-3 sm:pb-4">
+                  <img src={item.image} alt={item.title} className="w-16 h-20 sm:w-20 sm:h-24 object-cover shrink-0 rounded-xl sm:rounded-2xl bg-[var(--color-card-bg)] shadow-2xs" />
                   <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center flex-wrap gap-1.5">
-                        <p className="font-[var(--font-display)] text-sm sm:text-base font-bold leading-snug truncate text-[var(--color-ink)]">{item.title}</p>
+                      <div className="flex items-center flex-wrap gap-1">
+                        <p className="font-[var(--font-display)] text-xs sm:text-base font-bold leading-snug truncate text-[var(--color-ink)]">{item.title}</p>
                         {item.stock === 0 && (
-                          <span className="text-[0.58rem] text-rose-700 font-bold uppercase bg-rose-50 border border-rose-200 px-1.5 py-0.2 rounded shrink-0">
+                          <span className="text-[0.55rem] sm:text-[0.58rem] text-rose-700 font-bold uppercase bg-rose-50 border border-rose-200 px-1 py-0.2 rounded shrink-0">
                             Out of Stock
                           </span>
                         )}
                       </div>
                       <p className="text-xs sm:text-sm font-semibold text-[var(--color-primary)] mt-0.5">{formatPrice(item.price)}</p>
                     </div>
-                    <div className="flex items-center justify-between gap-2 mt-2">
+                    <div className="flex items-center justify-between gap-2 mt-1.5 sm:mt-2">
                       <div className="flex items-center gap-2">
                         <div className="flex items-center border border-black/15 bg-[var(--color-card-bg)] rounded-full overflow-hidden px-1">
-                          <button onClick={() => setQty(item.id, item.qty - 1)} className="w-7 h-7 flex items-center justify-center hover:bg-black/5 rounded-full cursor-pointer" aria-label="Decrease"><Minus size={11} /></button>
-                          <span className="w-7 text-center text-xs font-bold font-mono">{item.stock === 0 ? 0 : item.qty}</span>
+                          <button onClick={() => setQty(item.id, item.qty - 1)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center hover:bg-black/5 rounded-full cursor-pointer" aria-label="Decrease"><Minus size={10} /></button>
+                          <span className="w-6 sm:w-7 text-center text-xs font-bold font-mono">{item.stock === 0 ? 0 : item.qty}</span>
                           <button
                             onClick={() => setQty(item.id, item.qty + 1)}
                             disabled={item.qty >= maxQtyPerProduct || item.stock === 0}
-                            className="w-7 h-7 flex items-center justify-center hover:bg-black/5 rounded-full disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                            className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center hover:bg-black/5 rounded-full disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                             aria-label="Increase"
                             title={item.stock === 0 ? 'Item is out of stock' : item.qty >= maxQtyPerProduct ? `Studio limit of ${maxQtyPerProduct} per design reached` : 'Increase quantity'}
                           >
-                            <Plus size={11} />
+                            <Plus size={10} />
                           </button>
                         </div>
                         {item.qty >= maxQtyPerProduct && item.stock !== 0 && (
-                          <span className="text-[0.62rem] text-amber-800 font-mono font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                          <span className="text-[0.58rem] text-amber-800 font-mono font-semibold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
                             Max {maxQtyPerProduct}
                           </span>
                         )}
                       </div>
-                      <button onClick={() => removeItem(item.id)} className="text-[0.68rem] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] font-bold uppercase underline cursor-pointer transition-colors">Remove</button>
+                      <button onClick={() => removeItem(item.id)} className="text-[0.62rem] sm:text-[0.68rem] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] font-bold uppercase underline cursor-pointer transition-colors">Remove</button>
                     </div>
                   </div>
                 </div>
@@ -134,25 +134,25 @@ export default function CartDrawer() {
             </div>
 
             {items.length > 0 && (
-              <div className="border-t border-black/10 px-5 sm:px-6 py-5 sm:py-6 space-y-3.5 sm:space-y-4 bg-[var(--color-card-bg)]/80 shrink-0">
+              <div className="border-t border-black/10 px-4 sm:px-6 py-3.5 sm:py-6 space-y-2.5 sm:space-y-4 bg-[var(--color-card-bg)] shrink-0">
                 {/* Active Coupon Banner or Input Form */}
                 {activeCoupon ? (
-                  <div className="bg-[var(--color-card-bg)] border border-[var(--color-line)] p-3 text-xs flex justify-between items-center rounded-2xl shadow-2xs">
+                  <div className="bg-[var(--color-bg)] border border-[var(--color-line)] p-2.5 sm:p-3 text-xs flex justify-between items-center rounded-xl shadow-2xs">
                     <div>
-                      <p className="font-bold text-[var(--color-ink)] flex items-center gap-1">
+                      <p className="font-bold text-[var(--color-ink)] flex items-center gap-1 text-xs">
                         {activeCoupon.code} ({activeCoupon.label})
                       </p>
-                      <p className="text-[0.65rem] text-[var(--color-primary)]">Saved {formatPrice(activeCoupon.discountAmount)}</p>
+                      <p className="text-[0.62rem] text-[var(--color-primary)]">Saved {formatPrice(activeCoupon.discountAmount)}</p>
                     </div>
                     <button
                       onClick={handleRemoveCoupon}
-                      className="text-[0.65rem] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] font-bold uppercase underline cursor-pointer transition-colors"
+                      className="text-[0.62rem] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] font-bold uppercase underline cursor-pointer transition-colors"
                     >
                       Remove
                     </button>
                   </div>
                 ) : (
-                  <form onSubmit={handleApplyCoupon} className="space-y-1">
+                  <form onSubmit={handleApplyCoupon} className="space-y-0.5">
                     <div className="flex gap-2">
                       <input
                         value={couponInput}
@@ -161,23 +161,23 @@ export default function CartDrawer() {
                           if (couponMsg) setCouponMsg(null)
                         }}
                         placeholder="Promo code (e.g. LILY10)"
-                        className="flex-1 border border-black/15 bg-transparent px-3.5 py-2 text-xs uppercase focus:outline-none focus:border-[var(--color-primary)] font-mono min-w-0 rounded-xl"
+                        className="flex-1 border border-black/15 bg-transparent px-3 py-1.5 sm:py-2 text-xs uppercase focus:outline-none focus:border-[var(--color-primary)] font-mono min-w-0 rounded-lg"
                       />
-                      <button type="submit" className="btn-outline text-[0.68rem] uppercase font-bold text-[var(--color-ink)] px-3.5 shrink-0 rounded-xl cursor-pointer">
+                      <button type="submit" className="btn-outline text-[0.65rem] sm:text-[0.68rem] uppercase font-bold text-[var(--color-ink)] px-3 sm:px-3.5 py-1.5 sm:py-2 shrink-0 rounded-lg cursor-pointer">
                         Apply
                       </button>
                     </div>
-                    <p className="text-[0.62rem] text-[var(--color-ink-soft)] italic">Try code: <strong className="font-mono text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('LILY10')}>LILY10</strong></p>
+                    <p className="text-[0.58rem] sm:text-[0.62rem] text-[var(--color-ink-soft)] italic">Try code: <strong className="font-mono text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('LILY10')}>LILY10</strong></p>
                   </form>
                 )}
 
                 {!activeCoupon && couponMsg && (
-                  <div className={`text-[0.68rem] p-2 rounded-xl ${couponMsg.success ? 'bg-[#212B1C]/10 text-[#212B1C] font-bold' : 'bg-rose-100 text-rose-800'}`}>
+                  <div className={`text-[0.65rem] p-1.5 sm:p-2 rounded-lg ${couponMsg.success ? 'bg-[#212B1C]/10 text-[#212B1C] font-bold' : 'bg-rose-100 text-rose-800'}`}>
                     {couponMsg.message}
                   </div>
                 )}
 
-                <div className="space-y-2 text-xs sm:text-sm">
+                <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
                   <div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
                   {discountAmount > 0 && (
                     <div className="flex justify-between text-[var(--color-primary)] font-bold">
@@ -191,7 +191,7 @@ export default function CartDrawer() {
                       {shippingLoading ? (
                         <span className="text-[var(--color-ink-soft)] font-mono animate-pulse">Calculating...</span>
                       ) : shipping === 0 ? (
-                        <span className="text-[var(--color-primary)] font-mono">
+                        <span className="text-[var(--color-primary)] font-mono text-xs">
                           Free {isShippingEnabled && subtotal >= freeThreshold ? `(> ₹${freeThreshold.toLocaleString('en-IN')})` : ''}
                         </span>
                       ) : (
@@ -200,11 +200,11 @@ export default function CartDrawer() {
                     </span>
                   </div>
                   {isShippingEnabled && shipping > 0 && subtotal < freeThreshold && (
-                    <p className="text-[0.68rem] text-[var(--color-ink-soft)] text-center font-normal pt-1">
+                    <p className="text-[0.62rem] sm:text-[0.68rem] text-[var(--color-ink-soft)] text-center font-normal pt-0.5">
                       Add {formatPrice(freeThreshold - subtotal)} more for free shipping
                     </p>
                   )}
-                  <div className="flex justify-between font-[var(--font-display)] text-base sm:text-lg pt-2.5 border-t border-black/10 text-[var(--color-ink)] font-bold">
+                  <div className="flex justify-between font-[var(--font-display)] text-sm sm:text-lg pt-1.5 sm:pt-2.5 border-t border-black/10 text-[var(--color-ink)] font-bold">
                     <span>Total</span><span className="text-[var(--color-primary)]">{formatPrice(grandTotal)}</span>
                   </div>
                 </div>
@@ -212,7 +212,7 @@ export default function CartDrawer() {
                 {hasOutOfStockItems ? (
                   <button
                     disabled
-                    className="w-full bg-rose-600/10 border border-rose-300 text-rose-700/60 text-center py-3.5 uppercase text-xs font-bold tracking-widest rounded-full cursor-not-allowed"
+                    className="w-full bg-rose-600/10 border border-rose-300 text-rose-700/60 text-center py-2.5 sm:py-3.5 uppercase text-xs font-bold tracking-widest rounded-full cursor-not-allowed"
                   >
                     Checkout Blocked (Stock Issue)
                   </button>
@@ -220,18 +220,18 @@ export default function CartDrawer() {
                   <Link
                     to="/checkout"
                     onClick={closeCart}
-                    className="btn-primary w-full text-center block py-3.5 uppercase text-xs font-bold tracking-widest rounded-full shadow-md"
+                    className="btn-primary w-full text-center block py-2.5 sm:py-3.5 uppercase text-xs font-bold tracking-widest rounded-full shadow-md"
                   >
                     Checkout ({formatPrice(grandTotal)})
                   </Link>
                 )}
                 {hasOutOfStockItems && (
-                  <p className="text-[0.62rem] text-rose-800 bg-rose-50 border border-rose-200 p-2 rounded-xl text-center leading-tight">
+                  <p className="text-[0.58rem] sm:text-[0.62rem] text-rose-800 bg-rose-50 border border-rose-200 p-1.5 sm:p-2 rounded-lg text-center leading-tight">
                     <strong>Unable to Checkout:</strong> One or more items in your bag are out of stock. Please remove them to proceed.
                   </p>
                 )}
-                <div className="p-2.5 bg-[var(--color-card-bg)] border border-[var(--color-line)] rounded-xl text-[0.63rem] text-[var(--color-ink-soft)] text-center leading-normal space-y-0.5">
-                  <p className="font-semibold text-[var(--color-ink)] uppercase tracking-wider text-[0.6rem]">
+                <div className="p-2 sm:p-2.5 bg-[var(--color-bg)] border border-[var(--color-line)] rounded-lg text-[0.58rem] sm:text-[0.63rem] text-[var(--color-ink-soft)] text-center leading-tight space-y-0.5">
+                  <p className="font-semibold text-[var(--color-ink)] uppercase tracking-wider text-[0.56rem] sm:text-[0.6rem]">
                     Cancellation Policy
                   </p>
                   <p>
