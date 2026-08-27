@@ -43,6 +43,7 @@ function PageTransition({ children }) {
 
 export default function App() {
   const location = useLocation()
+  const isCheckoutPage = location.pathname === '/checkout'
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -78,7 +79,7 @@ export default function App() {
           </AnimatePresence>
         </Suspense>
       </main>
-      <Footer />
+      {!isCheckoutPage && <Footer />}
     </div>
   )
 }

@@ -466,8 +466,115 @@ export default function Checkout() {
     )
   }
 
+  const renderOrderSummary = (isMobile = false) => (
+    <div className={`bg-[var(--color-card-bg)]/80 backdrop-blur-md p-5 sm:p-7 border border-black/10 rounded-3xl space-y-4 sm:space-y-5 w-full luxury-shadow-md ${!isMobile ? 'lg:sticky lg:top-28' : ''}`}>
+      <p className="eyebrow mb-2">Order Summary</p>
+      <div className="space-y-3 sm:space-y-4 max-h-56 overflow-y-auto pr-1 scrollbar-thin">
+        {items.map((item) => (
+          <div key={item.id} className="flex gap-3 items-center">
+            <img src={item.image} alt={item.title} className="w-14 h-16 object-cover shrink-0 rounded-xl bg-[var(--color-card-bg)] shadow-2xs" />
+            <div className="flex-1 min-w-0 text-xs">
+              <p className="font-bold leading-tight truncate text-[var(--color-ink)]">{item.title}</p>
+              <p className="text-[var(--color-ink-soft)] mt-0.5">Qty: {item.qty}</p>
+            </div>
+            <p className="text-xs font-bold text-[var(--color-primary)] shrink-0 font-sans">{formatPrice(item.price * item.qty)}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Promo Code Entry Box */}
+      <div className="pt-3.5 border-t border-black/10 space-y-2">
+        {activeCoupon ? (
+          <div className="bg-[var(--color-card-bg)] border border-[var(--color-line)] p-3 text-xs flex justify-between items-center rounded-2xl shadow-2xs">
+            <div>
+              <p className="font-bold text-[var(--color-ink)] flex items-center gap-1">
+                {activeCoupon.code}
+              </p>
+              <p className="text-[0.68rem] text-[var(--color-primary)]">{activeCoupon.label}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleRemoveCoupon}
+              className="text-[0.65rem] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] font-bold uppercase underline cursor-pointer transition-colors"
+            >
+              Remove
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            <div className="flex gap-2">
+              <input
+                value={couponInput}
+                onChange={(e) => {
+                  setCouponInput(e.target.value)
+                  if (couponMsg) setCouponMsg(null)
+                }}
+                placeholder="Promo code"
+                className="flex-1 border border-black/15 bg-transparent rounded-full px-4 py-2 text-xs focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleApplyCoupon}
+                className="btn-primary text-[0.65rem] py-2 px-4 rounded-full uppercase tracking-wider font-bold cursor-pointer"
+              >
+                Apply
+              </button>
+            </div>
+            <p className="text-[0.62rem] text-[var(--color-ink-soft)]">
+              Try code:{' '}
+              <span
+                className="font-mono font-bold text-[var(--color-primary)] cursor-pointer hover:underline"
+                onClick={() => setCouponInput('LILY10')}
+              >
+                LILY10
+              </span>
+            </p>
+          </div>
+        )}
+
+        {!activeCoupon && couponMsg && (
+          <div className={`text-[0.68rem] p-2 rounded-xl ${couponMsg.success ? 'bg-[#212B1C]/10 text-[#212B1C] font-bold' : 'bg-rose-100 text-rose-800'}`}>
+            {couponMsg.message}
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2 text-xs pt-3 border-t border-black/10">
+        <div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
+        {discountAmount > 0 && (
+          <div className="flex justify-between text-[var(--color-primary)] font-bold">
+            <span>Promo Discount ({activeCoupon?.code})</span>
+            <span>-{formatPrice(discountAmount)}</span>
+          </div>
+        )}
+        <div className="flex justify-between items-center">
+          <span>Shipping Charge</span>
+          <span className="font-bold">
+            {shippingLoading ? (
+              <span className="text-[var(--color-ink-soft)] font-mono animate-pulse">Calculating...</span>
+            ) : shipping === 0 ? (
+              <span className="text-[var(--color-primary)] font-mono">
+                FREE {isShippingEnabled && subtotal >= freeThreshold ? `(> ₹${freeThreshold.toLocaleString('en-IN')})` : ''}
+              </span>
+            ) : (
+              formatPrice(shipping)
+            )}
+          </span>
+        </div>
+        {isShippingEnabled && shipping > 0 && subtotal < freeThreshold && (
+          <p className="text-[0.68rem] text-[var(--color-ink-soft)] text-center font-normal pt-1">
+            Add {formatPrice(freeThreshold - subtotal)} more for free shipping
+          </p>
+        )}
+        <div className="flex justify-between font-[var(--font-display)] text-base sm:text-lg font-bold pt-3 border-t border-black/10 text-[var(--color-ink)]">
+          <span>Total Amount</span><span className="text-[var(--color-primary)]">{formatPrice(total)}</span>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pt-20 sm:pt-28 pb-16 sm:pb-24 space-y-6 sm:space-y-8 w-full max-w-full">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pt-20 sm:pt-28 pb-28 lg:pb-24 space-y-6 sm:space-y-8 w-full max-w-full">
       <Reveal>
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-[var(--font-display)] font-bold uppercase tracking-tight">Checkout</h1>
 
@@ -508,7 +615,7 @@ export default function Checkout() {
       </Reveal>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_390px] gap-8 lg:gap-14 items-start">
-        <form onSubmit={handlePay} className="space-y-6 sm:space-y-8">
+        <form id="checkout-form" onSubmit={handlePay} className="space-y-6 sm:space-y-8">
           <div className="bg-[var(--color-card-bg)]/80 backdrop-blur-sm p-5 sm:p-7 border border-black/10 rounded-3xl luxury-shadow-sm space-y-4">
             <p className="eyebrow mb-1 sm:mb-2">Contact Information</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 text-xs">
@@ -701,6 +808,13 @@ export default function Checkout() {
               </div>
             </div>
           </div>
+
+          {/* MOBILE ONLY: Order Summary placed upside before Payment Method */}
+          <div className="lg:hidden">
+            {renderOrderSummary(true)}
+          </div>
+
+          {/* Payment Method */}
           <div className="bg-[var(--color-card-bg)]/80 backdrop-blur-sm p-5 sm:p-7 border border-black/10 rounded-3xl luxury-shadow-sm space-y-3">
             <p className="eyebrow mb-1">Payment Method</p>
             <div className="border border-black/10 rounded-2xl px-4 py-3.5 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[var(--color-bg)]/40">
@@ -709,29 +823,16 @@ export default function Checkout() {
             </div>
           </div>
 
-          {/* Cancellation Policy Disclaimer */}
-          <div className="p-4 sm:p-5 bg-[var(--color-card-bg)] border border-[var(--color-line)] text-[0.7rem] sm:text-[0.72rem] text-[var(--color-ink-soft)] leading-relaxed rounded-2xl space-y-2 shadow-2xs">
-            <div className="font-bold uppercase tracking-wider text-[var(--color-primary)] text-xs">
-              Studio Cancellation & Refund Policy
-            </div>
-            <p className="text-[0.68rem] sm:text-[0.7rem]">
-              • <strong>Online Self-Cancellation:</strong> You can cancel your order before handcrafting begins. Customer self-cancellation incurs a <strong>3% payment processing fee</strong> (97% net amount is refunded to your original payment method).
-            </p>
-            <p className="text-[0.68rem] sm:text-[0.7rem]">
-              • <strong>Studio Admin Cancellation:</strong> If cancelled by Studio Admin, a <strong>100% full refund</strong> is issued immediately with 0% deduction.
-            </p>
-          </div>
-
-          {/* Mandatory Handmade Product Terms & Conditions */}
+          {/* Shortened Terms & Conditions */}
           <div
             data-error={formErrors.terms ? 'true' : undefined}
-            className={`p-4 sm:p-5 bg-[var(--color-card-bg)]/80 border rounded-3xl space-y-2 transition-colors ${
+            className={`p-3.5 sm:p-4 bg-[var(--color-card-bg)]/80 border rounded-2xl sm:rounded-3xl space-y-1.5 transition-colors ${
               formErrors.terms ? 'border-black bg-black/5 ring-1 ring-black/40' : 'border-black/10'
             }`}
           >
             <label
               htmlFor="handmadeTermsCheckbox"
-              className="flex items-start gap-3 text-xs text-[var(--color-ink)] cursor-pointer select-none"
+              className="flex items-center gap-2.5 text-xs text-[var(--color-ink)] cursor-pointer select-none"
             >
               <input
                 type="checkbox"
@@ -746,10 +847,10 @@ export default function Checkout() {
                     setFormErrors((prev) => ({ ...prev, terms: '' }))
                   }
                 }}
-                className="mt-0.5 w-4 h-4 rounded border-black/30 text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer shrink-0"
+                className="w-4 h-4 rounded border-black/30 text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer shrink-0"
               />
-              <span className="leading-snug font-medium">
-                I understand and agree that handmade products may have slight variations from the product images due to their handmade nature.{' '}
+              <span className="leading-snug text-xs font-medium">
+                I agree to the{' '}
                 <button
                   type="button"
                   onClick={(e) => {
@@ -757,9 +858,9 @@ export default function Checkout() {
                     e.stopPropagation()
                     setShowTermsModal(true)
                   }}
-                  className="text-[var(--color-primary)] underline font-bold hover:opacity-80 inline-block cursor-pointer"
+                  className="text-[var(--color-primary)] underline font-bold hover:opacity-80 inline cursor-pointer"
                 >
-                  View Terms & Conditions
+                  Terms & Conditions
                 </button>
               </span>
             </label>
@@ -771,106 +872,43 @@ export default function Checkout() {
             )}
           </div>
 
-          <button type="submit" disabled={processing} className="btn-primary w-full py-4 text-xs uppercase tracking-widest font-bold disabled:opacity-60 rounded-full shadow-md cursor-pointer">
+          {/* Desktop Only Standard Pay Button */}
+          <button
+            type="submit"
+            disabled={processing}
+            className="hidden lg:block btn-primary w-full py-4 text-xs uppercase tracking-widest font-bold disabled:opacity-60 rounded-full shadow-md cursor-pointer"
+          >
             {processing ? 'Processing Payment & Saving Order...' : `Pay ${formatPrice(total)} Now`}
           </button>
         </form>
 
-        <Reveal delay={0.1}>
-          <div className="bg-[var(--color-card-bg)]/80 backdrop-blur-md p-5 sm:p-7 lg:sticky lg:top-28 border border-black/10 rounded-3xl space-y-4 sm:space-y-5 w-full luxury-shadow-md">
-          <p className="eyebrow mb-2">Order Summary</p>
-          <div className="space-y-3 sm:space-y-4 max-h-56 overflow-y-auto pr-1 scrollbar-thin">
-            {items.map((item) => (
-              <div key={item.id} className="flex gap-3 items-center">
-                <img src={item.image} alt={item.title} className="w-14 h-16 object-cover shrink-0 rounded-xl bg-[var(--color-card-bg)] shadow-2xs" />
-                <div className="flex-1 min-w-0 text-xs">
-                  <p className="font-bold leading-tight truncate text-[var(--color-ink)]">{item.title}</p>
-                  <p className="text-[var(--color-ink-soft)] mt-0.5">Qty: {item.qty}</p>
-                </div>
-                <p className="text-xs font-bold text-[var(--color-primary)] shrink-0 font-sans">{formatPrice(item.price * item.qty)}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Promo Code Entry Box */}
-          <div className="pt-3.5 border-t border-black/10 space-y-2">
-            {activeCoupon ? (
-              <div className="bg-[var(--color-card-bg)] border border-[var(--color-line)] p-3 text-xs flex justify-between items-center rounded-2xl shadow-2xs">
-                <div>
-                  <p className="font-bold text-[var(--color-ink)] flex items-center gap-1">
-                    {activeCoupon.code}
-                  </p>
-                  <p className="text-[0.68rem] text-[var(--color-primary)]">{activeCoupon.label}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRemoveCoupon}
-                  className="text-[0.65rem] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] font-bold uppercase underline cursor-pointer transition-colors"
-                >
-                  Remove
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleApplyCoupon} className="space-y-1.5">
-                <div className="flex gap-2">
-                  <input
-                    value={couponInput}
-                    onChange={(e) => {
-                      setCouponInput(e.target.value)
-                      if (couponMsg) setCouponMsg(null)
-                    }}
-                    placeholder="Promo code"
-                    className="flex-1 border border-black/15 bg-transparent rounded-full px-4 py-2 text-xs focus:outline-none"
-                  />
-                  <button type="submit" className="btn-primary text-[0.65rem] py-2 px-4 rounded-full uppercase tracking-wider font-bold cursor-pointer">
-                    Apply
-                  </button>
-                </div>
-                <p className="text-[0.62rem] text-[var(--color-ink-soft)]">Try code: <span className="font-mono font-bold text-[var(--color-primary)] cursor-pointer" onClick={() => setCouponInput('LILY10')}>LILY10</span></p>
-              </form>
-            )}
-
-            {!activeCoupon && couponMsg && (
-              <div className={`text-[0.68rem] p-2 rounded-xl ${couponMsg.success ? 'bg-[#212B1C]/10 text-[#212B1C] font-bold' : 'bg-rose-100 text-rose-800'}`}>
-                {couponMsg.message}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-2 text-xs pt-3 border-t border-black/10">
-            <div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
-            {discountAmount > 0 && (
-              <div className="flex justify-between text-[var(--color-primary)] font-bold">
-                <span>Promo Discount ({activeCoupon?.code})</span>
-                <span>-{formatPrice(discountAmount)}</span>
-              </div>
-            )}
-            <div className="flex justify-between items-center">
-              <span>Shipping Charge</span>
-              <span className="font-bold">
-                {shippingLoading ? (
-                  <span className="text-[var(--color-ink-soft)] font-mono animate-pulse">Calculating...</span>
-                ) : shipping === 0 ? (
-                  <span className="text-[var(--color-primary)] font-mono">
-                    FREE {isShippingEnabled && subtotal >= freeThreshold ? `(> ₹${freeThreshold.toLocaleString('en-IN')})` : ''}
-                  </span>
-                ) : (
-                  formatPrice(shipping)
-                )}
-              </span>
-            </div>
-            {isShippingEnabled && shipping > 0 && subtotal < freeThreshold && (
-              <p className="text-[0.68rem] text-[var(--color-ink-soft)] text-center font-normal pt-1">
-                Add {formatPrice(freeThreshold - subtotal)} more for free shipping
-              </p>
-            )}
-            <div className="flex justify-between font-[var(--font-display)] text-base sm:text-lg font-bold pt-3 border-t border-black/10 text-[var(--color-ink)]">
-              <span>Total Amount</span><span className="text-[var(--color-primary)]">{formatPrice(total)}</span>
-            </div>
-          </div>
+        {/* DESKTOP ONLY: Sidebar Order Summary */}
+        <div className="hidden lg:block">
+          <Reveal delay={0.1}>
+            {renderOrderSummary(false)}
+          </Reveal>
         </div>
-      </Reveal>
-    </div>
+      </div>
+
+      {/* MOBILE ONLY: Sticky Pay Button Bar Fixed to Bottom */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--color-bg)]/95 backdrop-blur-md border-t border-black/10 p-3 sm:p-4 px-4 pb-[max(0.85rem,env(safe-area-inset-bottom))] shadow-[0_-8px_20px_rgba(0,0,0,0.08)] lg:hidden">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-3">
+          <div className="leading-tight">
+            <span className="text-[0.62rem] uppercase font-mono text-[var(--color-ink-soft)] block">Total Due</span>
+            <span className="font-[var(--font-display)] text-lg font-bold text-[var(--color-primary)]">
+              {formatPrice(total)}
+            </span>
+          </div>
+          <button
+            type="submit"
+            form="checkout-form"
+            disabled={processing}
+            className="btn-primary flex-1 py-3.5 px-5 text-xs uppercase tracking-widest font-bold disabled:opacity-60 rounded-full shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            {processing ? 'Processing...' : `Pay ${formatPrice(total)} Now`}
+          </button>
+        </div>
+      </div>
 
       <AuthModal
         isOpen={isAuthModalOpen}
