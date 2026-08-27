@@ -149,7 +149,7 @@ export default function Shop() {
         </aside>
 
         <div>
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 gap-y-8 sm:gap-y-12">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-6 gap-y-5 sm:gap-y-12">
             {filtered.map((p, i) => (
               <ProductCard key={p.id} product={p} index={i} />
             ))}
