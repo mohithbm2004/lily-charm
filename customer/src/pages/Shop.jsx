@@ -49,14 +49,29 @@ export default function Shop() {
     return list
   }, [products, activeCategory, sort, maxPrice, inStockOnly])
 
-  const FilterPanel = (
+  const renderFilterPanel = (isMobile = false) => (
     <div className="space-y-6 sm:space-y-8">
       <div>
-        <p className="eyebrow mb-3 sm:mb-4">Category</p>
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <p className="eyebrow">Category</p>
+          {activeCategory !== 'all' && (
+            <button
+              onClick={() => setParams({})}
+              className="text-[0.68rem] text-[var(--color-primary)] font-bold hover:underline uppercase tracking-wider"
+            >
+              Reset
+            </button>
+          )}
+        </div>
         <div className="space-y-2">
           <button
-            onClick={() => { setParams({}); setFiltersOpen(false); }}
-            className={`block text-xs sm:text-sm text-left ${activeCategory === 'all' ? 'text-[var(--color-primary)] font-bold' : 'text-[var(--color-ink-soft)]'}`}
+            onClick={() => {
+              setParams({})
+              if (!isMobile) setFiltersOpen(false)
+            }}
+            className={`block text-xs sm:text-sm text-left transition-colors cursor-pointer ${
+              activeCategory === 'all' ? 'text-[var(--color-primary)] font-bold' : 'text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
+            }`}
           >
             All Pieces
           </button>
@@ -65,8 +80,13 @@ export default function Shop() {
             return (
               <button
                 key={catId}
-                onClick={() => { setParams({ category: catId }); setFiltersOpen(false); }}
-                className={`block text-xs sm:text-sm text-left ${activeCategory === catId ? 'text-[var(--color-primary)] font-bold' : 'text-[var(--color-ink-soft)]'}`}
+                onClick={() => {
+                  setParams({ category: catId })
+                  if (!isMobile) setFiltersOpen(false)
+                }}
+                className={`block text-xs sm:text-sm text-left transition-colors cursor-pointer ${
+                  activeCategory === catId ? 'text-[var(--color-primary)] font-bold' : 'text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
+                }`}
               >
                 {c.title}
               </button>
@@ -93,10 +113,38 @@ export default function Shop() {
       <div>
         <p className="eyebrow mb-3 sm:mb-4">Availability</p>
         <label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer">
-          <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="accent-[var(--color-primary)] cursor-pointer" />
-          In stock only
+          <input
+            type="checkbox"
+            checked={inStockOnly}
+            onChange={(e) => setInStockOnly(e.target.checked)}
+            className="accent-[var(--color-primary)] cursor-pointer w-4 h-4 rounded"
+          />
+          <span>In stock only</span>
         </label>
       </div>
+
+      {isMobile && (
+        <div className="pt-6 border-t border-black/10 space-y-2.5">
+          <button
+            onClick={() => setFiltersOpen(false)}
+            className="btn-primary w-full py-3.5 rounded-xl text-xs font-bold tracking-[0.16em] uppercase flex items-center justify-center gap-2 shadow-md cursor-pointer"
+          >
+            Apply Filters ({filtered.length} {filtered.length === 1 ? 'Piece' : 'Pieces'})
+          </button>
+          {(activeCategory !== 'all' || selectedMaxPrice !== null || inStockOnly) && (
+            <button
+              onClick={() => {
+                setParams({})
+                setSelectedMaxPrice(null)
+                setInStockOnly(false)
+              }}
+              className="btn-outline w-full py-2.5 rounded-xl text-[0.7rem] font-bold uppercase tracking-wider text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] cursor-pointer"
+            >
+              Clear All Filters
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 
@@ -125,27 +173,23 @@ export default function Shop() {
         </Reveal>
       </div>
 
-      {/* Mobile Filters Bar */}
-      <div className="flex items-center justify-between mb-6 md:hidden gap-3">
+      {/* Mobile Filters Bar (Circled duplicate Featured sort removed) */}
+      <div className="flex items-center justify-between mb-6 md:hidden">
         <button
           onClick={() => setFiltersOpen(true)}
-          className="flex items-center gap-2 text-xs sm:text-sm border border-black/15 bg-[var(--color-card-bg)] rounded-xl px-4 py-2 font-bold uppercase tracking-wider shadow-2xs"
+          className="flex items-center gap-2 text-xs sm:text-sm border border-black/15 bg-[var(--color-card-bg)] rounded-xl px-4 py-2.5 font-bold uppercase tracking-wider shadow-2xs cursor-pointer"
         >
           <SlidersHorizontal size={14} /> Filters
+          {(activeCategory !== 'all' || selectedMaxPrice !== null || inStockOnly) && (
+            <span className="w-2 h-2 rounded-full bg-[var(--color-primary)]" />
+          )}
         </button>
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          className="text-xs sm:text-sm border border-black/15 rounded-xl px-3 py-2 bg-[var(--color-bg)] font-semibold"
-        >
-          {sortOptions.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-        </select>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[230px_1fr] gap-8 md:gap-12 items-start">
         {/* Desktop Sidebar Filter */}
         <aside className="hidden md:block sticky top-[190px] bg-[var(--color-card-bg)] p-6 rounded-2xl luxury-shadow-sm">
-          {FilterPanel}
+          {renderFilterPanel(false)}
         </aside>
 
         <div>
@@ -159,7 +203,7 @@ export default function Shop() {
             <div className="text-center py-16 border border-dashed border-black/20 rounded-3xl p-8 bg-[var(--color-card-bg)]/40">
               <p className="text-sm text-[var(--color-ink-soft)] font-medium">No botanical creations match those criteria.</p>
               <button
-                onClick={() => { setParams({}); setMaxPrice(12000); setInStockOnly(false); }}
+                onClick={() => { setParams({}); setSelectedMaxPrice(null); setInStockOnly(false); }}
                 className="mt-4 btn-outline text-xs rounded-full cursor-pointer"
               >
                 Reset Filters
@@ -169,20 +213,22 @@ export default function Shop() {
         </div>
       </div>
 
-      {/* Mobile Filter Modal */}
+      {/* Mobile Filter Modal with Apply Button */}
       {filtersOpen && (
-        <div className="fixed inset-0 z-[1100] bg-[var(--color-bg)] p-5 sm:p-6 overflow-y-auto md:hidden rounded-t-3xl shadow-2xl">
-          <div className="flex justify-between items-center mb-6 pb-4 border-b border-black/10">
-            <p className="font-[var(--font-display)] text-xl font-bold uppercase">Filter Creations</p>
-            <button
-              onClick={() => setFiltersOpen(false)}
-              className="p-1.5 text-[var(--color-ink)] rounded-full hover:bg-black/5"
-              aria-label="Close filters"
-            >
-              <X size={22} />
-            </button>
+        <div className="fixed inset-0 z-[1100] bg-[var(--color-bg)] p-5 sm:p-6 overflow-y-auto md:hidden rounded-t-3xl shadow-2xl flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-black/10">
+              <p className="font-[var(--font-display)] text-xl font-bold uppercase">Filter Creations</p>
+              <button
+                onClick={() => setFiltersOpen(false)}
+                className="p-1.5 text-[var(--color-ink)] rounded-full hover:bg-black/5 cursor-pointer"
+                aria-label="Close filters"
+              >
+                <X size={22} />
+              </button>
+            </div>
+            {renderFilterPanel(true)}
           </div>
-          {FilterPanel}
         </div>
       )}
     </div>
