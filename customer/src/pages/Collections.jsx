@@ -89,7 +89,7 @@ export default function Collections() {
   const { collections = [], products: liveShopProducts = [] } = useStudio()
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-2.5 sm:pt-4 md:pt-6 pb-16 sm:pb-24 space-y-8 sm:space-y-12 w-full max-w-full">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-12 sm:pt-16 pb-16 sm:pb-24 space-y-12 sm:space-y-16 w-full max-w-full">
       {/* Header */}
       <Reveal>
         <p className="eyebrow mb-1.5 sm:mb-2 font-[var(--font-button)]">Lily Charm Collections</p>

@@ -207,7 +207,7 @@ export default function Shop() {
   const pageEyebrow = activeCategory !== 'all' ? 'COLLECTION ARCHIVE' : 'STUDIO CATALOG'
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-3 sm:pt-6 md:pt-8 pb-16 sm:pb-24 w-full max-w-full">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-6 sm:pt-8 md:pt-10 pb-16 sm:pb-24 w-full max-w-full">
       <div className="sticky top-[89px] md:top-[105px] z-20 bg-[var(--color-bg)] opacity-100 py-2.5 sm:py-3.5 mb-4 sm:mb-6 border-b border-black/10 transition-all">
         <Reveal>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">

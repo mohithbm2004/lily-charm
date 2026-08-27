@@ -3,7 +3,7 @@ import { Sparkles, ShieldCheck, Heart, AlertCircle, RefreshCw, Truck } from 'luc
 
 export default function Terms() {
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-10 pt-6 sm:pt-8 pb-16 sm:pb-20 text-[var(--color-ink)]">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-10 pt-14 sm:pt-18 pb-16 sm:pb-24 text-[var(--color-ink)]">
       <Reveal>
         <div className="text-center space-y-3 mb-12 sm:mb-16">
           <div className="inline-flex items-center gap-1.5 text-[var(--color-primary)] text-xs font-bold uppercase tracking-widest">

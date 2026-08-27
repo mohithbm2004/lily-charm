@@ -4,7 +4,7 @@ import { Sparkles, Heart } from 'lucide-react'
 
 export default function About() {
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-10 pt-4 sm:pt-5 md:pt-6 pb-16 sm:pb-24 w-full max-w-full">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-10 pt-10 sm:pt-12 md:pt-16 pb-16 sm:pb-24 w-full max-w-full">
       {/* Header Title */}
       <Reveal>
         <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14 space-y-2 sm:space-y-3">
