@@ -40,7 +40,7 @@ function CollectionHero({ collection = {}, isEven = true }) {
   return (
     <div className="space-y-3 w-full max-w-full">
       <div
-        className={`relative overflow-hidden border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl transition-all duration-500 shadow-sm w-full ${
+        className={`relative overflow-hidden bg-[var(--color-card-bg)] rounded-3xl transition-all duration-500 luxury-shadow-md w-full ${
           isPortrait
             ? `max-w-full md:max-w-[420px] h-[380px] xs:h-[440px] sm:h-[500px] md:h-[580px] ${isEven ? 'md:ml-auto md:mr-0' : 'md:ml-0 md:mr-auto'}`
             : 'h-[260px] xs:h-[300px] sm:h-[340px] md:h-[400px]'
@@ -72,8 +72,8 @@ function CollectionHero({ collection = {}, isEven = true }) {
               key={i}
               type="button"
               onClick={() => setActiveImg(img)}
-              className={`w-11 h-11 sm:w-12 sm:h-12 shrink-0 border rounded-xl overflow-hidden transition-all ${
-                currentBanner === img ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/30 scale-105' : 'border-[var(--color-line)] opacity-60 hover:opacity-100'
+              className={`w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-xl overflow-hidden transition-all ${
+                currentBanner === img ? 'ring-2 ring-[var(--color-primary)] scale-105' : 'opacity-60 hover:opacity-100'
               }`}
             >
               <img src={img} alt={`Series thumbnail ${i + 1}`} className="w-full h-full object-cover rounded-xl" />

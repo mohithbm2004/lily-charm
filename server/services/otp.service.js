@@ -41,7 +41,7 @@ export async function sendOtpEmail(email, name, otp, isReset = false) {
   return await sendEmail({
     type: isReset ? 'reset-password' : 'otp',
     to: email,
-    subject: isReset ? `🔑 ${otp} is your Lily Charm Password Reset Code` : `🔐 ${otp} is your Lily Charm Verification Code`,
+    subject: isReset ? `${otp} is your Lily Charm Password Reset Code` : `${otp} is your Lily Charm Verification Code`,
     text: `${heading}: ${otp}. Valid for 5 minutes.`,
     html,
   })
@@ -61,7 +61,7 @@ export async function sendPasswordResetEmail(email, name, resetUrl) {
   return await sendEmail({
     type: 'reset-password',
     to: email,
-    subject: `🔑 Reset Your Lily Charm Password`,
+    subject: `Reset Your Lily Charm Password`,
     text: `Hello ${name || 'Valued Customer'}, please reset your Lily Charm password by visiting: ${resetUrl} (Valid for 15 minutes).`,
     html,
   })
@@ -80,7 +80,7 @@ export async function sendWelcomeEmail(email, name) {
   return await sendEmail({
     type: 'welcome',
     to: email,
-    subject: `🌸 Welcome to Lily Charm Velvet Floral Studio!`,
+    subject: `Welcome to Lily Charm Floral Atelier`,
     text: `Welcome to Lily Charm, ${name}! Your account is active.`,
     html,
   })

@@ -3,71 +3,98 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tax Invoice - Lily Charm</title>
-  <style>
-    body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FAF7F2; color: #2B2625; }
-    .container { max-width: 600px; margin: 20px auto; background-color: #FFFFFF; border: 1px solid #E6DDD0; border-radius: 8px; overflow: hidden; }
-    .header { background-color: #212B1C; color: #FFFFFF; text-align: center; padding: 30px 20px; }
-    .header h1 { margin: 0; font-size: 26px; letter-spacing: 3px; font-weight: 300; text-transform: uppercase; color: #FAF7F2; }
-    .content { padding: 32px 24px; }
-    .invoice-title { font-size: 20px; color: #212B1C; margin-top: 0; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 2px solid #212B1C; padding-bottom: 8px; }
-    .meta-table { width: 100%; font-size: 13px; margin: 16px 0; border-collapse: collapse; }
-    .meta-table td { padding: 4px 0; vertical-align: top; }
-    .table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
-    .table th { background-color: #FAF7F2; border: 1px solid #E6DDD0; padding: 8px; text-align: left; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; color: #736B65; }
-    .table td { border: 1px solid #E6DDD0; padding: 10px 8px; }
-    .footer { border-top: 1px solid #E6DDD0; background-color: #FAF7F2; padding: 20px; text-align: center; font-size: 11px; color: #8C847D; }
-  </style>
+  <title>Tax Invoice — Lily Charm</title>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>LILY CHARM</h1>
-      <p style="margin: 4px 0 0; font-size: 11px; letter-spacing: 2px; color: #E8DCC4;">Official Tax Invoice & Payment Receipt</p>
-    </div>
-    <div class="content">
-      <h2 class="invoice-title">Tax Invoice</h2>
-      <table class="meta-table">
-        <tr>
-          <td><strong>Invoice Date:</strong> {{invoiceDate}}</td>
-          <td style="text-align: right;"><strong>Invoice No:</strong> INV-{{orderNumber}}</td>
-        </tr>
-        <tr>
-          <td><strong>Billed To:</strong> {{customerName}}</td>
-          <td style="text-align: right;"><strong>Payment Method:</strong> {{paymentMethod}}</td>
-        </tr>
-        <tr>
-          <td><strong>Email:</strong> {{customerEmail}}</td>
-          <td style="text-align: right;"><strong>Payment ID:</strong> <span style="font-family: monospace;">{{paymentId}}</span></td>
-        </tr>
-      </table>
-
-      <table class="table">
-        <thead>
+<body style="margin: 0; padding: 0; background-color: #FAF7F2; color: #212B1C; font-family: 'Inter', Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #FAF7F2; padding: 32px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #FAF7F2; border: 1px solid #3D5E33; border-collapse: collapse;">
+          
+          <!-- Header -->
           <tr>
-            <th>Description</th>
-            <th style="text-align: center;">Qty</th>
-            <th style="text-align: right;">Amount</th>
+            <td align="center" style="padding: 36px 24px 28px; background-color: #FAF7F2; border-bottom: 1px solid #3D5E33;">
+              <div style="font-family: 'Cormorant Garamond', Georgia, Times, serif; font-size: 26px; font-weight: 600; letter-spacing: 4px; color: #212B1C; text-transform: uppercase; line-height: 1.2;">LILY CHARM</div>
+              <div style="font-family: 'Inter', Arial, sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 3px; color: #4F7942; text-transform: uppercase; margin-top: 6px;">FLORAL CREATIONS</div>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {{itemsHtml}}
-        </tbody>
-      </table>
 
-      <div style="float: right; width: 220px; font-size: 13px; margin-top: 10px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span>Subtotal:</span> <span>₹{{subtotal}}</span></div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span>Discount:</span> <span>-₹{{discount}}</span></div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span>Shipping:</span> <span>₹{{shipping}}</span></div>
-        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 15px; color: #212B1C; border-top: 2px solid #212B1C; padding-top: 6px; margin-top: 6px;"><span>Total:</span> <span>₹{{grandTotal}}</span></div>
-      </div>
-      <div style="clear: both;"></div>
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 36px 32px; background-color: #FAF7F2;">
+              <h1 style="font-family: 'Cormorant Garamond', Georgia, Times, serif; font-size: 22px; font-weight: 600; color: #212B1C; margin: 0 0 20px 0; letter-spacing: 0.5px; text-transform: uppercase; border-bottom: 1px solid #3D5E33; padding-bottom: 8px;">Tax Invoice</h1>
+              
+              <!-- Meta Table -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size: 13px; color: #212B1C; margin-bottom: 24px; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 4px 0; color: #4F7942;"><strong>Invoice Date:</strong> {{invoiceDate}}</td>
+                  <td align="right" style="padding: 4px 0; color: #4F7942;"><strong>Invoice No:</strong> INV-{{orderNumber}}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; color: #212B1C;"><strong>Billed To:</strong> {{customerName}}</td>
+                  <td align="right" style="padding: 4px 0; color: #212B1C;"><strong>Payment Method:</strong> {{paymentMethod}}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; color: #212B1C;"><strong>Email:</strong> {{customerEmail}}</td>
+                  <td align="right" style="padding: 4px 0; color: #212B1C;"><strong>Payment ID:</strong> <span style="font-family: monospace;">{{paymentId}}</span></td>
+                </tr>
+              </table>
 
-      <p style="font-size: 12px; color: #736B65; margin-top: 30px; text-align: center;">This is a computer-generated tax invoice for your purchase at Lily Charm Atelier.</p>
-    </div>
-    <div class="footer">
-      <p>© 2026 Lily Charm Studio. Registered Tax Invoice.</p>
-    </div>
-  </div>
+              <!-- Items Table -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; margin-bottom: 24px;">
+                <thead>
+                  <tr style="border-bottom: 1px solid #3D5E33;">
+                    <th align="left" style="padding: 10px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #4F7942; font-weight: 700;">Description</th>
+                    <th align="center" style="padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #4F7942; font-weight: 700; width: 50px;">Qty</th>
+                    <th align="right" style="padding: 10px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #4F7942; font-weight: 700; width: 90px;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{itemsHtml}}
+                </tbody>
+              </table>
+
+              <!-- Invoice Summary -->
+              <div style="border-top: 1px solid #3D5E33; padding-top: 16px; margin-bottom: 28px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size: 13px; color: #212B1C; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 4px 0; color: #4F7942;">Subtotal</td>
+                    <td align="right" style="padding: 4px 0; font-weight: 600; color: #212B1C;">₹{{subtotal}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 4px 0; color: #4F7942;">Discount</td>
+                    <td align="right" style="padding: 4px 0; font-weight: 600; color: #156E1F;">-₹{{discount}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 4px 0; color: #4F7942;">Shipping</td>
+                    <td align="right" style="padding: 4px 0; font-weight: 600; color: #212B1C;">₹{{shipping}}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="padding-top: 8px;"><div style="border-top: 1px solid #3D5E33;"></div></td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 12px 0 0 0; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 16px; font-weight: 700; color: #212B1C; text-transform: uppercase; letter-spacing: 1px;">Total Billed</td>
+                    <td align="right" style="padding: 12px 0 0 0; font-size: 18px; font-weight: 700; color: #212B1C;">₹{{grandTotal}}</td>
+                  </tr>
+                </table>
+              </div>
+
+              <p style="font-size: 12px; color: #4F7942; text-align: center; margin: 24px 0 0 0;">This is an official computer-generated tax invoice for your purchase at Lily Charm Studio.</p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="background-color: #212B1C; color: #FAF7F2; padding: 28px 24px; font-size: 11px; line-height: 1.6;">
+              <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 14px; letter-spacing: 2px; color: #FAF7F2; margin-bottom: 8px; font-weight: 600;">LILY CHARM FLORAL ATELIER</div>
+              <div style="color: #FAF7F2; opacity: 0.85;">Bengaluru, Karnataka, India • support@lilycharm.in</div>
+              <div style="color: #FAF7F2; opacity: 0.6; margin-top: 6px;">© 2026 Lily Charm Studio. All rights reserved.</div>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>

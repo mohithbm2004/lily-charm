@@ -35,8 +35,8 @@ export default function AboutArtist() {
         <div className="md:col-span-6 flex justify-center md:justify-end">
           <Reveal delay={0.15}>
             <TiltCard3D intensity={14} className="max-w-md w-full">
-              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-2.5 sm:p-3 shadow-xl overflow-hidden">
-                <div className="relative overflow-hidden aspect-[4/5] arch-frame rounded-b-2xl border border-[var(--color-line)] bg-[var(--color-bg)]">
+              <div className="bg-[var(--color-card-bg)] rounded-3xl p-2.5 sm:p-3 shadow-xl overflow-hidden">
+                <div className="relative overflow-hidden aspect-[4/5] arch-frame rounded-b-2xl bg-[var(--color-bg)]">
                   <img
                     src="/images/products/flower-crimson-velvet-bouquet.webp"
                     alt="Lily Charm handcrafted crimson red velvet flower bouquet"

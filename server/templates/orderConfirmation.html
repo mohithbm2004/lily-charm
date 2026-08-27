@@ -4,306 +4,113 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Order Confirmation — Lily Charm</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      background-color: #FAF7F2;
-      color: #2B2625;
-      -webkit-font-smoothing: antialiased;
-    }
-    .email-wrapper {
-      width: 100%;
-      background-color: #FAF7F2;
-      padding: 24px 12px;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background-color: #FFFFFF;
-      border: 1px solid #EAE3D5;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 4px 24px rgba(43, 57, 37, 0.06);
-    }
-    .header {
-      background-color: #FAF7F2;
-      border-bottom: 1px solid #EAE3D5;
-      text-align: center;
-      padding: 34px 20px 26px;
-      position: relative;
-    }
-    .logo-emblem {
-      display: inline-block;
-      margin-bottom: 8px;
-    }
-    .brand-title {
-      margin: 0;
-      font-family: 'Playfair Display', 'Cinzel', Georgia, serif;
-      font-size: 26px;
-      letter-spacing: 4px;
-      font-weight: 600;
-      text-transform: uppercase;
-      color: #2D3926;
-    }
-    .brand-subtitle {
-      margin: 6px 0 0;
-      font-size: 11px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #7A6652;
-      font-weight: 500;
-    }
-    .content {
-      padding: 32px 28px 24px;
-      background-color: #FFFFFF;
-    }
-    .status-badge-wrap {
-      text-align: center;
-      margin-bottom: 14px;
-    }
-    .status-badge-circle {
-      display: inline-block;
-      width: 44px;
-      height: 44px;
-      line-height: 44px;
-      background-color: #4A6B43;
-      color: #FFFFFF;
-      border-radius: 50%;
-      font-size: 20px;
-      font-weight: bold;
-      text-align: center;
-      box-shadow: 0 2px 8px rgba(74, 107, 67, 0.25);
-    }
-    .hero-title {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-size: 24px;
-      color: #2D3926;
-      text-align: center;
-      margin: 0 0 10px;
-      font-weight: 600;
-    }
-    .hero-greeting {
-      font-size: 14px;
-      color: #524B46;
-      line-height: 1.6;
-      text-align: center;
-      margin: 0 0 20px;
-    }
-    .order-ref-box {
-      background-color: #F3F7F1;
-      border: 1px solid #D5E2D0;
-      border-radius: 8px;
-      padding: 10px 18px;
-      margin: 0 auto 26px;
-      text-align: center;
-      font-size: 14px;
-      color: #2D3926;
-    }
-    .items-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 16px 0 20px;
-      border: 1px solid #EAE3D5;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    .items-table-header {
-      background-color: #3E4F36;
-      color: #FFFFFF;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-weight: 600;
-    }
-    .items-table-header th {
-      padding: 12px 14px;
-      text-align: left;
-    }
-    .summary-card {
-      background-color: #FAF8F5;
-      border: 1px solid #EAE3D5;
-      border-radius: 10px;
-      padding: 16px 20px;
-      margin-top: 16px;
-    }
-    .summary-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-      font-size: 13.5px;
-      color: #4A443E;
-    }
-    .summary-row-total {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px dashed #D5CDC2;
-      font-size: 15px;
-      font-weight: bold;
-      color: #2D3926;
-    }
-    .address-card {
-      background-color: #F3F7F1;
-      border: 1px solid #D5E2D0;
-      border-radius: 12px;
-      padding: 18px 20px;
-      margin-top: 24px;
-    }
-    .help-section {
-      text-align: center;
-      padding: 24px 20px 10px;
-    }
-    .help-icon {
-      display: inline-block;
-      width: 36px;
-      height: 36px;
-      line-height: 36px;
-      background-color: #FDEEE9;
-      color: #D9534F;
-      border-radius: 50%;
-      font-size: 16px;
-      margin-bottom: 8px;
-    }
-    .heart-divider {
-      text-align: center;
-      margin: 20px 0 0;
-      color: #D5CDC2;
-      font-size: 12px;
-    }
-    .footer {
-      background-color: #2D3A27;
-      color: #E8EFE5;
-      text-align: center;
-      padding: 24px 20px;
-      font-size: 11.5px;
-      line-height: 1.6;
-    }
-    .footer a {
-      color: #FFFFFF;
-      text-decoration: none;
-      margin: 0 8px;
-    }
-  </style>
 </head>
-<body>
-  <div class="email-wrapper">
-    <div class="container">
-      
-      <!-- Top Brand Header -->
-      <div class="header">
-        <div class="logo-emblem">
-          <img src="https://res.cloudinary.com/dzv7vsmf7/image/upload/v1740000000/logo.png" onerror="this.style.display='none'" width="46" height="46" alt="Lily Charm Logo" style="display:inline-block; margin-bottom: 4px;" />
-          <div style="font-size: 24px;">🌸</div>
-        </div>
-        <h1 class="brand-title">LILY CHARM</h1>
-        <p class="brand-subtitle">Handcrafted Botanical Art &amp; Velvet Sculptures</p>
-      </div>
+<body style="margin: 0; padding: 0; background-color: #FAF7F2; color: #212B1C; font-family: 'Inter', Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #FAF7F2; padding: 32px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #FAF7F2; border: 1px solid #3D5E33; border-collapse: collapse;">
+          
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding: 36px 24px 28px; background-color: #FAF7F2; border-bottom: 1px solid #3D5E33;">
+              <div style="font-family: 'Cormorant Garamond', Georgia, Times, serif; font-size: 26px; font-weight: 600; letter-spacing: 4px; color: #212B1C; text-transform: uppercase; line-height: 1.2;">LILY CHARM</div>
+              <div style="font-family: 'Inter', Arial, sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 3px; color: #4F7942; text-transform: uppercase; margin-top: 6px;">FLORAL CREATIONS</div>
+            </td>
+          </tr>
 
-      <!-- Main Body Content -->
-      <div class="content">
-        <div class="status-badge-wrap">
-          <div class="status-badge-circle">✓</div>
-        </div>
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 36px 32px; background-color: #FAF7F2;">
+              <h1 style="font-family: 'Cormorant Garamond', Georgia, Times, serif; font-size: 24px; font-weight: 600; color: #212B1C; margin: 0 0 12px 0; text-align: center; letter-spacing: 0.5px;">Order Confirmed</h1>
+              
+              <p style="font-size: 14px; line-height: 1.6; color: #212B1C; text-align: center; margin: 0 0 24px 0;">
+                Hello <strong>{{customerName}}</strong>,<br/>
+                Thank you for your order. Our studio florists are preparing your handcrafted botanical artwork.
+              </p>
 
-        <h2 class="hero-title">✨ Thank You for Your Order! ✨</h2>
-        
-        <p class="hero-greeting">
-          Hi <strong>{{customerName}}</strong>,<br/>
-          We have received your payment and our master florists are preparing your order with delicate care.
-        </p>
+              <!-- Order Number Container -->
+              <div style="background-color: #FAF7F2; border: 1px solid #3D5E33; padding: 14px 20px; margin-bottom: 28px; text-align: center;">
+                <span style="font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #4F7942; display: inline-block; margin-right: 8px;">Order Reference:</span>
+                <span style="font-family: 'Inter', monospace, sans-serif; font-size: 15px; font-weight: 700; color: #212B1C; letter-spacing: 1px;">{{orderNumber}}</span>
+              </div>
 
-        <!-- Order Reference Pill -->
-        <div class="order-ref-box">
-          📑 <strong>Order Reference:</strong> <span style="font-family: monospace, sans-serif; font-size: 15px; font-weight: bold; letter-spacing: 0.5px;">{{orderNumber}}</span>
-        </div>
+              <!-- Items Table -->
+              <div style="margin-bottom: 24px;">
+                <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 16px; font-weight: 600; color: #212B1C; margin-bottom: 12px; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid #3D5E33; padding-bottom: 6px;">Order Details</div>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid #3D5E33;">
+                      <th align="left" style="padding: 10px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #4F7942; font-weight: 700;">Item</th>
+                      <th align="center" style="padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #4F7942; font-weight: 700; width: 50px;">Qty</th>
+                      <th align="right" style="padding: 10px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #4F7942; font-weight: 700; width: 90px;">Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{itemsHtml}}
+                  </tbody>
+                </table>
+              </div>
 
-        <!-- Items Table -->
-        <table class="items-table" width="100%" cellpadding="0" cellspacing="0">
-          <thead>
-            <tr class="items-table-header">
-              <th colspan="2" style="padding-left: 14px;">Item Details</th>
-              <th style="text-align: center; width: 60px;">Qty</th>
-              <th style="text-align: right; width: 80px; padding-right: 14px;">Price</th>
-            </tr>
-          </thead>
-          <tbody>
-            {{itemsHtml}}
-          </tbody>
+              <!-- Summary Section -->
+              <div style="border-top: 1px solid #3D5E33; padding-top: 16px; margin-bottom: 28px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size: 13px; color: #212B1C; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 4px 0; color: #4F7942;">Subtotal</td>
+                    <td align="right" style="padding: 4px 0; font-weight: 600; color: #212B1C;">₹{{subtotal}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 4px 0; color: #4F7942;">Discount</td>
+                    <td align="right" style="padding: 4px 0; font-weight: 600; color: #156E1F;">-₹{{discount}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 4px 0; color: #4F7942;">Shipping</td>
+                    <td align="right" style="padding: 4px 0; font-weight: 600; color: #212B1C;">{{shipping}}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="padding-top: 8px;"><div style="border-top: 1px solid #3D5E33;"></div></td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 12px 0 0 0; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 16px; font-weight: 700; color: #212B1C; text-transform: uppercase; letter-spacing: 1px;">Total Paid</td>
+                    <td align="right" style="padding: 12px 0 0 0; font-size: 18px; font-weight: 700; color: #212B1C;">₹{{grandTotal}}</td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- Shipping Address -->
+              <div style="background-color: #FAF7F2; border: 1px solid #3D5E33; padding: 20px; margin-bottom: 28px;">
+                <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 15px; font-weight: 600; color: #212B1C; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Shipping Address</div>
+                <div style="font-size: 13px; line-height: 1.5; color: #212B1C;">{{shippingAddress}}</div>
+                <div style="font-size: 12px; color: #4F7942; margin-top: 6px;"><strong>Phone:</strong> {{shippingPhone}}</div>
+              </div>
+
+              <!-- Action Button -->
+              <div style="text-align: center; margin: 32px 0 20px 0;">
+                <a href="{{clientUrl}}/dashboard" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #212B1C; color: #FAF7F2; font-family: 'Inter', Arial, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; text-decoration: none; padding: 14px 32px; border-radius: 4px;">
+                  VIEW ORDER
+                </a>
+              </div>
+
+              <!-- Support Note -->
+              <p style="font-size: 12px; color: #4F7942; text-align: center; margin: 20px 0 0 0;">
+                Questions regarding your order? Contact studio support at <a href="mailto:{{supportEmail}}" style="color: #156E1F; font-weight: 600; text-decoration: none;">{{supportEmail}}</a>
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="background-color: #212B1C; color: #FAF7F2; padding: 28px 24px; font-size: 11px; line-height: 1.6;">
+              <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 14px; letter-spacing: 2px; color: #FAF7F2; margin-bottom: 8px; font-weight: 600;">LILY CHARM FLORAL ATELIER</div>
+              <div style="color: #FAF7F2; opacity: 0.85;">Bengaluru, Karnataka, India • support@lilycharm.in</div>
+              <div style="color: #FAF7F2; opacity: 0.6; margin-top: 6px;">© 2026 Lily Charm Studio. All rights reserved.</div>
+            </td>
+          </tr>
+
         </table>
-
-        <!-- Pricing Summary Card -->
-        <div class="summary-card">
-          <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 13.5px; color: #4A443E;">
-            <tr>
-              <td style="padding: 4px 0;">🏷️ &nbsp;Subtotal</td>
-              <td style="text-align: right; font-weight: 600; color: #2D3926;">₹{{subtotal}}</td>
-            </tr>
-            <tr>
-              <td style="padding: 4px 0;">🎯 &nbsp;Discount</td>
-              <td style="text-align: right; font-weight: 600; color: #2E7D32;">-₹{{discount}}</td>
-            </tr>
-            <tr>
-              <td style="padding: 4px 0;">🚚 &nbsp;Shipping</td>
-              <td style="text-align: right; font-weight: 600; color: #2D3926;">{{shipping}}</td>
-            </tr>
-            <tr>
-              <td colspan="2" style="padding-top: 8px;"><div style="border-top: 1px dashed #D5CDC2; height: 1px;"></div></td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0 0; font-size: 15px; font-weight: bold; color: #2D3926;">👛 &nbsp;Grand Total Paid</td>
-              <td style="padding: 8px 0 0; text-align: right; font-size: 19px; font-weight: 800; color: #C8433C;">₹{{grandTotal}}</td>
-            </tr>
-          </table>
-        </div>
-
-        <!-- Shipping Address Card with Truck Graphic -->
-        <div class="address-card">
-          <table width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <td width="36" valign="top">
-                <div style="width: 28px; height: 28px; line-height: 28px; background-color: #2D3926; color: #FFFFFF; border-radius: 50%; text-align: center; font-size: 13px;">📍</div>
-              </td>
-              <td valign="top" style="padding-left: 10px;">
-                <div style="font-size: 14px; font-weight: bold; color: #2D3926; margin-bottom: 4px;">Shipping Address</div>
-                <div style="font-size: 13px; color: #4A443E; line-height: 1.5;">{{shippingAddress}}</div>
-                <div style="font-size: 12px; color: #7A6652; margin-top: 3px;"><strong>Phone:</strong> {{shippingPhone}}</div>
-              </td>
-              <td width="80" align="right" valign="middle">
-                <div style="font-size: 32px; line-height: 1;">🚚🌿</div>
-              </td>
-            </tr>
-          </table>
-        </div>
-
-        <!-- Help Section -->
-        <div class="help-section">
-          <div class="help-icon">🎧</div>
-          <div style="font-size: 13.5px; font-weight: 600; color: #2D3926;">Questions? We're here to help!</div>
-          <div style="font-size: 13px; color: #524B46; margin-top: 2px;">
-            Contact us at <a href="mailto:{{supportEmail}}" style="color: #C8433C; font-weight: bold; text-decoration: none;">{{supportEmail}}</a>
-          </div>
-          <div class="heart-divider">──────── &nbsp;💖&nbsp; ────────</div>
-        </div>
-
-      </div>
-
-      <!-- Dark Forest Green Footer -->
-      <div class="footer">
-        <div style="margin-bottom: 10px;">
-          <a href="https://instagram.com" target="_blank" style="display:inline-block; width: 28px; height: 28px; line-height: 28px; background: rgba(255,255,255,0.15); border-radius: 50%; text-align: center; color: #FFFFFF; text-decoration: none; margin: 0 4px;">📸</a>
-          <a href="https://facebook.com" target="_blank" style="display:inline-block; width: 28px; height: 28px; line-height: 28px; background: rgba(255,255,255,0.15); border-radius: 50%; text-align: center; color: #FFFFFF; text-decoration: none; margin: 0 4px;">👥</a>
-          <a href="https://pinterest.com" target="_blank" style="display:inline-block; width: 28px; height: 28px; line-height: 28px; background: rgba(255,255,255,0.15); border-radius: 50%; text-align: center; color: #FFFFFF; text-decoration: none; margin: 0 4px;">📌</a>
-        </div>
-        <div>Made with 💖 by <strong>Lily Charm Studio</strong></div>
-        <div style="margin-top: 4px; opacity: 0.8;">© 2026 Lily Charm Studio. All rights reserved.</div>
-      </div>
-
-    </div>
-  </div>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>

@@ -4,127 +4,81 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Payment Received — Lily Charm</title>
-  <style>
-    body {
-      margin: 0; padding: 0;
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      background-color: #FAF7F2; color: #2B2625;
-      -webkit-font-smoothing: antialiased;
-    }
-    .email-wrapper { width: 100%; background-color: #FAF7F2; padding: 24px 12px; }
-    .container {
-      max-width: 600px; margin: 0 auto; background-color: #FFFFFF;
-      border: 1px solid #EAE3D5; border-radius: 16px; overflow: hidden;
-      box-shadow: 0 4px 24px rgba(43, 57, 37, 0.06);
-    }
-    .header {
-      background-color: #FAF7F2; border-bottom: 1px solid #EAE3D5;
-      text-align: center; padding: 34px 20px 26px;
-    }
-    .brand-title {
-      margin: 0; font-family: 'Playfair Display', 'Cinzel', Georgia, serif;
-      font-size: 26px; letter-spacing: 4px; font-weight: 600; text-transform: uppercase; color: #2D3926;
-    }
-    .brand-subtitle {
-      margin: 6px 0 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #7A6652; font-weight: 500;
-    }
-    .content { padding: 32px 28px 24px; background-color: #FFFFFF; text-align: center; }
-    .status-badge-circle {
-      display: inline-block; width: 44px; height: 44px; line-height: 44px;
-      background-color: #4A6B43; color: #FFFFFF; border-radius: 50%;
-      font-size: 20px; font-weight: bold; margin-bottom: 14px;
-      box-shadow: 0 2px 8px rgba(74, 107, 67, 0.25);
-    }
-    .hero-title {
-      font-family: 'Playfair Display', Georgia, serif; font-size: 24px;
-      color: #2D3926; margin: 0 0 10px; font-weight: 600;
-    }
-    .hero-greeting { font-size: 14px; color: #524B46; line-height: 1.6; margin: 0 0 20px; }
-    .info-card {
-      background-color: #FAF8F5; border: 1px solid #EAE3D5; border-radius: 10px;
-      padding: 18px 20px; margin: 20px 0; text-align: left;
-    }
-    .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13.5px; color: #4A443E; }
-    .btn {
-      display: inline-block; background-color: #2D3926; color: #FFFFFF !important;
-      text-decoration: none; padding: 13px 30px; border-radius: 25px;
-      font-weight: bold; font-size: 12.5px; letter-spacing: 1.5px; text-transform: uppercase;
-      box-shadow: 0 4px 12px rgba(45, 57, 38, 0.2); margin-top: 10px;
-    }
-    .help-section { text-align: center; padding: 24px 20px 10px; }
-    .footer {
-      background-color: #2D3A27; color: #E8EFE5; text-align: center;
-      padding: 24px 20px; font-size: 11.5px; line-height: 1.6;
-    }
-  </style>
 </head>
-<body>
-  <div class="email-wrapper">
-    <div class="container">
-      
-      <!-- Top Brand Header -->
-      <div class="header">
-        <div style="font-size: 24px; margin-bottom: 4px;">🌸</div>
-        <h1 class="brand-title">LILY CHARM</h1>
-        <p class="brand-subtitle">Handcrafted Botanical Art &amp; Velvet Sculptures</p>
-      </div>
+<body style="margin: 0; padding: 0; background-color: #FAF7F2; color: #212B1C; font-family: 'Inter', Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #FAF7F2; padding: 32px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #FAF7F2; border: 1px solid #3D5E33; border-collapse: collapse;">
+          
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding: 36px 24px 28px; background-color: #FAF7F2; border-bottom: 1px solid #3D5E33;">
+              <div style="font-family: 'Cormorant Garamond', Georgia, Times, serif; font-size: 26px; font-weight: 600; letter-spacing: 4px; color: #212B1C; text-transform: uppercase; line-height: 1.2;">LILY CHARM</div>
+              <div style="font-family: 'Inter', Arial, sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 3px; color: #4F7942; text-transform: uppercase; margin-top: 6px;">FLORAL CREATIONS</div>
+            </td>
+          </tr>
 
-      <!-- Content -->
-      <div class="content">
-        <div class="status-badge-circle">✓</div>
-        <h2 class="hero-title">✨ Payment Successfully Received ✨</h2>
-        
-        <p class="hero-greeting">
-          Hi <strong>{{customerName}}</strong>,<br/>
-          Your payment of <strong>₹{{amount}}</strong> for order <strong>#{{orderNumber}}</strong> has been securely confirmed.
-        </p>
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 36px 32px; background-color: #FAF7F2;">
+              <h1 style="font-family: 'Cormorant Garamond', Georgia, Times, serif; font-size: 22px; font-weight: 600; color: #212B1C; margin: 0 0 16px 0; letter-spacing: 0.5px; text-align: center;">Payment Received</h1>
+              
+              <p style="font-size: 14px; line-height: 1.6; color: #212B1C; margin: 0 0 24px 0; text-align: center;">
+                Hello {{customerName}},<br/>
+                Your payment of <strong>₹{{amount}}</strong> for order <strong>#{{orderNumber}}</strong> has been confirmed.
+              </p>
 
-        <div class="info-card">
-          <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 13.5px; color: #4A443E;">
-            <tr>
-              <td style="padding: 5px 0;">📑 &nbsp;Order Reference</td>
-              <td style="text-align: right; font-weight: bold; font-family: monospace; color: #2D3926;">{{orderNumber}}</td>
-            </tr>
-            <tr>
-              <td style="padding: 5px 0;">💳 &nbsp;Payment Method</td>
-              <td style="text-align: right; font-weight: 600; color: #2D3926;">{{paymentMethod}}</td>
-            </tr>
-            <tr>
-              <td style="padding: 5px 0;">🆔 &nbsp;Transaction ID</td>
-              <td style="text-align: right; font-family: monospace; color: #7A6652;">{{paymentId}}</td>
-            </tr>
-            <tr>
-              <td colspan="2" style="padding-top: 8px;"><div style="border-top: 1px dashed #D5CDC2; height: 1px;"></div></td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0 0; font-size: 15px; font-weight: bold; color: #2D3926;">👛 &nbsp;Total Paid</td>
-              <td style="padding: 8px 0 0; text-align: right; font-size: 18px; font-weight: 800; color: #C8433C;">₹{{amount}}</td>
-            </tr>
-          </table>
-        </div>
+              <!-- Info Container -->
+              <div style="background-color: #FAF7F2; border: 1px solid #3D5E33; padding: 20px; margin-bottom: 28px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size: 13px; color: #212B1C; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 5px 0; color: #4F7942;">Order Reference</td>
+                    <td align="right" style="padding: 5px 0; font-weight: 700; font-family: monospace;">{{orderNumber}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 5px 0; color: #4F7942;">Payment Method</td>
+                    <td align="right" style="padding: 5px 0; font-weight: 600; color: #212B1C;">{{paymentMethod}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 5px 0; color: #4F7942;">Transaction ID</td>
+                    <td align="right" style="padding: 5px 0; font-family: monospace; color: #212B1C;">{{paymentId}}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="padding-top: 8px;"><div style="border-top: 1px solid #3D5E33;"></div></td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0 0 0; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 15px; font-weight: 700; color: #212B1C; text-transform: uppercase;">Total Paid</td>
+                    <td align="right" style="padding: 10px 0 0 0; font-size: 18px; font-weight: 700; color: #212B1C;">₹{{amount}}</td>
+                  </tr>
+                </table>
+              </div>
 
-        <a href="{{orderUrl}}" class="btn" target="_blank">View Order Status ➔</a>
+              <!-- Action Button -->
+              <div style="text-align: center; margin: 32px 0;">
+                <a href="{{orderUrl}}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #212B1C; color: #FAF7F2; font-family: 'Inter', Arial, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; text-decoration: none; padding: 14px 32px; border-radius: 4px;">
+                  VIEW ORDER STATUS
+                </a>
+              </div>
 
-        <div class="help-section">
-          <div style="font-size: 13.5px; font-weight: 600; color: #2D3926;">Questions? We're here to help!</div>
-          <div style="font-size: 13px; color: #524B46; margin-top: 2px;">
-            Contact us at <a href="mailto:support@lilycharm.in" style="color: #C8433C; font-weight: bold; text-decoration: none;">support@lilycharm.in</a>
-          </div>
-          <div style="margin-top: 16px; color: #D5CDC2;">──────── &nbsp;💖&nbsp; ────────</div>
-        </div>
-      </div>
+              <p style="font-size: 12px; color: #4F7942; text-align: center; margin: 20px 0 0 0;">
+                Questions? Contact studio support at <a href="mailto:support@lilycharm.in" style="color: #156E1F; font-weight: 600; text-decoration: none;">support@lilycharm.in</a>
+              </p>
+            </td>
+          </tr>
 
-      <!-- Footer -->
-      <div class="footer">
-        <div style="margin-bottom: 8px;">
-          <a href="https://instagram.com" target="_blank" style="color: #FFFFFF; text-decoration: none; margin: 0 6px;">📸 Instagram</a> • 
-          <a href="https://pinterest.com" target="_blank" style="color: #FFFFFF; text-decoration: none; margin: 0 6px;">📌 Pinterest</a>
-        </div>
-        <div>Made with 💖 by <strong>Lily Charm Studio</strong></div>
-        <div style="margin-top: 4px; opacity: 0.8;">© 2026 Lily Charm Studio. All rights reserved.</div>
-      </div>
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="background-color: #212B1C; color: #FAF7F2; padding: 28px 24px; font-size: 11px; line-height: 1.6;">
+              <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 14px; letter-spacing: 2px; color: #FAF7F2; margin-bottom: 8px; font-weight: 600;">LILY CHARM FLORAL ATELIER</div>
+              <div style="color: #FAF7F2; opacity: 0.85;">Bengaluru, Karnataka, India • support@lilycharm.in</div>
+              <div style="color: #FAF7F2; opacity: 0.6; margin-top: 6px;">© 2026 Lily Charm Studio. All rights reserved.</div>
+            </td>
+          </tr>
 
-    </div>
-  </div>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>

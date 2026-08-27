@@ -3,53 +3,61 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Order Cancelled - Lily Charm</title>
-  <style>
-    body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FAF7F2; color: #2B2625; }
-    .container { max-width: 600px; margin: 20px auto; background-color: #FFFFFF; border: 1px solid #E6DDD0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .header { background-color: #212B1C; color: #FFFFFF; text-align: center; padding: 32px 20px; }
-    .header h1 { margin: 0; font-size: 24px; letter-spacing: 3px; font-weight: 400; text-transform: uppercase; color: #FAF7F2; }
-    .header p { margin: 6px 0 0; font-size: 11px; letter-spacing: 2px; color: #E8DCC4; text-transform: uppercase; }
-    .content { padding: 32px 24px; }
-    .status-badge { display: inline-block; font-size: 11px; font-weight: bold; padding: 6px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; background-color: #F5E8E4; color: #8C2D38; border: 1px solid #E6B8B8; }
-    .info-box { background-color: #FAF7F2; border: 1px solid #E6DDD0; padding: 18px; border-radius: 8px; margin: 20px 0; font-size: 13px; line-height: 1.6; }
-    .footer { border-top: 1px solid #E6DDD0; background-color: #FAF7F2; padding: 20px; text-align: center; font-size: 11px; color: #8C847D; }
-    .shop-btn { display: inline-block; background-color: #212B1C; color: #FAF7F2 !important; text-decoration: none; padding: 12px 24px; border-radius: 50px; font-size: 12px; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 16px; }
-  </style>
+  <title>Order Cancelled — Lily Charm</title>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>LILY CHARM</h1>
-      <p>Handcrafted Botanical Art & Velvet Sculptures</p>
-    </div>
-    <div class="content">
-      <span class="status-badge">Order Cancelled</span>
-      <h2 style="font-size: 20px; color: #212B1C; margin: 0 0 10px;">Order Cancellation Notice</h2>
-      <p style="font-size: 14px; color: #524B46; line-height: 1.6;">Hello <strong>{{customerName}}</strong>,</p>
-      <p style="font-size: 14px; color: #524B46; line-height: 1.6;">
-        Your order <strong>{{orderNumber}}</strong> has been cancelled.
-      </p>
+<body style="margin: 0; padding: 0; background-color: #FAF7F2; color: #212B1C; font-family: 'Inter', Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #FAF7F2; padding: 32px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #FAF7F2; border: 1px solid #3D5E33; border-collapse: collapse;">
+          
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding: 36px 24px 28px; background-color: #FAF7F2; border-bottom: 1px solid #3D5E33;">
+              <div style="font-family: 'Cormorant Garamond', Georgia, Times, serif; font-size: 26px; font-weight: 600; letter-spacing: 4px; color: #212B1C; text-transform: uppercase; line-height: 1.2;">LILY CHARM</div>
+              <div style="font-family: 'Inter', Arial, sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 3px; color: #4F7942; text-transform: uppercase; margin-top: 6px;">FLORAL CREATIONS</div>
+            </td>
+          </tr>
 
-      <div class="info-box">
-        <p style="margin: 0 0 6px;"><strong>Order Number:</strong> {{orderNumber}}</p>
-        <p style="margin: 0 0 6px;"><strong>Status:</strong> Cancelled</p>
-        <p style="margin: 0 0 6px;"><strong>Payment Status:</strong> {{paymentNotice}}</p>
-        {{reasonHtml}}
-      </div>
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 36px 32px; background-color: #FAF7F2;">
+              <h1 style="font-family: 'Cormorant Garamond', Georgia, Times, serif; font-size: 22px; font-weight: 600; color: #212B1C; margin: 0 0 16px 0; letter-spacing: 0.5px;">Order Cancellation Notice</h1>
+              <p style="font-size: 14px; line-height: 1.6; color: #212B1C; margin: 0 0 12px 0;">Hello {{customerName}},</p>
+              <p style="font-size: 14px; line-height: 1.6; color: #212B1C; margin: 0 0 24px 0;">Your order <strong>#{{orderNumber}}</strong> has been cancelled.</p>
+              
+              <!-- Info Box -->
+              <div style="background-color: #FAF7F2; border: 1px solid #3D5E33; padding: 20px; margin-bottom: 24px;">
+                <p style="margin: 0 0 6px 0; font-size: 13px; color: #212B1C;"><strong>Order Reference:</strong> {{orderNumber}}</p>
+                <p style="margin: 0 0 6px 0; font-size: 13px; color: #212B1C;"><strong>Payment Status:</strong> {{paymentNotice}}</p>
+                {{reasonHtml}}
+              </div>
 
-      <p style="font-size: 13px; color: #524B46; line-height: 1.6;">
-        If you would like to explore or purchase other handcrafted velvet florals, you are always welcome back to our studio storefront.
-      </p>
+              <p style="font-size: 13px; line-height: 1.6; color: #4F7942; margin: 0 0 24px 0;">
+                If you would like to explore or purchase other handcrafted botanical artworks, you are welcome back to our studio storefront.
+              </p>
 
-      <div style="text-align: center; margin-top: 24px;">
-        <a href="{{shopUrl}}" class="shop-btn" target="_blank" rel="noopener noreferrer">Explore Floral Collection</a>
-      </div>
-    </div>
-    <div class="footer">
-      <p>© 2026 Lily Charm Studio & Botanical Atelier. All rights reserved.</p>
-      <p>Bengaluru, Karnataka, India</p>
-    </div>
-  </div>
+              <!-- Action Button -->
+              <div style="text-align: center; margin: 32px 0;">
+                <a href="{{shopUrl}}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #212B1C; color: #FAF7F2; font-family: 'Inter', Arial, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; text-decoration: none; padding: 14px 32px; border-radius: 4px;">
+                  EXPLORE COLLECTION
+                </a>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="background-color: #212B1C; color: #FAF7F2; padding: 28px 24px; font-size: 11px; line-height: 1.6;">
+              <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 14px; letter-spacing: 2px; color: #FAF7F2; margin-bottom: 8px; font-weight: 600;">LILY CHARM FLORAL ATELIER</div>
+              <div style="color: #FAF7F2; opacity: 0.85;">Bengaluru, Karnataka, India • support@lilycharm.in</div>
+              <div style="color: #FAF7F2; opacity: 0.6; margin-top: 6px;">© 2026 Lily Charm Studio. All rights reserved.</div>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>

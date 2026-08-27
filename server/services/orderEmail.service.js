@@ -88,28 +88,28 @@ function buildItemsHtml(items = []) {
       const price = formatPrice((item.price || 0) * qty)
       const specimen =
         item.specimen && item.specimen !== 'Specimen' && item.specimen !== 'CUSTOM-DESIGN'
-          ? `<div style="font-size: 11px; color: #7A6652; margin-top: 2px;">${item.specimen}</div>`
+          ? `<div style="font-size: 11px; color: #4F7942; margin-top: 2px;">${item.specimen}</div>`
           : ''
 
       const imageTd = imgSrc
-        ? `<td style="padding: 12px 10px 12px 14px; border-bottom: 1px solid #EFEAE1; width: 62px; vertical-align: middle;">
-             <img src="${imgSrc}" alt="${title}" width="52" height="52" style="width: 52px; height: 52px; border-radius: 8px; object-fit: cover; border: 1px solid #EAE3D5; background: #FAF7F2; display: block;" />
+        ? `<td style="padding: 12px 10px 12px 0; border-bottom: 1px solid #3D5E33; width: 56px; vertical-align: middle;">
+             <img src="${imgSrc}" alt="${title}" width="48" height="48" style="width: 48px; height: 48px; object-fit: cover; display: block;" />
            </td>`
-        : `<td style="padding: 12px 10px 12px 14px; border-bottom: 1px solid #EFEAE1; width: 62px; vertical-align: middle;">
-             <div style="width: 52px; height: 52px; border-radius: 8px; background-color: #F6F2EA; border: 1px solid #EAE3D5; text-align: center; line-height: 52px; font-size: 22px;">🌸</div>
+        : `<td style="padding: 12px 10px 12px 0; border-bottom: 1px solid #3D5E33; width: 56px; vertical-align: middle;">
+             <div style="width: 48px; height: 48px; background-color: #212B1C; color: #FAF7F2; text-align: center; line-height: 48px; font-size: 11px; font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600;">LC</div>
            </td>`
 
       return `
         <tr>
           ${imageTd}
-          <td style="padding: 12px 10px; border-bottom: 1px solid #EFEAE1; vertical-align: middle;">
-            <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 14px; font-weight: 600; color: #2D3926; line-height: 1.35;">${title}</div>
+          <td style="padding: 12px 10px; border-bottom: 1px solid #3D5E33; vertical-align: middle;">
+            <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 14px; font-weight: 600; color: #212B1C; line-height: 1.35;">${title}</div>
             ${specimen}
           </td>
-          <td style="padding: 12px 10px; border-bottom: 1px solid #EFEAE1; text-align: center; font-size: 14px; color: #2D3926; font-weight: 600; vertical-align: middle;">
+          <td style="padding: 12px 10px; border-bottom: 1px solid #3D5E33; text-align: center; font-size: 13px; color: #212B1C; font-weight: 600; vertical-align: middle;">
             ${qty}
           </td>
-          <td style="padding: 12px 16px 12px 10px; border-bottom: 1px solid #EFEAE1; text-align: right; font-weight: bold; font-size: 14px; color: #2D3926; vertical-align: middle;">
+          <td style="padding: 12px 0 12px 10px; border-bottom: 1px solid #3D5E33; text-align: right; font-weight: 700; font-size: 14px; color: #212B1C; vertical-align: middle;">
             ₹${price}
           </td>
         </tr>
@@ -154,7 +154,7 @@ export async function sendOrderConfirmation(order) {
   return await sendEmail({
     type: 'order-confirmation',
     to: recipientEmail,
-    subject: `✨ Order Confirmed: ${order.orderNumber} - Lily Charm`,
+    subject: `Order Confirmed: ${order.orderNumber} - Lily Charm`,
     text: `Thank you for your order ${order.orderNumber}. Grand Total: ₹${order.grandTotal || order.total}.`,
     html,
   })
@@ -195,7 +195,7 @@ export async function sendOrderInvoice(order, pdfBuffer = null) {
   return await sendEmail({
     type: 'invoice',
     to: recipientEmail,
-    subject: `📄 Tax Invoice for Order ${order.orderNumber} - Lily Charm`,
+    subject: `Tax Invoice for Order ${order.orderNumber} - Lily Charm`,
     text: `Your tax invoice for order ${order.orderNumber} is attached.`,
     html,
     attachments,
@@ -221,7 +221,7 @@ export async function sendPaymentSuccess(order) {
   return await sendEmail({
     type: 'payment-success',
     to: recipientEmail,
-    subject: `💳 Payment Received: Order ${order.orderNumber} - Lily Charm`,
+    subject: `Payment Received: Order ${order.orderNumber} - Lily Charm`,
     text: `Payment of ₹${order.grandTotal || order.total} received successfully for order ${order.orderNumber}.`,
     html,
   })
@@ -242,7 +242,7 @@ export async function sendOrderPacked(order) {
   return await sendEmail({
     type: 'order-packed',
     to: recipientEmail,
-    subject: `📦 Order Packed: ${order.orderNumber} - Lily Charm`,
+    subject: `Order Packed: ${order.orderNumber} - Lily Charm`,
     text: `Your order ${order.orderNumber} has been packed with care.`,
     html,
   })
@@ -269,7 +269,7 @@ export async function sendOrderShipped(order) {
   return await sendEmail({
     type: 'order-shipped',
     to: recipientEmail,
-    subject: `🚚 Order Shipped: ${order.orderNumber} - Lily Charm`,
+    subject: `Order Shipped: ${order.orderNumber} - Lily Charm`,
     text: `Your order ${order.orderNumber} is in transit via ${order.carrier || 'BlueDart'}. Tracking #: ${order.trackingNumber || 'N/A'}`,
     html,
   })
@@ -292,7 +292,7 @@ export async function sendOrderOutForDelivery(order) {
   return await sendEmail({
     type: 'out-for-delivery',
     to: recipientEmail,
-    subject: `🚚 Out for Delivery Today: ${order.orderNumber} - Lily Charm`,
+    subject: `Out for Delivery Today: ${order.orderNumber} - Lily Charm`,
     text: `Your order ${order.orderNumber} is out for delivery today!`,
     html,
   })
@@ -315,7 +315,7 @@ export async function sendOrderDelivered(order) {
   return await sendEmail({
     type: 'order-delivered',
     to: recipientEmail,
-    subject: `🎉 Delivered: Order ${order.orderNumber} - Lily Charm`,
+    subject: `Delivered: Order ${order.orderNumber} - Lily Charm`,
     text: `Your order ${order.orderNumber} has been delivered. Enjoy your botanical art!`,
     html,
   })
@@ -339,7 +339,7 @@ export async function sendRefundApproved(order) {
   return await sendEmail({
     type: 'refund-approved',
     to: recipientEmail,
-    subject: `💰 Refund Approved: Order ${order.orderNumber} - Lily Charm`,
+    subject: `Refund Approved: Order ${order.orderNumber} - Lily Charm`,
     text: `Your refund of ₹${refundAmount} for order ${order.orderNumber} has been approved.`,
     html,
   })
@@ -361,7 +361,7 @@ export async function sendRefundRejected(order, reason = '') {
   return await sendEmail({
     type: 'refund-rejected',
     to: recipientEmail,
-    subject: `⚠️ Refund Notice: Order ${order.orderNumber} - Lily Charm`,
+    subject: `Refund Notice: Order ${order.orderNumber} - Lily Charm`,
     text: `Your refund request for order ${order.orderNumber} could not be approved.`,
     html,
   })
@@ -477,7 +477,7 @@ export async function sendNewsletterEmail(recipients = [], subject, content) {
       const res = await sendEmail({
         type: 'newsletter',
         to: email,
-        subject: subject || '🌸 Lily Charm Newsletter',
+        subject: subject || 'Lily Charm Newsletter',
         html,
       })
       results.push(res)
@@ -506,8 +506,8 @@ export async function sendCustomQuoteReadyEmail(customRequest) {
   const price = Number(customRequest.quotedPrice || 0)
   const shippingNote =
     price >= 2500
-      ? '✨ <strong>Free Standard Studio Shipping</strong> applies to this custom artwork.'
-      : '📦 Standard Studio Delivery applies at checkout.'
+      ? '<strong>Free Standard Studio Shipping</strong> applies to this custom artwork.'
+      : 'Standard Studio Delivery applies at checkout.'
 
   const html = compileTemplate('customQuoteReady.html', {
     customerName: customRequest.name || 'Valued Collector',
@@ -522,7 +522,7 @@ export async function sendCustomQuoteReadyEmail(customRequest) {
   return await sendEmail({
     type: 'order',
     to: recipientEmail,
-    subject: `✨ Custom Design Quote Ready: ₹${formatPrice(price)} — Lily Charm`,
+    subject: `Custom Design Quote Ready: ₹${formatPrice(price)} - Lily Charm`,
     text: `Your custom botanical quote for "${customRequest.stylePreference}" is ready: ₹${formatPrice(price)}. Review and place order at ${actionUrl}`,
     html,
   })

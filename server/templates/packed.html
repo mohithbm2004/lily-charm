@@ -4,93 +4,59 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Order Packed & Sealed — Lily Charm</title>
-  <style>
-    body {
-      margin: 0; padding: 0;
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      background-color: #FAF7F2; color: #2B2625;
-      -webkit-font-smoothing: antialiased;
-    }
-    .email-wrapper { width: 100%; background-color: #FAF7F2; padding: 24px 12px; }
-    .container {
-      max-width: 600px; margin: 0 auto; background-color: #FFFFFF;
-      border: 1px solid #EAE3D5; border-radius: 16px; overflow: hidden;
-      box-shadow: 0 4px 24px rgba(43, 57, 37, 0.06);
-    }
-    .header {
-      background-color: #FAF7F2; border-bottom: 1px solid #EAE3D5;
-      text-align: center; padding: 34px 20px 26px;
-    }
-    .brand-title {
-      margin: 0; font-family: 'Playfair Display', 'Cinzel', Georgia, serif;
-      font-size: 26px; letter-spacing: 4px; font-weight: 600; text-transform: uppercase; color: #2D3926;
-    }
-    .brand-subtitle {
-      margin: 6px 0 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #7A6652; font-weight: 500;
-    }
-    .content { padding: 32px 28px 24px; background-color: #FFFFFF; text-align: center; }
-    .badge-icon {
-      display: inline-block; width: 44px; height: 44px; line-height: 44px;
-      background-color: #4A6B43; color: #FFFFFF; border-radius: 50%;
-      font-size: 20px; margin-bottom: 14px;
-    }
-    .hero-title {
-      font-family: 'Playfair Display', Georgia, serif; font-size: 24px;
-      color: #2D3926; margin: 0 0 10px; font-weight: 600;
-    }
-    .hero-greeting { font-size: 14px; color: #524B46; line-height: 1.6; margin: 0 0 20px; }
-    .order-ref-box {
-      background-color: #F3F7F1; border: 1px solid #D5E2D0; border-radius: 8px;
-      padding: 10px 18px; margin: 0 auto 20px; text-align: center; font-size: 14px; color: #2D3926;
-    }
-    .footer {
-      background-color: #2D3A27; color: #E8EFE5; text-align: center;
-      padding: 24px 20px; font-size: 11.5px; line-height: 1.6;
-    }
-  </style>
 </head>
-<body>
-  <div class="email-wrapper">
-    <div class="container">
-      
-      <div class="header">
-        <div style="font-size: 24px; margin-bottom: 4px;">🌸</div>
-        <h1 class="brand-title">LILY CHARM</h1>
-        <p class="brand-subtitle">Handcrafted Botanical Art &amp; Velvet Sculptures</p>
-      </div>
+<body style="margin: 0; padding: 0; background-color: #FAF7F2; color: #212B1C; font-family: 'Inter', Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #FAF7F2; padding: 32px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #FAF7F2; border: 1px solid #3D5E33; border-collapse: collapse;">
+          
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding: 36px 24px 28px; background-color: #FAF7F2; border-bottom: 1px solid #3D5E33;">
+              <div style="font-family: 'Cormorant Garamond', Georgia, Times, serif; font-size: 26px; font-weight: 600; letter-spacing: 4px; color: #212B1C; text-transform: uppercase; line-height: 1.2;">LILY CHARM</div>
+              <div style="font-family: 'Inter', Arial, sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 3px; color: #4F7942; text-transform: uppercase; margin-top: 6px;">FLORAL CREATIONS</div>
+            </td>
+          </tr>
 
-      <div class="content">
-        <div class="badge-icon">🎁</div>
-        <h2 class="hero-title">✨ Order Handcrafted &amp; Sealed ✨</h2>
-        
-        <p class="hero-greeting">
-          Hi <strong>{{customerName}}</strong>,<br/>
-          Your botanical artwork for order <strong>#{{orderNumber}}</strong> has been carefully finished and packaged in our atelier with gift wrapping and protective casing.
-        </p>
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 36px 32px; background-color: #FAF7F2;">
+              <h1 style="font-family: 'Cormorant Garamond', Georgia, Times, serif; font-size: 22px; font-weight: 600; color: #212B1C; margin: 0 0 16px 0; letter-spacing: 0.5px; text-align: center;">Order Packed & Sealed</h1>
+              
+              <p style="font-size: 14px; line-height: 1.6; color: #212B1C; margin: 0 0 24px 0; text-align: center;">
+                Hello {{customerName}},<br/>
+                Your botanical artwork for order <strong>#{{orderNumber}}</strong> has been carefully finished, inspect-certified, and packaged in our studio.
+              </p>
 
-        <div class="order-ref-box">
-          📑 <strong>Order Reference:</strong> <span style="font-family: monospace, sans-serif; font-weight: bold;">{{orderNumber}}</span>
-        </div>
+              <!-- Order Reference Box -->
+              <div style="background-color: #FAF7F2; border: 1px solid #3D5E33; padding: 16px; margin-bottom: 24px; text-align: center;">
+                <span style="font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #4F7942; display: inline-block; margin-right: 8px;">Order Reference:</span>
+                <span style="font-family: monospace, sans-serif; font-size: 15px; font-weight: 700; color: #212B1C;">{{orderNumber}}</span>
+              </div>
 
-        <p style="font-size: 13.5px; color: #524B46; line-height: 1.6;">
-          Our courier partner will pick up your package shortly. You will receive live tracking information as soon as it is dispatched!
-        </p>
+              <p style="font-size: 13px; color: #4F7942; line-height: 1.6; text-align: center; margin: 0 0 24px 0;">
+                Our courier partner will pick up your package shortly. You will receive live tracking information as soon as it is dispatched.
+              </p>
 
-        <div style="text-align: center; padding: 24px 20px 10px;">
-          <div style="font-size: 13.5px; font-weight: 600; color: #2D3926;">Questions? We're here to help!</div>
-          <div style="font-size: 13px; color: #524B46; margin-top: 2px;">
-            Contact us at <a href="mailto:support@lilycharm.in" style="color: #C8433C; font-weight: bold; text-decoration: none;">support@lilycharm.in</a>
-          </div>
-          <div style="margin-top: 16px; color: #D5CDC2;">──────── &nbsp;💖&nbsp; ────────</div>
-        </div>
-      </div>
+              <p style="font-size: 12px; color: #4F7942; text-align: center; margin: 24px 0 0 0;">
+                Questions? Contact studio support at <a href="mailto:support@lilycharm.in" style="color: #156E1F; font-weight: 600; text-decoration: none;">support@lilycharm.in</a>
+              </p>
+            </td>
+          </tr>
 
-      <div class="footer">
-        <div>Made with 💖 by <strong>Lily Charm Studio</strong></div>
-        <div style="margin-top: 4px; opacity: 0.8;">© 2026 Lily Charm Studio. All rights reserved.</div>
-      </div>
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="background-color: #212B1C; color: #FAF7F2; padding: 28px 24px; font-size: 11px; line-height: 1.6;">
+              <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 14px; letter-spacing: 2px; color: #FAF7F2; margin-bottom: 8px; font-weight: 600;">LILY CHARM FLORAL ATELIER</div>
+              <div style="color: #FAF7F2; opacity: 0.85;">Bengaluru, Karnataka, India • support@lilycharm.in</div>
+              <div style="color: #FAF7F2; opacity: 0.6; margin-top: 6px;">© 2026 Lily Charm Studio. All rights reserved.</div>
+            </td>
+          </tr>
 
-    </div>
-  </div>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>

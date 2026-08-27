@@ -420,9 +420,9 @@ export default function Checkout() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pt-24 sm:pt-32 pb-16 sm:pb-24 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 lg:gap-14 w-full max-w-full">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pt-20 sm:pt-28 pb-16 sm:pb-24 grid grid-cols-1 lg:grid-cols-[1fr_390px] gap-8 lg:gap-14 w-full max-w-full">
       <Reveal>
-        <h1 className="text-2xl sm:text-3xl mb-4 sm:mb-6 font-[var(--font-display)] font-bold uppercase">Checkout</h1>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl mb-4 sm:mb-6 font-[var(--font-display)] font-bold uppercase tracking-tight">Checkout</h1>
 
         {!authLoading && (!user || !token) && (
           <div className="bg-amber-50/90 border border-amber-300 rounded-2xl p-4 sm:p-5 mb-6 text-xs text-[var(--color-ink)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
@@ -460,11 +460,11 @@ export default function Checkout() {
         )}
 
         <form onSubmit={handlePay} className="space-y-6 sm:space-y-8">
-          <div>
-            <p className="eyebrow mb-3 sm:mb-4">Contact Information</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
+          <div className="bg-[var(--color-card-bg)]/80 backdrop-blur-sm p-5 sm:p-7 border border-black/10 rounded-3xl luxury-shadow-sm space-y-4">
+            <p className="eyebrow mb-1 sm:mb-2">Contact Information</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 text-xs">
               <div>
-                <label className="block font-bold uppercase mb-1 text-[0.68rem]">
+                <label className="block font-bold uppercase mb-1 text-[0.68rem] tracking-wider text-[var(--color-ink)]">
                   Full Name <span className="text-red-500 font-bold ml-0.5">*</span>
                 </label>
                 <input
@@ -478,7 +478,7 @@ export default function Checkout() {
                   className={`border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none w-full transition-colors ${
                     formErrors.name
                       ? 'border-red-500 focus:border-red-500 bg-red-50/20'
-                      : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                      : 'border-black/15 focus:border-[var(--color-primary)]'
                   }`}
                 />
                 {formErrors.name && (
@@ -489,7 +489,7 @@ export default function Checkout() {
               </div>
 
               <div>
-                <label className="block font-bold uppercase mb-1 text-[0.68rem]">
+                <label className="block font-bold uppercase mb-1 text-[0.68rem] tracking-wider text-[var(--color-ink)]">
                   Email Address <span className="text-red-500 font-bold ml-0.5">*</span>
                 </label>
                 <input
@@ -503,7 +503,7 @@ export default function Checkout() {
                   className={`border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none w-full transition-colors ${
                     formErrors.email
                       ? 'border-red-500 focus:border-red-500 bg-red-50/20'
-                      : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                      : 'border-black/15 focus:border-[var(--color-primary)]'
                   }`}
                 />
                 {formErrors.email && (
@@ -514,7 +514,7 @@ export default function Checkout() {
               </div>
 
               <div className="col-span-1 sm:col-span-2">
-                <label className="block font-bold uppercase mb-1 text-[0.68rem]">
+                <label className="block font-bold uppercase mb-1 text-[0.68rem] tracking-wider text-[var(--color-ink)]">
                   Phone Number <span className="text-red-500 font-bold ml-0.5">*</span>
                 </label>
                 <input
@@ -528,7 +528,7 @@ export default function Checkout() {
                   className={`border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none font-mono w-full transition-colors ${
                     formErrors.phone
                       ? 'border-red-500 focus:border-red-500 bg-red-50/20'
-                      : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                      : 'border-black/15 focus:border-[var(--color-primary)]'
                   }`}
                 />
                 {formErrors.phone && (
@@ -540,11 +540,11 @@ export default function Checkout() {
             </div>
           </div>
 
-          <div>
-            <p className="eyebrow mb-3 sm:mb-4">Shipping Address</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
+          <div className="bg-[var(--color-card-bg)]/80 backdrop-blur-sm p-5 sm:p-7 border border-black/10 rounded-3xl luxury-shadow-sm space-y-4">
+            <p className="eyebrow mb-1 sm:mb-2">Shipping Address</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 text-xs">
               <div className="col-span-1 sm:col-span-2">
-                <label className="block font-bold uppercase mb-1 text-[0.68rem]">
+                <label className="block font-bold uppercase mb-1 text-[0.68rem] tracking-wider text-[var(--color-ink)]">
                   Street Address <span className="text-red-500 font-bold ml-0.5">*</span>
                 </label>
                 <input
@@ -558,7 +558,7 @@ export default function Checkout() {
                   className={`border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none w-full transition-colors ${
                     formErrors.address
                       ? 'border-red-500 focus:border-red-500 bg-red-50/20'
-                      : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                      : 'border-black/15 focus:border-[var(--color-primary)]'
                   }`}
                 />
                 {formErrors.address && (
@@ -569,7 +569,7 @@ export default function Checkout() {
               </div>
 
               <div>
-                <label className="block font-bold uppercase mb-1 text-[0.68rem]">
+                <label className="block font-bold uppercase mb-1 text-[0.68rem] tracking-wider text-[var(--color-ink)]">
                   City / District <span className="text-red-500 font-bold ml-0.5">*</span>
                 </label>
                 <input
@@ -583,7 +583,7 @@ export default function Checkout() {
                   className={`border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none font-semibold w-full transition-colors ${
                     formErrors.city
                       ? 'border-red-500 focus:border-red-500 bg-red-50/20'
-                      : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                      : 'border-black/15 focus:border-[var(--color-primary)]'
                   }`}
                 />
                 {formErrors.city && (
@@ -594,7 +594,7 @@ export default function Checkout() {
               </div>
 
               <div className="w-full">
-                <label className="block font-bold uppercase mb-1 text-[0.68rem]">
+                <label className="block font-bold uppercase mb-1 text-[0.68rem] tracking-wider text-[var(--color-ink)]">
                   PIN Code (6 digits) <span className="text-red-500 font-bold ml-0.5">*</span>
                 </label>
                 <input
@@ -615,7 +615,7 @@ export default function Checkout() {
                       ? 'border-amber-600 focus:border-amber-600'
                       : pincodeStatus.success
                       ? 'border-emerald-600 focus:border-emerald-600'
-                      : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
+                      : 'border-black/15 focus:border-[var(--color-primary)]'
                   }`}
                 />
                 {formErrors.pincode ? (
@@ -636,16 +636,16 @@ export default function Checkout() {
               </div>
             </div>
           </div>
-          <div>
-            <p className="eyebrow mb-3 sm:mb-4">Payment Method</p>
-            <div className="border border-[var(--color-line)] rounded-2xl px-3.5 sm:px-4 py-3.5 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[var(--color-beige)]/30">
-              <span className="font-semibold">Cards, UPI, Netbanking, Wallets</span>
-              <span className="specimen-tag bg-emerald-800 text-white font-mono px-2.5 py-0.5 rounded-full self-start sm:self-auto">100% SECURE</span>
+          <div className="bg-[var(--color-card-bg)]/80 backdrop-blur-sm p-5 sm:p-7 border border-black/10 rounded-3xl luxury-shadow-sm space-y-3">
+            <p className="eyebrow mb-1">Payment Method</p>
+            <div className="border border-black/10 rounded-2xl px-4 py-3.5 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[var(--color-bg)]/40">
+              <span className="font-semibold text-[var(--color-ink)]">Cards, UPI, Netbanking, Wallets (Razorpay)</span>
+              <span className="specimen-tag bg-[var(--color-primary)] text-white font-mono px-3 py-0.5 rounded-full self-start sm:self-auto shadow-2xs">100% SECURE PREPAID</span>
             </div>
           </div>
 
           {/* Cancellation Policy Disclaimer */}
-          <div className="p-3.5 sm:p-4 bg-amber-50/90 border border-amber-300 text-[0.7rem] sm:text-[0.72rem] text-amber-900 leading-relaxed rounded-2xl space-y-1.5 shadow-sm">
+          <div className="p-4 sm:p-5 bg-amber-50/90 border border-amber-300 text-[0.7rem] sm:text-[0.72rem] text-amber-900 leading-relaxed rounded-3xl space-y-2 shadow-2xs">
             <div className="font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-950 text-xs">
               <AlertTriangle size={15} className="text-amber-700 shrink-0" />
               Studio Cancellation & Refund Policy
@@ -659,12 +659,12 @@ export default function Checkout() {
           </div>
 
           {/* Mandatory Handmade Product Terms & Conditions */}
-          <div className={`p-3.5 sm:p-4 bg-[var(--color-beige)]/40 border rounded-2xl space-y-2 transition-colors ${
-            formErrors.terms ? 'border-red-500 bg-red-50/20' : 'border-[var(--color-line)]'
+          <div className={`p-4 sm:p-5 bg-[var(--color-card-bg)]/80 border rounded-3xl space-y-2 transition-colors ${
+            formErrors.terms ? 'border-red-500 bg-red-50/20' : 'border-black/10'
           }`}>
             <label
               htmlFor="handmadeTermsCheckbox"
-              className="flex items-start gap-2.5 text-xs text-[var(--color-ink)] cursor-pointer select-none"
+              className="flex items-start gap-3 text-xs text-[var(--color-ink)] cursor-pointer select-none"
             >
               <input
                 type="checkbox"
@@ -679,9 +679,9 @@ export default function Checkout() {
                     setFormErrors((prev) => ({ ...prev, terms: '' }))
                   }
                 }}
-                className="mt-0.5 w-4 h-4 rounded border-[var(--color-line)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer shrink-0 accent-[var(--color-primary)]"
+                className="mt-0.5 w-4 h-4 rounded border-black/20 text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer shrink-0 accent-[var(--color-primary)]"
               />
-              <span className="leading-snug text-[0.74rem] sm:text-[0.76rem] text-[var(--color-ink)]">
+              <span className="leading-relaxed text-[0.74rem] sm:text-[0.76rem] text-[var(--color-ink)] font-normal">
                 I understand and agree that handmade products may have slight variations from the product images due to their handmade nature.{' '}
                 <a
                   href="/terms"
@@ -702,32 +702,32 @@ export default function Checkout() {
             )}
           </div>
 
-          <button type="submit" disabled={processing} className="btn-primary w-full py-3.5 text-xs uppercase tracking-widest font-bold disabled:opacity-60 rounded-full">
+          <button type="submit" disabled={processing} className="btn-primary w-full py-4 text-xs uppercase tracking-widest font-bold disabled:opacity-60 rounded-full shadow-md cursor-pointer">
             {processing ? 'Processing Payment & Saving Order...' : `Pay ${formatPrice(total)} Now`}
           </button>
         </form>
       </Reveal>
 
       <Reveal delay={0.1}>
-        <div className="bg-[var(--color-beige)]/30 p-4 sm:p-6 lg:sticky lg:top-28 border border-[var(--color-line)] rounded-3xl space-y-4 sm:space-y-5 w-full">
+        <div className="bg-[var(--color-card-bg)]/80 backdrop-blur-md p-5 sm:p-7 lg:sticky lg:top-28 border border-black/10 rounded-3xl space-y-4 sm:space-y-5 w-full luxury-shadow-md">
           <p className="eyebrow mb-2">Order Summary</p>
-          <div className="space-y-3 sm:space-y-4 max-h-56 overflow-y-auto pr-1">
+          <div className="space-y-3 sm:space-y-4 max-h-56 overflow-y-auto pr-1 scrollbar-thin">
             {items.map((item) => (
-              <div key={item.id} className="flex gap-3">
-                <img src={item.image} alt={item.title} className="w-14 h-16 object-cover shrink-0 border border-[var(--color-line)] rounded-xl bg-[var(--color-card-bg)]" />
+              <div key={item.id} className="flex gap-3 items-center">
+                <img src={item.image} alt={item.title} className="w-14 h-16 object-cover shrink-0 rounded-xl bg-[var(--color-card-bg)] shadow-2xs" />
                 <div className="flex-1 min-w-0 text-xs">
-                  <p className="font-bold leading-tight truncate">{item.title}</p>
+                  <p className="font-bold leading-tight truncate text-[var(--color-ink)]">{item.title}</p>
                   <p className="text-[var(--color-ink-soft)] mt-0.5">Qty: {item.qty}</p>
                 </div>
-                <p className="text-xs font-bold text-[var(--color-primary)] shrink-0">{formatPrice(item.price * item.qty)}</p>
+                <p className="text-xs font-bold text-[var(--color-primary)] shrink-0 font-sans">{formatPrice(item.price * item.qty)}</p>
               </div>
             ))}
           </div>
 
           {/* Promo Code Entry Box */}
-          <div className="pt-3 border-t border-[var(--color-line)] space-y-2">
+          <div className="pt-3.5 border-t border-black/10 space-y-2">
             {activeCoupon ? (
-              <div className="bg-emerald-50 border border-emerald-300 p-2.5 text-xs flex justify-between items-center rounded-2xl">
+              <div className="bg-emerald-50 border border-emerald-300 p-3 text-xs flex justify-between items-center rounded-2xl">
                 <div>
                   <p className="font-bold text-emerald-900 flex items-center gap-1">
                     ✨ {activeCoupon.code}
@@ -737,7 +737,7 @@ export default function Checkout() {
                 <button
                   type="button"
                   onClick={handleRemoveCoupon}
-                  className="text-rose-600 font-bold uppercase text-[0.65rem] hover:underline"
+                  className="text-rose-600 font-bold uppercase text-[0.65rem] hover:underline cursor-pointer"
                 >
                   Remove
                 </button>
@@ -752,9 +752,9 @@ export default function Checkout() {
                       if (couponMsg) setCouponMsg(null)
                     }}
                     placeholder="Promo code"
-                    className="flex-1 border border-[var(--color-line)] bg-transparent rounded-full px-3.5 py-2 text-xs focus:outline-none"
+                    className="flex-1 border border-black/15 bg-transparent rounded-full px-4 py-2 text-xs focus:outline-none"
                   />
-                  <button type="submit" className="btn-primary text-[0.65rem] py-2 px-3 rounded-full uppercase tracking-wider font-bold">
+                  <button type="submit" className="btn-primary text-[0.65rem] py-2 px-4 rounded-full uppercase tracking-wider font-bold cursor-pointer">
                     Apply
                   </button>
                 </div>
@@ -763,13 +763,13 @@ export default function Checkout() {
             )}
 
             {!activeCoupon && couponMsg && (
-              <div className={`text-[0.68rem] p-2 rounded ${couponMsg.success ? 'bg-emerald-100 text-emerald-900 font-bold' : 'bg-rose-100 text-rose-800'}`}>
+              <div className={`text-[0.68rem] p-2 rounded-xl ${couponMsg.success ? 'bg-emerald-100 text-emerald-900 font-bold' : 'bg-rose-100 text-rose-800'}`}>
                 {couponMsg.message}
               </div>
             )}
           </div>
 
-          <div className="space-y-2 text-xs pt-3 border-t border-[var(--color-line)]">
+          <div className="space-y-2 text-xs pt-3 border-t border-black/10">
             <div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
             {discountAmount > 0 && (
               <div className="flex justify-between text-emerald-700 font-bold">
@@ -792,11 +792,11 @@ export default function Checkout() {
               </span>
             </div>
             {isShippingEnabled && shipping > 0 && subtotal < freeThreshold && (
-              <p className="text-[0.65rem] text-emerald-800 bg-emerald-50 border border-emerald-200 p-1.5 rounded font-semibold text-center">
+              <p className="text-[0.65rem] text-emerald-800 bg-emerald-50 border border-emerald-200 p-2 rounded-xl font-semibold text-center">
                 ✨ Add {formatPrice(freeThreshold - subtotal)} more for <strong>FREE Shipping!</strong>
               </p>
             )}
-            <div className="flex justify-between font-[var(--font-display)] text-base sm:text-lg font-bold pt-3 border-t border-[var(--color-line)] text-[var(--color-ink)]">
+            <div className="flex justify-between font-[var(--font-display)] text-base sm:text-lg font-bold pt-3 border-t border-black/10 text-[var(--color-ink)]">
               <span>Total Amount</span><span className="text-[var(--color-primary)]">{formatPrice(total)}</span>
             </div>
           </div>

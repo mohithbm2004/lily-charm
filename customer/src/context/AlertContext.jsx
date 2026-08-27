@@ -115,11 +115,33 @@ export function AlertProvider({ children }) {
     }
   }, [showAlert])
 
+  const [toast, setToast] = useState(null)
+
+  const showToast = useCallback((options) => {
+    const toastData = typeof options === 'string'
+      ? { title: 'Added to Cart', message: options }
+      : {
+          title: options.title || 'Added to Cart',
+          message: options.message || '',
+          image: options.image || null,
+        }
+    setToast(toastData)
+  }, [])
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => {
+      setToast(null)
+    }, 3000)
+    return () => clearTimeout(timer)
+  }, [toast])
+
   const alertContextValue = useMemo(() => ({
     showAlert,
     showConfirm,
+    showToast,
     closeAlert: handleCancel,
-  }), [showAlert, showConfirm, handleCancel])
+  }), [showAlert, showConfirm, showToast, handleCancel])
 
   return (
     <AlertContext.Provider value={alertContextValue}>
@@ -237,6 +259,44 @@ export function AlertProvider({ children }) {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Fixed Bottom Popup Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 z-[9999] bg-[#1C2518]/95 text-[#FAF7F2] backdrop-blur-md px-4 py-3 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-3.5 min-w-[280px] max-w-sm"
+          >
+            {toast.image ? (
+              <img src={toast.image} alt="Added Product" className="w-10 h-12 object-cover rounded-xl shrink-0 shadow-2xs" />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-400 flex items-center justify-center shrink-0">
+                <Sparkles size={16} />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-xs uppercase tracking-wider text-[#F5E8D0] flex items-center gap-1.5 font-[var(--font-button)]">
+                <span>🌸</span> {toast.title || 'Added to Cart'}
+              </p>
+              {toast.message && (
+                <p className="text-[0.72rem] text-[#E2DACB] truncate leading-tight mt-0.5 font-normal">
+                  {toast.message}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={() => setToast(null)}
+              className="text-[#E2DACB] hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label="Close notification"
+            >
+              <X size={15} />
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
     </AlertContext.Provider>

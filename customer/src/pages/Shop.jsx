@@ -77,59 +77,59 @@ export default function Shop() {
   )
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-24 sm:pt-32 pb-16 sm:pb-24 w-full max-w-full">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-20 sm:pt-28 pb-16 sm:pb-24 w-full max-w-full">
       <Reveal>
-        <p className="eyebrow mb-2 sm:mb-3">Shop</p>
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-[var(--font-display)]">The Full Collection</h1>
+        <span className="eyebrow block mb-2 text-[var(--color-brown)] tracking-[0.28em]">STUDIO CATALOG</span>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-normal font-[var(--font-display)] tracking-tight">The Full Collection</h1>
       </Reveal>
 
       {/* Mobile Filters Bar */}
       <div className="flex items-center justify-between mt-6 sm:mt-10 mb-6 md:hidden gap-3">
         <button
           onClick={() => setFiltersOpen(true)}
-          className="flex items-center gap-2 text-xs sm:text-sm border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-full px-4 py-2 font-bold uppercase tracking-wider shadow-sm"
+          className="flex items-center gap-2 text-xs sm:text-sm border border-black/15 bg-[var(--color-card-bg)] rounded-xl px-4 py-2 font-bold uppercase tracking-wider shadow-2xs"
         >
           <SlidersHorizontal size={14} /> Filters
         </button>
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value)}
-          className="text-xs sm:text-sm border border-[var(--color-line)] rounded-xl px-3 py-2 bg-[var(--color-bg)] font-semibold"
+          className="text-xs sm:text-sm border border-black/15 rounded-xl px-3 py-2 bg-[var(--color-bg)] font-semibold"
         >
           {sortOptions.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
         </select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-8 md:gap-12 mt-4 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-[230px_1fr] gap-8 md:gap-12 mt-6 sm:mt-8 items-start">
         {/* Desktop Sidebar Filter */}
-        <aside className="hidden md:block sticky top-28 bg-[var(--color-card-bg)]/50 p-6 border border-[var(--color-line)] rounded-3xl shadow-sm">
+        <aside className="hidden md:block sticky top-28 bg-[var(--color-card-bg)] p-6 rounded-2xl luxury-shadow-sm">
           {FilterPanel}
         </aside>
 
         <div>
-          <div className="hidden md:flex justify-between items-center mb-8">
-            <p className="text-sm text-[var(--color-ink-soft)] font-medium">{filtered.length} pieces</p>
+          <div className="hidden md:flex justify-between items-center mb-8 pb-4 border-b border-black/10">
+            <p className="text-xs sm:text-sm text-[var(--color-brown)] font-semibold uppercase tracking-wider font-mono">Showing {filtered.length} Handcrafted Pieces</p>
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
-              className="text-sm border border-[var(--color-line)] rounded-xl px-3 py-2 bg-transparent font-medium"
+              className="text-xs sm:text-sm border border-black/15 rounded-xl px-3.5 py-2 bg-[var(--color-bg)] font-medium cursor-pointer"
             >
               {sortOptions.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
           </div>
 
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-6 gap-y-8 sm:gap-y-12">
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 gap-y-8 sm:gap-y-12">
             {filtered.map((p, i) => (
               <ProductCard key={p.id} product={p} index={i} />
             ))}
           </div>
 
           {filtered.length === 0 && (
-            <div className="text-center py-16 border border-dashed border-[var(--color-line)] rounded-2xl p-8">
-              <p className="text-sm text-[var(--color-ink-soft)]">No pieces match those filters.</p>
+            <div className="text-center py-16 border border-dashed border-black/20 rounded-3xl p-8 bg-[var(--color-card-bg)]/40">
+              <p className="text-sm text-[var(--color-ink-soft)] font-medium">No botanical creations match those criteria.</p>
               <button
                 onClick={() => { setParams({}); setMaxPrice(12000); setInStockOnly(false); }}
-                className="mt-4 btn-outline text-xs rounded-full"
+                className="mt-4 btn-outline text-xs rounded-full cursor-pointer"
               >
                 Reset Filters
               </button>
@@ -140,9 +140,9 @@ export default function Shop() {
 
       {/* Mobile Filter Modal */}
       {filtersOpen && (
-        <div className="fixed inset-0 z-[1100] bg-[var(--color-bg)] p-5 sm:p-6 overflow-y-auto md:hidden rounded-t-3xl">
-          <div className="flex justify-between items-center mb-6 pb-4 border-b border-[var(--color-line)]">
-            <p className="font-[var(--font-display)] text-xl font-bold uppercase">Filters</p>
+        <div className="fixed inset-0 z-[1100] bg-[var(--color-bg)] p-5 sm:p-6 overflow-y-auto md:hidden rounded-t-3xl shadow-2xl">
+          <div className="flex justify-between items-center mb-6 pb-4 border-b border-black/10">
+            <p className="font-[var(--font-display)] text-xl font-bold uppercase">Filter Creations</p>
             <button
               onClick={() => setFiltersOpen(false)}
               className="p-1.5 text-[var(--color-ink)] rounded-full hover:bg-black/5"

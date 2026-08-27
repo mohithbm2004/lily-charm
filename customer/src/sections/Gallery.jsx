@@ -19,7 +19,7 @@ export default function Gallery() {
       <div className="columns-2 md:columns-3 gap-3 sm:gap-4 mt-8 sm:mt-14 [column-fill:balance]">
         {galleryImages.map((src, i) => (
           <Reveal key={src} delay={(i % 3) * 0.08} className="mb-3 sm:mb-4 break-inside-avoid">
-            <button onClick={() => setActive(src)} className="block w-full group overflow-hidden border border-[var(--color-line)] bg-[var(--color-card-bg)]">
+            <button onClick={() => setActive(src)} className="block w-full group overflow-hidden bg-[var(--color-card-bg)] rounded-2xl luxury-shadow-sm">
               <img
                 src={src}
                 alt="Studio and finished botanical artwork"
