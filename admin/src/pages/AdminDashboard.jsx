@@ -3830,7 +3830,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                     <div style={{ width: `${tableScrollWidth}px`, height: '1px' }} />
                   </div>
                 )}
-                <div ref={bottomScrollRef} onScroll={handleBottomScroll} className="overflow-x-auto max-h-[70vh] overflow-y-auto">
+                <div ref={bottomScrollRef} onScroll={handleBottomScroll} className="overflow-x-auto max-h-[70vh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="sticky top-0 z-10 shadow-[0_1px_0_0_rgba(0,0,0,0.05)]">
                       <tr className="font-bold text-stone-700">
