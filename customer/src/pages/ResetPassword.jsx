@@ -277,7 +277,7 @@ export default function ResetPassword() {
                 </div>
                 {fieldErrors.newPassword && (
                   <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                    ⚠️ {fieldErrors.newPassword}
+                    {fieldErrors.newPassword}
                   </p>
                 )}
               </div>
@@ -307,7 +307,7 @@ export default function ResetPassword() {
                 </div>
                 {fieldErrors.confirmPassword && (
                   <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                    ⚠️ {fieldErrors.confirmPassword}
+                    {fieldErrors.confirmPassword}
                   </p>
                 )}
               </div>
@@ -331,12 +331,12 @@ export default function ResetPassword() {
           {/* STATE 4: SUCCESS */}
           {status === 'success' && (
             <div className="space-y-5 text-center">
-              <div className="p-4 bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-bold rounded-2xl space-y-1">
+              <div className="p-4 bg-[var(--color-card-bg)] border border-[var(--color-line)] text-[var(--color-ink)] text-xs font-bold rounded-2xl space-y-1 shadow-2xs">
                 <div className="flex items-center justify-center gap-1.5 text-sm">
-                  <CheckCircle2 size={18} className="text-emerald-700" />
+                  <CheckCircle2 size={18} className="text-[var(--color-primary)]" />
                   Password Reset Successfully!
                 </div>
-                <p className="text-[0.72rem] text-emerald-800 font-normal">
+                <p className="text-[0.72rem] text-[var(--color-ink-soft)] font-normal">
                   Your new password is now active. You can sign in immediately to access your Lily Charm customer account.
                 </p>
               </div>

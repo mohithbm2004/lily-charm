@@ -126,11 +126,11 @@ export default function Reviews() {
                     <strong className="text-[var(--color-ink)] font-bold text-xs sm:text-sm">{review.name}</strong>
                     {review.productTitle && (
                       <span className="text-[0.65rem] sm:text-[0.7rem] bg-[var(--color-bg)] border border-[var(--color-line)] px-2.5 py-0.5 rounded-full font-mono">
-                        🌸 {review.productTitle}
+                        {review.productTitle}
                       </span>
                     )}
                     {review.isVerifiedBuyer !== false && (
-                      <span className="inline-flex items-center gap-1 text-[0.62rem] sm:text-[0.68rem] text-emerald-800 font-bold bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                      <span className="inline-flex items-center gap-1 text-[0.62rem] sm:text-[0.68rem] text-[#212B1C] font-bold bg-[#212B1C]/10 px-2.5 py-0.5 rounded-full border border-[#212B1C]/20">
                         <CheckCircle2 size={11} /> Verified Buyer
                       </span>
                     )}

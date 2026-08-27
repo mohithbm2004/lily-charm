@@ -191,7 +191,7 @@ export default function AuthModal({
       }
 
       if (res.ok) {
-        setSuccessMessage('🎉 Verified! Welcome to Lily Charm.')
+        setSuccessMessage('Verified! Welcome to Lily Charm.')
         handleAuthSuccess(data.user, data.token)
       } else if (res.status === 400) {
         setErrorMessage(data.message || 'Invalid verification code. Please try again.')
@@ -275,7 +275,7 @@ export default function AuthModal({
         const tokenOrCode = tokenResponse.access_token || tokenResponse.credential
         const result = await loginWithGoogle(tokenOrCode)
         if (result.ok) {
-          setSuccessMessage('🎉 Signed in successfully!')
+          setSuccessMessage('Signed in successfully!')
           handleAuthSuccess(result.user, result.token)
         } else {
           setErrorMessage(result.error || 'Could not sign in with Google. Please try again.')
@@ -391,7 +391,7 @@ export default function AuthModal({
         }
 
         if (res.ok) {
-          setSuccessMessage('🎉 Welcome back! Signed in successfully.')
+          setSuccessMessage('Welcome back! Signed in successfully.')
           handleAuthSuccess(data.user, data.token)
         } else if (res.status === 403 && data.requiresOtp) {
           setMode('otp')
@@ -438,7 +438,7 @@ export default function AuthModal({
         if (res.ok && data.requiresOtp) {
           setMode('otp')
         } else if (res.ok) {
-          setSuccessMessage('✨ Account created successfully!')
+          setSuccessMessage('Account created successfully!')
           handleAuthSuccess(data.user, data.token)
         } else if (res.status === 400 && data.hasTypo) {
           setErrorMessage(data.message)
@@ -544,7 +544,7 @@ export default function AuthModal({
 
             {customNotice && (
               <div className="p-2.5 sm:p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold rounded-2xl text-center leading-snug">
-                🌸 {customNotice}
+                {customNotice}
               </div>
             )}
 
@@ -784,7 +784,7 @@ export default function AuthModal({
                     </div>
                     {fieldErrors.name && (
                       <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                        ⚠️ {fieldErrors.name}
+                        {fieldErrors.name}
                       </p>
                     )}
                   </div>
@@ -828,7 +828,7 @@ export default function AuthModal({
 
                   {fieldErrors.email && (
                     <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                      ⚠️ {fieldErrors.email}
+                      {fieldErrors.email}
                     </p>
                   )}
                 </div>
@@ -895,7 +895,7 @@ export default function AuthModal({
                     </div>
                     {fieldErrors.password && (
                       <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                        ⚠️ {fieldErrors.password}
+                        {fieldErrors.password}
                       </p>
                     )}
                   </div>

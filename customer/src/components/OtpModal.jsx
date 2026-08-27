@@ -117,7 +117,7 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
       }
 
       if (res.ok) {
-        setSuccessMessage('🎉 Email verified successfully!')
+        setSuccessMessage('Email verified successfully!')
         if (onVerified) onVerified(data)
         setTimeout(() => {
           onClose()
@@ -164,7 +164,7 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
       }
 
       if (res.ok) {
-        setSuccessMessage('✨ A new 6-digit verification code has been sent to your email.')
+        setSuccessMessage('A new 6-digit verification code has been sent to your email.')
         setResendCooldown(60)
         setTimeLeft(300)
         setOtpDigits(['', '', '', '', '', ''])
@@ -223,12 +223,12 @@ export default function OtpModal({ isOpen, onClose, email, onVerified }) {
 
           {errorMessage && (
             <div className="p-2.5 sm:p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold rounded">
-              ⚠️ {errorMessage}
+              {errorMessage}
             </div>
           )}
 
           {successMessage && (
-            <div className="p-2.5 sm:p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2 rounded">
+            <div className="p-2.5 sm:p-3 bg-[#212B1C]/10 border border-[#212B1C]/20 text-[#212B1C] text-xs font-bold flex items-center justify-center gap-2 rounded">
               <CheckCircle2 size={16} /> {successMessage}
             </div>
           )}

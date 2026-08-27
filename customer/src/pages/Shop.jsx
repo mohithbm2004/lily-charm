@@ -12,20 +12,40 @@ const sortOptions = [
 ]
 
 export default function Shop() {
-  const { products, collections = [] } = useStudio()
+  const { products = [], collections = [] } = useStudio()
   const [params, setParams] = useSearchParams()
   const activeCategory = params.get('category') || 'all'
   const [sort, setSort] = useState('featured')
-  const [maxPrice, setMaxPrice] = useState(12000)
   const [inStockOnly, setInStockOnly] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
 
+  // Compute dynamic min & max prices from actual catalog products, rounded to clean figures
+  const { catalogMinPrice, catalogMaxPrice } = useMemo(() => {
+    if (!Array.isArray(products) || products.length === 0) {
+      return { catalogMinPrice: 1000, catalogMaxPrice: 15000 }
+    }
+    const prices = products.map((p) => Number(p.price) || 0).filter((p) => p > 0)
+    if (prices.length === 0) return { catalogMinPrice: 1000, catalogMaxPrice: 15000 }
+
+    const rawMin = Math.min(...prices)
+    const rawMax = Math.max(...prices)
+
+    // Round min down to clean 500 multiple, round max up to clean 500/1000 multiple
+    const roundedMin = Math.max(0, Math.floor(rawMin / 500) * 500)
+    const roundedMax = Math.max(roundedMin + 1000, Math.ceil(rawMax / 500) * 500)
+
+    return { catalogMinPrice: roundedMin, catalogMaxPrice: roundedMax }
+  }, [products])
+
+  const [selectedMaxPrice, setSelectedMaxPrice] = useState(null)
+  const maxPrice = selectedMaxPrice !== null ? selectedMaxPrice : catalogMaxPrice
+
   const filtered = useMemo(() => {
     let list = products.filter((p) => (activeCategory === 'all' ? true : (p.category === activeCategory || p.category === activeCategory.toLowerCase())))
-    list = list.filter((p) => p.price <= maxPrice)
-    if (inStockOnly) list = list.filter((_, i) => i % 5 !== 4) // mock availability
-    if (sort === 'price-asc') list = [...list].sort((a, b) => a.price - b.price)
-    if (sort === 'price-desc') list = [...list].sort((a, b) => b.price - a.price)
+    list = list.filter((p) => (Number(p.price) || 0) <= maxPrice)
+    if (inStockOnly) list = list.filter((p) => p.stock === undefined || p.stock > 0)
+    if (sort === 'price-asc') list = [...list].sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0))
+    if (sort === 'price-desc') list = [...list].sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0))
     return list
   }, [products, activeCategory, sort, maxPrice, inStockOnly])
 
@@ -58,13 +78,17 @@ export default function Shop() {
         <p className="eyebrow mb-3 sm:mb-4">Price up to ₹{maxPrice.toLocaleString('en-IN')}</p>
         <input
           type="range"
-          min={2000}
-          max={12000}
-          step={500}
+          min={catalogMinPrice}
+          max={catalogMaxPrice}
+          step={1}
           value={maxPrice}
-          onChange={(e) => setMaxPrice(Number(e.target.value))}
+          onChange={(e) => setSelectedMaxPrice(Number(e.target.value))}
           className="w-full accent-[var(--color-primary)] cursor-pointer"
         />
+        <div className="flex justify-between text-[0.65rem] text-[var(--color-ink-soft)] font-mono mt-1">
+          <span>₹{catalogMinPrice.toLocaleString('en-IN')}</span>
+          <span>₹{catalogMaxPrice.toLocaleString('en-IN')}</span>
+        </div>
       </div>
       <div>
         <p className="eyebrow mb-3 sm:mb-4">Availability</p>
@@ -78,13 +102,31 @@ export default function Shop() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-20 sm:pt-28 pb-16 sm:pb-24 w-full max-w-full">
-      <Reveal>
-        <span className="eyebrow block mb-2 text-[var(--color-brown)] tracking-[0.28em]">STUDIO CATALOG</span>
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-normal font-[var(--font-display)] tracking-tight">The Full Collection</h1>
-      </Reveal>
+      <div className="sticky top-[104px] z-20 bg-[var(--color-bg)]/95 backdrop-blur-md py-4 mb-8 border-b border-black/10 transition-all">
+        <Reveal>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span className="eyebrow block mb-1 text-[var(--color-brown)] tracking-[0.28em]">STUDIO CATALOG</span>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-normal font-[var(--font-display)] tracking-tight text-[var(--color-ink)]">The Full Collection</h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <p className="text-xs sm:text-sm text-[var(--color-brown)] font-semibold uppercase tracking-wider font-mono">
+                Showing {filtered.length} Handcrafted Pieces
+              </p>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                className="text-xs sm:text-sm border border-black/15 rounded-xl px-3.5 py-2 bg-[var(--color-bg)] font-medium cursor-pointer shadow-2xs"
+              >
+                {sortOptions.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+              </select>
+            </div>
+          </div>
+        </Reveal>
+      </div>
 
       {/* Mobile Filters Bar */}
-      <div className="flex items-center justify-between mt-6 sm:mt-10 mb-6 md:hidden gap-3">
+      <div className="flex items-center justify-between mb-6 md:hidden gap-3">
         <button
           onClick={() => setFiltersOpen(true)}
           className="flex items-center gap-2 text-xs sm:text-sm border border-black/15 bg-[var(--color-card-bg)] rounded-xl px-4 py-2 font-bold uppercase tracking-wider shadow-2xs"
@@ -100,24 +142,13 @@ export default function Shop() {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[230px_1fr] gap-8 md:gap-12 mt-6 sm:mt-8 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-[230px_1fr] gap-8 md:gap-12 items-start">
         {/* Desktop Sidebar Filter */}
-        <aside className="hidden md:block sticky top-28 bg-[var(--color-card-bg)] p-6 rounded-2xl luxury-shadow-sm">
+        <aside className="hidden md:block sticky top-[190px] bg-[var(--color-card-bg)] p-6 rounded-2xl luxury-shadow-sm">
           {FilterPanel}
         </aside>
 
         <div>
-          <div className="hidden md:flex justify-between items-center mb-8 pb-4 border-b border-black/10">
-            <p className="text-xs sm:text-sm text-[var(--color-brown)] font-semibold uppercase tracking-wider font-mono">Showing {filtered.length} Handcrafted Pieces</p>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              className="text-xs sm:text-sm border border-black/15 rounded-xl px-3.5 py-2 bg-[var(--color-bg)] font-medium cursor-pointer"
-            >
-              {sortOptions.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-            </select>
-          </div>
-
           <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 gap-y-8 sm:gap-y-12">
             {filtered.map((p, i) => (
               <ProductCard key={p.id} product={p} index={i} />

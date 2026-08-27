@@ -252,7 +252,7 @@ export default function Product() {
               </div>
 
               <p className="text-[0.66rem] text-[var(--color-brown)] font-sans font-medium flex items-center gap-1">
-                🌸 Limited Studio Edition: Maximum 4 units per handcrafted design.
+                Limited Studio Edition: Maximum 4 units per handcrafted design.
               </p>
             </div>
 

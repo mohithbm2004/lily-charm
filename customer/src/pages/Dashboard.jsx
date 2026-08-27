@@ -137,6 +137,7 @@ export default function Dashboard() {
 
   const currentEmail = userProfile?.email || user?.email || ''
 
+  const [isRefreshingOrders, setIsRefreshingOrders] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState(userProfile?.profileImage || '')
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('')
@@ -175,6 +176,7 @@ export default function Dashboard() {
   const fetchUserOrdersAndRequests = async () => {
     const currentToken = token || localStorage.getItem('lilycharm_token')
     if (!currentToken) return
+    setIsRefreshingOrders(true)
     try {
       const [ordRes, reqRes] = await Promise.all([
         fetch(`${API_URL}/orders/mine`, {
@@ -198,6 +200,8 @@ export default function Dashboard() {
       }
     } catch (e) {
       console.error('Failed to fetch user orders from API:', e)
+    } finally {
+      setTimeout(() => setIsRefreshingOrders(false), 500)
     }
   }
 
@@ -318,7 +322,7 @@ export default function Dashboard() {
         setDashPincodeStatus({
           loading: false,
           success: false,
-          message: '⚠️ Invalid PIN code',
+          message: 'Invalid PIN code',
         })
       }
     } catch (err) {
@@ -476,7 +480,7 @@ export default function Dashboard() {
         updateUserProfile(data.user)
         setAvatarPreview(data.user.profileImage || '')
         localStorage.setItem('lilycharm_user_profile', JSON.stringify(data.user))
-        setSaveSuccessMsg('✨ Profile updated successfully!')
+        setSaveSuccessMsg('Profile updated successfully!')
         setTimeout(() => setSaveSuccessMsg(''), 4000)
       } else {
         alert('Unable to update profile. Please try again.')
@@ -518,7 +522,7 @@ export default function Dashboard() {
         setUserProfile(data.user)
         updateUserProfile(data.user)
         localStorage.setItem('lilycharm_user_profile', JSON.stringify(data.user))
-        alert('✨ Saved shipping address has been deleted.')
+        alert('Saved shipping address has been deleted.')
       } else {
         alert('Unable to delete address. Please try again.')
       }
@@ -532,7 +536,7 @@ export default function Dashboard() {
   if (confirmedCustomOrder) {
     return (
       <div className="max-w-3xl mx-auto px-6 pt-36 pb-24 text-center space-y-6">
-        <div className="w-20 h-20 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto">
+        <div className="w-20 h-20 bg-[#212B1C]/10 text-[#212B1C] rounded-full flex items-center justify-center mx-auto border border-[#212B1C]/20">
           <CheckCircle2 size={48} />
         </div>
         <h1 className="text-3xl md:text-4xl font-bold font-[var(--font-display)] uppercase">ORDER CONFIRMED!</h1>
@@ -543,7 +547,7 @@ export default function Dashboard() {
         <div className="bg-[var(--color-beige)]/40 p-6 border border-[var(--color-line)] max-w-lg mx-auto text-left text-xs space-y-2">
           <div className="flex justify-between border-b border-[var(--color-line)] pb-2 font-bold uppercase">
             <span>Payment Status</span>
-            <span className="text-emerald-700 font-mono">PAID ONLINE</span>
+            <span className="text-[var(--color-primary)] font-mono">PAID ONLINE</span>
           </div>
           <div className="flex justify-between pt-1">
             <span>Shipping To:</span>
@@ -626,55 +630,61 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pt-24 sm:pt-32 pb-16 sm:pb-24 text-[var(--color-ink)] w-full max-w-full">
-      <Reveal>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--color-line)] pb-6">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-[var(--color-primary)] overflow-hidden bg-[var(--color-card-bg)] shrink-0 flex items-center justify-center">
-              {avatarPreview ? (
-                <img src={avatarPreview} alt={userProfile?.name || 'Customer'} className="w-full h-full object-cover" />
-              ) : (
-                <User size={28} className="text-[var(--color-primary)] sm:w-8 sm:h-8" />
-              )}
+      <div className="sticky top-[104px] z-20 bg-[var(--color-bg)]/95 backdrop-blur-md py-4 mb-6 border-b border-[var(--color-line)] transition-all">
+        <Reveal>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5 sm:gap-4">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-[var(--color-primary)] overflow-hidden bg-[var(--color-card-bg)] shrink-0 flex items-center justify-center luxury-shadow-xs">
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt={userProfile?.name || 'Customer'} className="w-full h-full object-cover" />
+                ) : (
+                  <User size={28} className="text-[var(--color-primary)] sm:w-8 sm:h-8" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-[var(--font-display)] uppercase tracking-tight text-[var(--color-ink)] truncate">
+                  {userProfile?.name || 'Valued Customer'}
+                </h1>
+                <p className="text-xs text-[var(--color-primary)] font-semibold font-mono truncate mt-0.5">
+                  {userProfile?.email || 'customer@example.com'}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-[var(--font-display)] uppercase truncate">{userProfile?.name || 'Valued Customer'}</h1>
-              <p className="text-xs text-[var(--color-primary)] font-semibold font-mono truncate">{userProfile?.email || 'customer@example.com'}</p>
+
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap self-center">
+              <div className="flex items-center gap-1.5 text-[0.65rem] sm:text-[0.7rem] font-bold uppercase tracking-wider text-[var(--color-primary)] bg-[var(--color-card-bg)] border border-[var(--color-line)] rounded-full px-3.5 py-1.5 sm:px-4 sm:py-2 shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#212B1C] animate-pulse" />
+                <span>Verified Member</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  logout()
+                  setUserProfile(null)
+                  setUserOrders([])
+                  setUserCustomRequests([])
+                  navigate('/')
+                }}
+                className="border border-black/20 text-[var(--color-ink)] bg-transparent hover:bg-black/5 rounded-full px-3.5 py-1.5 sm:px-4 sm:py-2 text-[0.68rem] sm:text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                title="Sign Out from account"
+              >
+                <LogOut size={13} /> Sign Out
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 self-start sm:self-auto flex-wrap">
-            <div className="flex items-center gap-2 text-[0.68rem] sm:text-xs font-mono text-[var(--color-ink-soft)] bg-[var(--color-card-bg)] border border-[var(--color-line)] rounded-full px-3 py-1.5 sm:px-4 sm:py-2">
-              <span>Account:</span>
-              <strong className="text-emerald-700">Verified & Active</strong>
+          {justOrdered && (
+            <div className="mt-4 p-3.5 sm:p-4 bg-[var(--color-card-bg)] border border-[var(--color-line)] text-[var(--color-ink)] text-xs font-semibold flex items-center gap-2 rounded-2xl shadow-2xs">
+              <CheckCircle2 size={16} className="shrink-0 text-[var(--color-primary)]" /> Order confirmed — your order details have been saved to your profile and sent to our studio delivery team!
             </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                logout()
-                setUserProfile(null)
-                setUserOrders([])
-                setUserCustomRequests([])
-                navigate('/')
-              }}
-              className="border border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-full px-3.5 py-1.5 sm:px-4 sm:py-2 text-[0.68rem] sm:text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors shadow-sm"
-              title="Sign Out from account"
-            >
-              <LogOut size={13} /> Sign Out
-            </button>
-          </div>
-        </div>
-
-        {justOrdered && (
-          <div className="mt-4 p-3.5 sm:p-4 bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-semibold flex items-center gap-2 rounded-2xl">
-            <CheckCircle2 size={16} className="shrink-0" /> Order confirmed — your order details have been saved to your profile and sent to our studio delivery team!
-          </div>
-        )}
-      </Reveal>
+          )}
+        </Reveal>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 md:gap-10 mt-6 sm:mt-8 items-start">
         {/* Tab Selector Sidebar */}
-        <aside className="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0 scrollbar-thin w-full max-w-full">
+        <aside className="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0 scrollbar-thin w-full max-w-full md:sticky md:top-[220px]">
           {tabs.map((t) => (
             <button
               key={t}
@@ -708,7 +718,7 @@ export default function Dashboard() {
               </div>
 
               {saveSuccessMsg && (
-                <div className="p-3 bg-emerald-100 text-emerald-900 font-bold text-xs rounded border border-emerald-300">
+                <div className="p-3 bg-[var(--color-card-bg)] text-[var(--color-ink)] font-bold text-xs rounded border border-[var(--color-line)]">
                   {saveSuccessMsg}
                 </div>
               )}
@@ -745,7 +755,7 @@ export default function Dashboard() {
                       setUserProfile({ ...userProfile, name: e.target.value })
                       if (profileErrors.name) setProfileErrors((prev) => ({ ...prev, name: '' }))
                     }}
-                    className={`w-full border p-3 font-bold transition-colors ${
+                    className={`w-full border p-3 font-bold transition-colors rounded-2xl ${
                       profileErrors.name
                         ? 'border-red-500 focus:border-red-500 bg-red-50/20'
                         : 'border-[var(--color-line)] bg-[var(--color-bg)]'
@@ -754,7 +764,7 @@ export default function Dashboard() {
                   />
                   {profileErrors.name && (
                     <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                      ⚠️ {profileErrors.name}
+                      {profileErrors.name}
                     </p>
                   )}
                 </div>
@@ -774,7 +784,7 @@ export default function Dashboard() {
                       readOnly
                       disabled
                       value={userProfile?.email || user?.email || ''}
-                      className="w-full border border-[var(--color-line)] bg-zinc-100/90 dark:bg-zinc-800/50 text-[var(--color-ink-soft)] p-3 font-semibold rounded-none cursor-not-allowed select-none opacity-80"
+                      className="w-full border border-[var(--color-line)] bg-zinc-100/90 text-[var(--color-ink-soft)] p-3 font-semibold rounded-2xl cursor-not-allowed select-none opacity-80"
                       placeholder="customer@example.com"
                       title="Registered email address cannot be changed after sign up."
                     />
@@ -795,7 +805,7 @@ export default function Dashboard() {
                     type="tel"
                     value={userProfile?.phone || ''}
                     onChange={(e) => setUserProfile({ ...userProfile, phone: e.target.value })}
-                    className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] p-3 font-mono"
+                    className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] p-3 font-mono rounded-2xl"
                     placeholder="e.g. +91 98765 43210"
                   />
                 </div>
@@ -806,7 +816,7 @@ export default function Dashboard() {
                     type="text"
                     value={userProfile?.city || ''}
                     onChange={(e) => setUserProfile({ ...userProfile, city: e.target.value })}
-                    className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] p-3"
+                    className="w-full border border-[var(--color-line)] bg-[var(--color-bg)] p-3 rounded-2xl"
                     placeholder="e.g. Bengaluru"
                   />
                 </div>
@@ -836,7 +846,7 @@ export default function Dashboard() {
                     dashPincodeStatus.message && !dashPincodeStatus.success && !dashPincodeStatus.loading
                       ? 'border-amber-600 focus:border-amber-600 bg-amber-50/20'
                       : dashPincodeStatus.success
-                      ? 'border-emerald-600 focus:border-emerald-600 bg-emerald-50/20'
+                      ? 'border-[var(--color-primary)] focus:border-[var(--color-primary)] bg-[var(--color-card-bg)]'
                       : 'border-[var(--color-line)] bg-[var(--color-bg)] focus:border-[var(--color-primary)]'
                   }`}
                   placeholder="e.g. 562159"
@@ -846,7 +856,7 @@ export default function Dashboard() {
                     dashPincodeStatus.loading
                       ? 'text-blue-600 animate-pulse'
                       : dashPincodeStatus.success
-                      ? 'text-emerald-700 font-mono'
+                      ? 'text-[var(--color-primary)] font-mono'
                       : 'text-amber-700'
                   }`}>
                     {dashPincodeStatus.message}
@@ -878,9 +888,9 @@ export default function Dashboard() {
                 </div>
                 <button
                   onClick={() => fetchUserOrdersAndRequests()}
-                  className="px-3 py-1.5 border border-[var(--color-line)] bg-[var(--color-card-bg)] hover:bg-black/5 rounded-full flex items-center gap-1 font-bold text-[0.65rem] uppercase shadow-sm"
+                  className="group px-3.5 py-1.5 border border-[var(--color-line)] bg-[var(--color-card-bg)] hover:bg-black/5 rounded-full flex items-center gap-1.5 font-bold text-[0.65rem] uppercase shadow-2xs transition-all cursor-pointer"
                 >
-                  <RefreshCw size={12} /> Refresh
+                  <RefreshCw size={12} className={`transition-transform duration-500 ${isRefreshingOrders ? 'animate-spin' : 'group-hover:rotate-180'}`} /> Refresh
                 </button>
               </div>
 
@@ -974,7 +984,7 @@ export default function Dashboard() {
                                   className={`font-mono font-bold uppercase px-3 py-1 text-[0.65rem] rounded-full tracking-wider border shadow-sm ${
                                     o?.paymentStatus === 'Failed'
                                       ? 'bg-rose-800 text-white border-rose-950'
-                                      : 'bg-emerald-800 text-white border-emerald-950'
+                                      : 'bg-[#212B1C] text-white border-[#212B1C]'
                                   }`}
                                 >
                                   Payment: {o?.paymentStatus || 'Paid'}
@@ -1017,15 +1027,15 @@ export default function Dashboard() {
                             <div className="pt-3 border-t border-[var(--color-line)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 w-full">
                               <div>
                                 <span className="text-[0.65rem] sm:text-[0.68rem] text-[var(--color-ink-soft)] uppercase font-bold">Total Amount Paid</span>
-                                <p className="text-emerald-800 text-sm sm:text-base font-mono font-bold">{formatPrice(o?.grandTotal || o?.total || 0)}</p>
+                                <p className="text-[var(--color-ink)] text-sm sm:text-base font-mono font-bold">{formatPrice(o?.grandTotal || o?.total || 0)}</p>
                               </div>
 
-                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto mt-2">
+                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto mt-2 sm:mt-0">
                                 <button
                                   onClick={() => setSelectedOrder(o)}
-                                  className="btn-primary py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center rounded-full"
+                                  className="btn-primary py-2.5 px-4 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 w-full sm:w-auto text-center rounded-2xl cursor-pointer shadow-2xs"
                                 >
-                                  <Eye size={12} /> View Details & Timeline
+                                  <Eye size={13} /> View Details & Timeline
                                 </button>
 
                                 <button
@@ -1033,9 +1043,9 @@ export default function Dashboard() {
                                     const authToken = token || localStorage.getItem('lilycharm_token') || ''
                                     window.open(`${API_URL}/orders/${o?._id}/invoice?token=${encodeURIComponent(authToken)}`, '_blank')
                                   }}
-                                  className="btn-outline py-2 px-3 text-[0.65rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full sm:w-auto text-center rounded-full"
+                                  className="btn-outline py-2.5 px-4 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 w-full sm:w-auto text-center rounded-2xl cursor-pointer shadow-2xs"
                                 >
-                                  <Download size={12} /> Invoice PDF
+                                  <Download size={13} /> Invoice PDF
                                 </button>
 
                                 {['Pending Payment', 'Pending', 'Order Confirmed', 'Confirmed', 'Paid'].includes(o?.status) && (
@@ -1043,8 +1053,8 @@ export default function Dashboard() {
                                     onClick={() => {
                                       const isPaidOrder = o?.paymentStatus === 'Paid' || o?.status === 'Order Confirmed' || o?.status === 'Confirmed' || o?.status === 'Paid'
                                       const orderTotal = o?.grandTotal ?? o?.total ?? 0
-                                      const processingFee = Math.round(orderTotal * 0.03)
-                                      const netRefund = Math.max(0, orderTotal - processingFee)
+                                      const processingFee = Number((orderTotal * 0.03).toFixed(2))
+                                      const netRefund = Math.max(0, Number((orderTotal - processingFee).toFixed(2)))
                                       const authToken = token || localStorage.getItem('lilycharm_token') || ''
 
                                       if (isPaidOrder) {
@@ -1078,7 +1088,7 @@ export default function Dashboard() {
                                                 showAlert({
                                                   title: 'Order Cancelled & Refund Initiated',
                                                   type: 'success',
-                                                  message: `✨ Order ${o?.orderNumber || o?._id} has been cancelled. Net refund of ${formatPrice(netRefund)} (97%) has been sent to your original payment method.`,
+                                                  message: `Order ${o?.orderNumber || o?._id} has been cancelled. Net refund of ${formatPrice(netRefund)} (97%) has been sent to your original payment method.`,
                                                 })
                                                 fetchUserOrdersAndRequests()
                                               } else {
@@ -1127,7 +1137,7 @@ export default function Dashboard() {
                                                 showAlert({
                                                   title: 'Order Cancelled',
                                                   type: 'success',
-                                                  message: `✨ Order ${o?.orderNumber || o?._id} has been cancelled. No payment was charged.`,
+                                                  message: `Order ${o?.orderNumber || o?._id} has been cancelled. No payment was charged.`,
                                                 })
                                                 fetchUserOrdersAndRequests()
                                               } else {
@@ -1148,10 +1158,10 @@ export default function Dashboard() {
                                         })
                                       }
                                     }}
-                                    className="text-rose-600 border border-rose-300 hover:bg-rose-50 font-bold text-[0.62rem] sm:text-[0.65rem] uppercase tracking-wider px-3 py-2 transition-colors flex items-center justify-center gap-1 rounded-full cursor-pointer transition-colors shadow-sm self-end sm:self-auto"
+                                    className="btn-outline py-2.5 px-4 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 w-full sm:w-auto text-center rounded-2xl cursor-pointer shadow-2xs"
                                     title="Cancel Order"
                                   >
-                                    <XCircle size={11} /> Cancel Order
+                                    <XCircle size={13} /> Cancel Order
                                   </button>
                                 )}
 
@@ -1162,8 +1172,8 @@ export default function Dashboard() {
                                 )}
 
                                 {o?.razorpayRefundId && (
-                                  <span className="text-[0.62rem] font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-300 px-2.5 py-1.5 rounded flex items-center gap-1">
-                                    ✨ Refund Ref: {o.razorpayRefundId}
+                                  <span className="py-2.5 px-4 text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 w-full sm:w-auto text-center rounded-2xl bg-[var(--color-card-bg)] text-[var(--color-primary)] border border-[var(--color-line)] shadow-2xs">
+                                    Refund Ref: {o.razorpayRefundId}
                                   </span>
                                 )}
                               </div>
@@ -1192,9 +1202,9 @@ export default function Dashboard() {
                 </div>
                 <button
                   onClick={() => fetchUserOrdersAndRequests()}
-                  className="p-2 border border-[var(--color-line)] bg-[var(--color-card-bg)] hover:bg-black/5 flex items-center gap-1 font-bold text-[0.65rem] uppercase"
+                  className="group px-3.5 py-1.5 border border-[var(--color-line)] bg-[var(--color-card-bg)] hover:bg-black/5 rounded-full flex items-center gap-1.5 font-bold text-[0.65rem] uppercase rounded-full shadow-2xs transition-all cursor-pointer"
                 >
-                  <RefreshCw size={12} /> Refresh Quotes
+                  <RefreshCw size={12} className={`transition-transform duration-500 ${isRefreshingOrders ? 'animate-spin' : 'group-hover:rotate-180'}`} /> Refresh Quotes
                 </button>
               </div>
 
@@ -1237,11 +1247,11 @@ export default function Dashboard() {
                         return (
                           <div className="p-4 bg-amber-50 border border-amber-200 space-y-2">
                             <span className="eyebrow text-[0.65rem] font-bold text-amber-900 uppercase">Studio Quoted Price</span>
-                            <p className="text-xl font-bold font-mono text-emerald-800">{formatPrice(req.quotedPrice)}</p>
+                            <p className="text-xl font-bold font-mono text-[var(--color-ink)]">{formatPrice(req.quotedPrice)}</p>
                             {customShipping > 0 ? (
                               <p className="text-[0.68rem] text-amber-900 font-mono">+ {formatPrice(customShipping)} Standard Shipping (Total: <strong>{formatPrice(totalCustomAmount)}</strong>)</p>
                             ) : (
-                              <p className="text-[0.68rem] text-emerald-800 font-mono font-bold">✨ FREE Shipping (Total: {formatPrice(totalCustomAmount)})</p>
+                              <p className="text-[0.68rem] text-[var(--color-primary)] font-mono font-bold">FREE Shipping (Total: {formatPrice(totalCustomAmount)})</p>
                             )}
                             {req.adminNotes && <p className="text-xs italic text-amber-900 font-medium">Studio Note: {req.adminNotes}</p>}
 
@@ -1252,7 +1262,7 @@ export default function Dashboard() {
                                   onClick={() => handleAcceptQuoteAndPay(req)}
                                   className="btn-primary py-2.5 px-5 text-[0.68rem] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm"
                                 >
-                                  💳 Accept Quote & Pay Now ({formatPrice(totalCustomAmount)})
+                                  Accept Quote & Pay Now ({formatPrice(totalCustomAmount)})
                                 </button>
 
                                 <button
@@ -1264,7 +1274,7 @@ export default function Dashboard() {
                                       console.error('Error declining quote:', e)
                                     }
                                   }}
-                                  className="px-4 py-2 border border-rose-300 text-rose-700 hover:bg-rose-50 text-[0.65rem] font-bold uppercase rounded-full"
+                                  className="px-4 py-2 border border-black/20 text-[var(--color-ink)] hover:bg-black/5 text-[0.65rem] font-bold uppercase rounded-full"
                                 >
                                   Decline Quote
                                 </button>
@@ -1313,7 +1323,7 @@ export default function Dashboard() {
                   <div className="pt-2 border-t border-[var(--color-line)] flex justify-end">
                     <button
                       onClick={handleDeleteAddress}
-                      className="px-3.5 py-1.5 border border-rose-300 text-rose-600 hover:bg-rose-50 text-[0.65rem] font-bold uppercase tracking-wider rounded-full transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
+                      className="px-3.5 py-1.5 border border-black/20 text-[var(--color-ink)] hover:bg-black/5 text-[0.65rem] font-bold uppercase tracking-wider rounded-full transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
                     >
                       <Trash2 size={12} /> Delete Saved Address
                     </button>

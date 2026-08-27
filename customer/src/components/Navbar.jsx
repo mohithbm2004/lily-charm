@@ -42,7 +42,7 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const marqueeDisplay = Array(10).fill(marqueeText || '✨ Bespoke Handcrafted Velvet Florals & Botanical Keepsakes').join('   •   ')
+  const marqueeDisplay = Array(10).fill(marqueeText || 'Bespoke Handcrafted Velvet Florals & Botanical Keepsakes').join('   •   ')
 
   const handleAccountClick = () => {
     if (user) {

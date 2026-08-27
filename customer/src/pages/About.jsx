@@ -15,7 +15,7 @@ export default function About() {
             A Dream That Grew With Me
           </h1>
           <p className="text-sm sm:text-lg md:text-xl font-serif italic text-[var(--color-primary)] font-semibold pt-1">
-            "Where childhood creativity blossomed into timeless artistry." ✨
+            "Where childhood creativity blossomed into timeless artistry."
           </p>
         </div>
       </Reveal>

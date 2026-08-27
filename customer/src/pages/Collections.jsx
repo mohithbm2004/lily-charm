@@ -153,7 +153,7 @@ export default function Collections() {
                 ) : (
                   <div className="mt-6 border border-dashed border-[var(--color-line)] rounded-2xl p-4 bg-[var(--color-card-bg)]/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                     <p className="text-xs text-[var(--color-ink-soft)] font-medium">
-                      ✨ New pieces for {c.title} are being handcrafted in studio by Lily Charm Lead Artisans.
+                      New pieces for {c.title} are being handcrafted in studio by Lily Charm Lead Artisans.
                     </p>
                     <Link to={`/shop?category=${slug}`} className="text-xs text-[var(--color-primary)] font-bold hover:underline shrink-0">
                       View Category →

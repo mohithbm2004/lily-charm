@@ -472,7 +472,7 @@ export function CartProvider({ children }) {
           dispatch({ type: 'APPLY_COUPON', coupon: codeKey })
           return {
             success: true,
-            message: data.message || `✨ Promo code "${codeKey}" applied successfully!`,
+            message: data.message || `Promo code "${codeKey}" applied successfully!`,
           }
         } else {
           return {
@@ -488,11 +488,11 @@ export function CartProvider({ children }) {
         if (rule.minOrderAmount > 0 && subtotal < rule.minOrderAmount) {
           return {
             success: false,
-            message: `⚠️ Code "${codeKey}" requires a minimum order spend of ₹${rule.minOrderAmount.toLocaleString('en-IN')}.`,
+            message: `Code "${codeKey}" requires a minimum order spend of ₹${rule.minOrderAmount.toLocaleString('en-IN')}.`,
           }
         }
         dispatch({ type: 'APPLY_COUPON', coupon: codeKey })
-        return { success: true, message: `✨ Promo code "${codeKey}" applied successfully!` }
+        return { success: true, message: `Promo code "${codeKey}" applied successfully!` }
       }
     }
 

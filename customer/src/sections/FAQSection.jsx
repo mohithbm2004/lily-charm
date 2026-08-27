@@ -107,7 +107,7 @@ export default function FAQSection({ isStandalonePage = false }) {
       className={`w-full max-w-full relative ${
         isStandalonePage
           ? 'py-6'
-          : 'py-14 sm:py-20 md:py-28 border-t border-[var(--color-line)] bg-[var(--color-bg)]'
+          : 'py-14 sm:py-20 md:py-24 bg-[var(--color-bg)]'
       }`}
       aria-label="Frequently Asked Questions"
     >
@@ -119,26 +119,20 @@ export default function FAQSection({ isStandalonePage = false }) {
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 md:px-8">
         <Reveal>
-          <div className="text-center space-y-2 sm:space-y-3 mb-8 sm:mb-12">
-            <span className="eyebrow inline-flex items-center gap-1.5 text-[var(--color-primary)] font-bold text-xs uppercase tracking-[0.24em]">
-              <Sparkles size={13} /> FAQ
-            </span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold font-[var(--font-display)] uppercase tracking-tight text-[var(--color-ink)]">
-              Frequently Asked Questions
+          <div className="text-center space-y-2 mb-10 sm:mb-14">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold uppercase tracking-wider text-[var(--color-ink)] font-[var(--font-display)]">
+              FREQUENTLY ASKED QUESTIONS
             </h2>
-            <p className="text-xs sm:text-sm text-[var(--color-ink-soft)] max-w-lg mx-auto leading-relaxed">
-              Everything you need to know about our handmade flowers and bouquets.
-            </p>
           </div>
         </Reveal>
 
-        {/* Accordion Container */}
-        <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-2xl sm:rounded-3xl divide-y divide-[var(--color-line)] shadow-sm overflow-hidden">
-          {FAQ_DATA.map((item, index) => {
+        {/* Clean Linear Accordion Container matching editorial design */}
+        <div className="border-t border-b border-[var(--color-line)] divide-y divide-[var(--color-line)]">
+          {FAQ_DATA.map((item) => {
             const isOpen = openIds.includes(item.id)
 
             return (
-              <div key={item.id} className="transition-colors">
+              <div key={item.id} className="py-4 sm:py-5">
                 <h3>
                   <button
                     type="button"
@@ -146,24 +140,13 @@ export default function FAQSection({ isStandalonePage = false }) {
                     aria-expanded={isOpen}
                     aria-controls={`faq-panel-${item.id}`}
                     onClick={() => toggleItem(item.id)}
-                    className="w-full py-4 sm:py-5 px-4 sm:px-6 md:px-8 flex items-center justify-between gap-4 text-left transition-colors hover:bg-[var(--color-bg)]/60 focus:outline-none focus-visible:bg-[var(--color-bg)]/80 group cursor-pointer"
+                    className="w-full flex items-center justify-between gap-4 text-left group cursor-pointer"
                   >
-                    <span className="font-[var(--font-display)] text-sm sm:text-base font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors pr-2">
+                    <span className="font-bold text-xs sm:text-sm md:text-base text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors pr-2">
                       {item.question}
                     </span>
-                    <span
-                      className={`shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full border flex items-center justify-center transition-all ${
-                        isOpen
-                          ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
-                          : 'border-[var(--color-line)] bg-[var(--color-bg)] text-[var(--color-ink-soft)] group-hover:border-[var(--color-primary)] group-hover:text-[var(--color-primary)]'
-                      }`}
-                      aria-hidden="true"
-                    >
-                      {isOpen ? (
-                        <Minus size={14} className="stroke-[2.5]" />
-                      ) : (
-                        <Plus size={14} className="stroke-[2.5]" />
-                      )}
+                    <span className="shrink-0 text-base sm:text-lg font-bold text-[var(--color-ink)] transition-colors select-none">
+                      {isOpen ? '—' : '+'}
                     </span>
                   </button>
                 </h3>
@@ -180,10 +163,8 @@ export default function FAQSection({ isStandalonePage = false }) {
                       transition={{ duration: 0.25, ease: 'easeInOut' }}
                       className="overflow-hidden"
                     >
-                      <div className="px-4 sm:px-6 md:px-8 pb-5 sm:pb-6 pt-1 text-xs sm:text-sm text-[var(--color-ink-soft)] leading-relaxed font-normal">
-                        <div className="p-3.5 sm:p-4 bg-[var(--color-bg)] rounded-xl border border-[var(--color-line)] text-[var(--color-ink)]">
-                          {item.answer}
-                        </div>
+                      <div className="pt-3 pb-1 text-xs sm:text-sm text-[var(--color-ink-soft)] leading-relaxed font-normal">
+                        {item.answer}
                       </div>
                     </motion.div>
                   )}
@@ -191,19 +172,6 @@ export default function FAQSection({ isStandalonePage = false }) {
               </div>
             )
           })}
-        </div>
-
-        {/* Friendly Studio Contact Footer Note */}
-        <div className="mt-8 text-center space-y-2">
-          <p className="text-xs text-[var(--color-ink-soft)]">
-            Have a question that is not answered here?
-          </p>
-          <a
-            href="/contact"
-            className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] hover:underline"
-          >
-            <HelpCircle size={14} /> Connect Directly with Our Studio &rarr;
-          </a>
         </div>
       </div>
     </section>

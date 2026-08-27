@@ -635,8 +635,8 @@ export async function cancelOrder(req, res, next) {
 
     if (!isAdmin) {
       // Customer self-cancellation: 3% fee (97% refund)
-      cancellationFee = Math.round(grandTotal * 0.03)
-      netRefund = Math.max(0, grandTotal - cancellationFee)
+      cancellationFee = Number((grandTotal * 0.03).toFixed(2))
+      netRefund = Math.max(0, Number((grandTotal - cancellationFee).toFixed(2)))
     } else {
       // Admin cancellation: 100% full refund of actual captured amount
       cancellationFee = 0

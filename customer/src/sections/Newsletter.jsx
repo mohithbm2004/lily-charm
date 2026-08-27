@@ -36,16 +36,16 @@ export default function Newsletter() {
                   if (error) setError('')
                 }}
                 placeholder="Your email address *"
-                className={`flex-1 border bg-transparent rounded-full px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm focus:outline-none min-w-0 transition-colors ${
+                className={`flex-1 border bg-transparent rounded-full px-5 py-3 text-xs sm:text-sm focus:outline-none min-w-0 transition-colors ${
                   error
                     ? 'border-red-500 focus:border-red-500 bg-red-50/20'
                     : 'border-[var(--color-line)] focus:border-[var(--color-primary)]'
                 }`}
               />
-              <button type="submit" className="btn-primary py-2.5 sm:py-3 text-xs rounded-full">Subscribe</button>
+              <button type="submit" className="btn-primary py-3 px-8 text-xs !rounded-full shrink-0">Subscribe</button>
             </form>
             {error && (
-              <p className="text-red-600 text-[0.68rem] text-center font-medium">⚠️ {error}</p>
+              <p className="text-red-600 text-[0.68rem] text-center font-medium">{error}</p>
             )}
           </div>
         )}

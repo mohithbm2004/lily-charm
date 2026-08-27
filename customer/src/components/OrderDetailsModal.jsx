@@ -40,13 +40,13 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
       })
       const data = await res.json()
       if (res.ok) {
-        setMessage('✨ Order cancelled successfully.')
+        setMessage('Order cancelled successfully.')
         if (onRefresh) onRefresh()
       } else {
-        setMessage(`⚠️ ${data.message || 'Failed to cancel order'}`)
+        setMessage(`${data.message || 'Failed to cancel order'}`)
       }
     } catch {
-      setMessage('⚠️ Error cancelling order')
+      setMessage('Error cancelling order')
     } finally {
       setLoading(false)
     }
@@ -68,13 +68,13 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
       })
       const data = await res.json()
       if (res.ok) {
-        setMessage('✨ Refund request submitted to our studio.')
+        setMessage('Refund request submitted to our studio.')
         if (onRefresh) onRefresh()
       } else {
-        setMessage(`⚠️ ${data.message || 'Failed to submit refund request'}`)
+        setMessage(`${data.message || 'Failed to submit refund request'}`)
       }
     } catch {
-      setMessage('⚠️ Error requesting refund')
+      setMessage('Error requesting refund')
     } finally {
       setLoading(false)
     }
@@ -98,7 +98,7 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
         </div>
 
         {message && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-900 rounded">
+          <div className="p-3 bg-[var(--color-card-bg)] border border-[var(--color-line)] text-xs font-bold text-[var(--color-ink)] rounded">
             {message}
           </div>
         )}
@@ -162,7 +162,7 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
               <span className="font-mono">{formatPrice(order.subtotal || order.grandTotal || 0)}</span>
             </div>
             {order.discountAmount > 0 && (
-              <div className="flex justify-between text-emerald-700 font-semibold">
+              <div className="flex justify-between text-[var(--color-primary)] font-semibold">
                 <span>Coupon Discount ({order.couponCode}):</span>
                 <span className="font-mono">- {formatPrice(order.discountAmount)}</span>
               </div>
@@ -194,7 +194,7 @@ export default function OrderDetailsModal({ order, isOpen, onClose, onRefresh })
             {['Pending Payment', 'Pending', 'Order Confirmed', 'Confirmed', 'Paid'].includes(order.status) && (
               <button
                 onClick={() => setShowCancelInput((v) => !v)}
-                className="text-xs font-bold text-rose-700 hover:underline uppercase"
+                className="text-xs font-bold text-[var(--color-ink)] hover:underline uppercase"
               >
                 Cancel Order
               </button>

@@ -104,7 +104,7 @@ export default function ReviewModal({ isOpen, onClose, defaultProductTitle = '',
 
         {isSuccess ? (
           <div className="py-8 text-center space-y-4">
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto shadow-inner border border-emerald-300">
+            <div className="w-16 h-16 bg-[#212B1C]/10 text-[#212B1C] rounded-full flex items-center justify-center mx-auto shadow-inner border border-[#212B1C]/20">
               <CheckCircle2 size={36} />
             </div>
             <span className="eyebrow block text-[var(--color-primary)] font-bold text-xs uppercase tracking-widest">
@@ -143,7 +143,7 @@ export default function ReviewModal({ isOpen, onClose, defaultProductTitle = '',
 
             {errorMsg && (
               <div className="p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-semibold rounded">
-                ⚠️ {errorMsg}
+                {errorMsg}
               </div>
             )}
 
@@ -204,7 +204,7 @@ export default function ReviewModal({ isOpen, onClose, defaultProductTitle = '',
                   />
                   {fieldErrors.name && (
                     <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                      ⚠️ {fieldErrors.name}
+                      {fieldErrors.name}
                     </p>
                   )}
                 </div>
@@ -267,7 +267,7 @@ export default function ReviewModal({ isOpen, onClose, defaultProductTitle = '',
                 />
                 {fieldErrors.comment && (
                   <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                    ⚠️ {fieldErrors.comment}
+                    {fieldErrors.comment}
                   </p>
                 )}
               </div>

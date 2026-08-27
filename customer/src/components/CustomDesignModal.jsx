@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Sparkles, Upload, CheckCircle2, Search, Check, Ban, Link as LinkIcon, Package } from 'lucide-react'
+import { X, Sparkles, Upload, CheckCircle2, Search, Check, Ban, Link as LinkIcon, Package, MapPin } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatPrice } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
@@ -86,7 +86,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
     }
 
     // Auto-fetch location when exactly 6 digits are entered
-    setPincodeStatus({ loading: true, success: false, message: '🔍 Fetching city & location...' })
+    setPincodeStatus({ loading: true, success: false, message: 'Fetching city & location...' })
     try {
       const res = await fetch(`https://api.postalpincode.in/pincode/${digitsOnly}`)
       const data = await res.json()
@@ -103,13 +103,13 @@ export default function CustomDesignModal({ isOpen, onClose }) {
         setPincodeStatus({
           loading: false,
           success: true,
-          message: `📍 Auto-filled City: ${city}`,
+          message: `Auto-filled City: ${city}`,
         })
       } else {
         setPincodeStatus({
           loading: false,
           success: false,
-          message: '⚠️ Invalid PIN code or postal data not found',
+          message: 'Invalid PIN code or postal data not found',
         })
       }
     } catch (err) {
@@ -402,7 +402,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                   : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
               }`}
             >
-              ✨ 1. Request Custom Design
+              1. Request Custom Design
             </button>
             <button
               onClick={() => {
@@ -415,7 +415,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                   : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
               }`}
             >
-              💰 2. Check Quotes & Orders
+              2. Check Quotes & Orders
             </button>
           </div>
 
@@ -423,7 +423,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
             <>
               {submittedSuccess ? (
                 <div className="py-10 text-center space-y-4">
-                  <div className="w-16 h-16 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto">
+                  <div className="w-14 h-14 bg-[#212B1C]/10 text-[#212B1C] rounded-full flex items-center justify-center mx-auto">
                     <CheckCircle2 size={36} />
                   </div>
                   <h2 className="text-2xl font-bold font-[var(--font-display)] uppercase">Request Submitted!</h2>
@@ -457,7 +457,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                     <div className="bg-amber-50/90 border border-amber-300 rounded-2xl p-4 sm:p-5 mb-4 text-xs text-[var(--color-ink)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
                       <div className="space-y-1">
                         <p className="font-bold text-sm text-amber-950 flex items-center gap-1.5">
-                          <span>🌸</span> Please log in to request a custom quote.
+                          <span>Studio Account:</span> Please log in to request a custom quote.
                         </p>
                         <p className="text-[0.72rem] text-amber-900/80 leading-relaxed">
                           Sign in to save your bespoke floral request and track studio quote estimates.
@@ -508,7 +508,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                           errors.name ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-[var(--color-line)]'
                         }`}
                       />
-                      {errors.name && <p className="text-[0.68rem] text-red-600 font-bold mt-1">⚠️ {errors.name}</p>}
+                      {errors.name && <p className="text-[0.68rem] text-red-600 font-bold mt-1">{errors.name}</p>}
                     </div>
 
                     <div>
@@ -529,7 +529,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                           errors.email ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-[var(--color-line)]'
                         }`}
                       />
-                      {errors.email && <p className="text-[0.68rem] text-red-600 font-bold mt-1">⚠️ {errors.email}</p>}
+                      {errors.email && <p className="text-[0.68rem] text-red-600 font-bold mt-1">{errors.email}</p>}
                     </div>
                   </div>
 
@@ -580,7 +580,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                         errors.address ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-[var(--color-line)]'
                       }`}
                     />
-                    {errors.address && <p className="text-[0.68rem] text-red-600 font-bold mt-1">⚠️ {errors.address}</p>}
+                    {errors.address && <p className="text-[0.68rem] text-red-600 font-bold mt-1">{errors.address}</p>}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -602,7 +602,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                           errors.city ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-[var(--color-line)]'
                         }`}
                       />
-                      {errors.city && <p className="text-[0.68rem] text-red-600 font-bold mt-1">⚠️ {errors.city}</p>}
+                      {errors.city && <p className="text-[0.68rem] text-red-600 font-bold mt-1">{errors.city}</p>}
                     </div>
 
                     <div>
@@ -622,18 +622,19 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                           errors.pincode ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-[var(--color-line)]'
                         }`}
                       />
-                      {errors.pincode && <p className="text-[0.68rem] text-red-600 font-bold mt-1">⚠️ {errors.pincode}</p>}
+                      {errors.pincode && <p className="text-[0.68rem] text-red-600 font-bold mt-1">{errors.pincode}</p>}
                       {pincodeStatus.message && (
                         <p
-                          className={`text-[0.68rem] mt-1 font-mono flex items-center gap-1 ${
+                          className={`text-[0.68rem] mt-1.5 font-bold uppercase tracking-wider flex items-center gap-1.5 ${
                             pincodeStatus.loading
-                              ? 'text-[var(--color-primary)] font-semibold'
+                              ? 'text-[var(--color-primary)] animate-pulse'
                               : pincodeStatus.success
-                              ? 'text-emerald-700 font-bold'
+                              ? 'text-[var(--color-ink)]'
                               : 'text-amber-800'
                           }`}
                         >
-                          {pincodeStatus.message}
+                          {pincodeStatus.success && <MapPin size={12} className="text-[var(--color-ink)] shrink-0" />}
+                          <span>{pincodeStatus.message}</span>
                         </p>
                       )}
                     </div>
@@ -668,7 +669,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                       <p className="font-bold uppercase text-[0.72rem]">Click or Drag & Drop Reference Photos</p>
                       <p className="text-[0.65rem] text-[var(--color-ink-soft)]">PNG, JPG, WEBP up to 10MB</p>
                     </div>
-                    {errors.image && <p className="text-[0.68rem] text-rose-600 font-bold mt-1">⚠️ {errors.image}</p>}
+                    {errors.image && <p className="text-[0.68rem] text-rose-600 font-bold mt-1">{errors.image}</p>}
 
                     {/* Thumbnail Previews */}
                     {selectedImages.length > 0 && (
@@ -750,7 +751,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
 
               {acceptedSuccessDoc && (
                 <div className="p-6 md:p-8 bg-[var(--color-bg)] border border-[var(--color-line)] text-center space-y-4 rounded shadow-sm">
-                  <div className="w-16 h-16 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto">
+                  <div className="w-16 h-16 bg-[#212B1C]/10 text-[#212B1C] rounded-full flex items-center justify-center mx-auto border border-[#212B1C]/20">
                     <CheckCircle2 size={36} />
                   </div>
                   <h3 className="text-2xl font-bold font-[var(--font-display)] uppercase">ORDER CONFIRMED!</h3>
@@ -761,7 +762,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                   <div className="bg-[var(--color-card-bg)] p-4 border border-[var(--color-line)] max-w-md mx-auto text-left text-xs space-y-2">
                     <div className="flex justify-between border-b border-[var(--color-line)] pb-2 font-bold uppercase">
                       <span>Payment Status</span>
-                      <span className="text-emerald-700 font-mono">PAID (RAZORPAY)</span>
+                      <span className="text-[var(--color-primary)] font-mono">PAID (RAZORPAY)</span>
                     </div>
                     <div className="flex justify-between pt-1">
                       <span>Shipping To:</span>
@@ -819,7 +820,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                         </div>
                         <span className={`px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-wider rounded border ${
                           req.status === 'Accepted & Order Created'
-                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                            ? 'bg-[#212B1C]/10 text-[#212B1C] border-[#212B1C]/20'
                             : req.status === 'Quoted'
                             ? 'bg-amber-100 text-amber-900 border-amber-400 animate-pulse'
                             : req.status === 'Quote Declined'
@@ -841,11 +842,11 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                             <div className="flex justify-between items-center">
                               <div>
                                 <span className="text-[0.65rem] uppercase font-bold text-amber-900">Admin Quoted Price:</span>
-                                <p className="text-lg font-bold text-emerald-800">{formatPrice(req.quotedPrice)}</p>
+                                <p className="text-lg font-bold text-[var(--color-ink)]">{formatPrice(req.quotedPrice)}</p>
                                 {quoteShipping > 0 ? (
                                   <p className="text-[0.68rem] text-amber-900 font-mono">+ {formatPrice(quoteShipping)} Standard Shipping (Total: <strong>{formatPrice(quoteTotal)}</strong>)</p>
                                 ) : (
-                                  <p className="text-[0.68rem] text-emerald-700 font-mono font-bold">✨ FREE Shipping (Total: {formatPrice(quoteTotal)})</p>
+                                  <p className="text-[0.68rem] text-[var(--color-primary)] font-mono font-bold">FREE Shipping (Total: {formatPrice(quoteTotal)})</p>
                                 )}
                                 {req.adminNotes && <p className="text-[0.68rem] text-amber-900 italic mt-0.5">{req.adminNotes}</p>}
                               </div>
@@ -871,9 +872,9 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                       })()}
 
                       {req.status === 'Accepted & Order Created' && (
-                        <div className="p-3 bg-emerald-50 text-emerald-900 border border-emerald-300 text-xs font-bold space-y-2">
+                        <div className="p-3 bg-[var(--color-card-bg)] text-[var(--color-ink)] border border-[var(--color-line)] text-xs font-bold space-y-2">
                           <p className="flex items-center gap-2">
-                            <CheckCircle2 size={16} className="text-emerald-700" /> Quote Accepted & Converted to Order! Total: {formatPrice(req.quotedPrice)}
+                            <CheckCircle2 size={16} className="text-[var(--color-primary)]" /> Quote Accepted & Converted to Order! Total: {formatPrice(req.quotedPrice)}
                           </p>
                           <Link
                             to="/dashboard"

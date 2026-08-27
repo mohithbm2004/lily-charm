@@ -22,7 +22,7 @@ export default function BrandIntro() {
                       className="w-full h-full object-cover transition-transform duration-700 hover:scale-105 rounded-xl"
                     />
                     <div className="absolute top-3 left-3 bg-[var(--color-bg)]/90 backdrop-blur-md rounded-lg px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-[0.24em] text-[var(--color-primary)]">
-                      ✨ Archival Atelier
+                      Archival Atelier
                     </div>
                   </div>
                 </div>

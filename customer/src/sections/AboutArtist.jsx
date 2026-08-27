@@ -15,7 +15,7 @@ export default function AboutArtist() {
               A DREAM THAT GREW WITH ME
             </h2>
             <p className="text-sm sm:text-base font-serif italic font-bold text-[var(--color-primary)] mt-2">
-              "Where childhood creativity blossomed into timeless artistry." ✨
+              "Where childhood creativity blossomed into timeless artistry."
             </p>
             <p className="text-[var(--color-ink-soft)] text-xs sm:text-sm md:text-base leading-relaxed max-w-lg mt-3">
               Lily Charm is more than a brand—it's a dream that grew with me. What began as a childhood passion for arts and crafts transformed into a business where every creation reflects love, patience, and creativity.

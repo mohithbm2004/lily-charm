@@ -3,7 +3,11 @@ import { sendWelcomeEmail } from './otp.service.js'
 import User from '../models/User.js'
 
 function formatPrice(val) {
-  return Number(val || 0).toLocaleString('en-IN')
+  const num = Number(val || 0)
+  if (num % 1 !== 0) {
+    return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  }
+  return num.toLocaleString('en-IN')
 }
 
 /**
@@ -374,13 +378,14 @@ export async function sendOrderCancelledRefunded(order, reason = '') {
   const recipientEmail = await getCustomerTransactionalEmail(order)
   if (!recipientEmail) return null
 
-  const refundAmount = order.refundAmount || order.grandTotal || order.total
-  const originalAmount = order.grandTotal || order.total || refundAmount
+  const originalAmount = Number(order.grandTotal || order.total || 0)
+  const cancellationFee = Number(order.cancellationFee || 0)
+  const refundAmount = order.refundAmount !== undefined ? Number(order.refundAmount) : Math.max(0, originalAmount - cancellationFee)
   
   // Extract cancellation reason from order notes or history note if reason not passed
   let cleanReason = reason
   if (!cleanReason || cleanReason.includes('Reason:')) {
-    cleanReason = order.notes || 'Order cancelled by studio administration'
+    cleanReason = order.notes || 'Order cancelled'
   }
   if (cleanReason.includes('Cancellation Reason:')) {
     cleanReason = cleanReason.replace('Cancellation Reason:', '').trim()
@@ -389,10 +394,25 @@ export async function sendOrderCancelledRefunded(order, reason = '') {
     cleanReason = cleanReason.split('[')[0].trim()
   }
 
+  const isCustomerCancelled = cancellationFee > 0 || cleanReason.toLowerCase().includes('customer') || order.notes?.includes('Customer cancellation')
+
+  let cancellationNoticeText = ''
+  let cancellationFeeHtml = ''
+
+  if (isCustomerCancelled) {
+    cancellationNoticeText = `Your order <strong>#${order.orderNumber}</strong> has been cancelled by you. As per studio policy, a 97% net refund (after 3% payment processing fee) has been processed to your original payment method.`
+    cancellationFeeHtml = `<p style="margin: 0 0 6px 0; font-size: 13px; color: #991B1B;"><strong>Processing Fee (3%):</strong> -₹${formatPrice(cancellationFee)}</p>`
+  } else {
+    cancellationNoticeText = `Your order <strong>#${order.orderNumber}</strong> has been cancelled by the studio, and a 100% full refund has been processed to your original payment method.`
+    cancellationFeeHtml = `<p style="margin: 0 0 6px 0; font-size: 13px; color: #4F7942;"><strong>Processing Fee (0% Admin):</strong> ₹0</p>`
+  }
+
   const html = compileTemplate('orderCancelledRefunded.html', {
     customerName: order.shippingAddress?.name || 'Valued Customer',
     orderNumber: order.orderNumber,
+    cancellationNoticeText,
     originalAmount: formatPrice(originalAmount),
+    cancellationFeeHtml,
     refundAmount: formatPrice(refundAmount),
     refundId: order.refundId || order.razorpayRefundId || 'REFUND-PROCESSED',
     cancellationReason: cleanReason,
@@ -401,8 +421,8 @@ export async function sendOrderCancelledRefunded(order, reason = '') {
   return await sendEmail({
     type: 'order-cancelled-refunded',
     to: recipientEmail,
-    subject: `Your Lily Charm Order Has Been Cancelled & Refunded`,
-    text: `Your order ${order.orderNumber} has been cancelled by the studio. A full refund of ₹${refundAmount} has been processed.`,
+    subject: `Order Cancelled & Refunded: #${order.orderNumber} - Lily Charm`,
+    text: `Your order ${order.orderNumber} has been cancelled (${isCustomerCancelled ? 'Customer Cancellation' : 'Studio Cancellation'}). Net refund of ₹${formatPrice(refundAmount)} has been processed.`,
     html,
   })
 }

@@ -34,19 +34,19 @@ export default function OrderTimeline({ status = 'Order Confirmed', history = []
           {cancellationFee > 0 && (
             <div className="pt-1.5 border-t border-rose-200 text-[0.65rem] sm:text-[0.68rem] font-mono space-y-0.5">
               <p className="text-rose-900">• Customer Cancellation Fee (3%): <strong>-₹{cancellationFee}</strong></p>
-              <p className="text-emerald-900 font-bold">• Net Refund to Payment Method (97%): <strong>₹{refundAmount}</strong></p>
+              <p className="text-[var(--color-ink)] font-bold">• Net Refund to Payment Method (97%): <strong>₹{refundAmount}</strong></p>
             </div>
           )}
 
           {cancellationFee === 0 && refundAmount > 0 && (
-            <div className="pt-1 border-t border-rose-200 text-[0.65rem] sm:text-[0.68rem] text-emerald-900 font-mono font-bold">
+            <div className="pt-1 border-t border-rose-200 text-[0.65rem] sm:text-[0.68rem] text-[var(--color-ink)] font-mono font-bold">
               • Studio Cancellation (100% Full Refund: ₹{refundAmount})
             </div>
           )}
 
           {refundId && (
-            <span className="text-[0.62rem] sm:text-[0.65rem] text-emerald-800 font-mono font-bold block pt-0.5 break-all">
-              ✨ Refund Reference: {refundId}
+            <span className="text-[0.62rem] sm:text-[0.65rem] text-[var(--color-primary)] font-mono font-bold block pt-0.5 break-all">
+              Refund Reference: {refundId}
             </span>
           )}
         </div>
@@ -97,7 +97,7 @@ export default function OrderTimeline({ status = 'Order Confirmed', history = []
       <div className="w-full">
         <div
           onClick={onToggle || (() => {})}
-          className="flex items-center justify-between gap-3 p-3 bg-emerald-50/40 hover:bg-emerald-50/70 border border-emerald-100/80 rounded-2xl cursor-pointer transition-colors shadow-sm"
+          className="flex items-center justify-between gap-3 p-3 bg-[var(--color-card-bg)] hover:bg-[var(--color-card-bg)]/80 border border-[var(--color-line)] rounded-2xl cursor-pointer transition-colors shadow-2xs"
         >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center shrink-0">

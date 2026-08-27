@@ -126,7 +126,7 @@ export default function CartDrawer() {
                           </span>
                         )}
                       </div>
-                      <button onClick={() => removeItem(item.id)} className="text-[0.68rem] text-rose-700 font-bold uppercase hover:underline cursor-pointer">Remove</button>
+                      <button onClick={() => removeItem(item.id)} className="text-[0.68rem] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] font-bold uppercase underline cursor-pointer transition-colors">Remove</button>
                     </div>
                   </div>
                 </div>
@@ -137,16 +137,16 @@ export default function CartDrawer() {
               <div className="border-t border-black/10 px-5 sm:px-6 py-5 sm:py-6 space-y-3.5 sm:space-y-4 bg-[var(--color-card-bg)]/80 shrink-0">
                 {/* Active Coupon Banner or Input Form */}
                 {activeCoupon ? (
-                  <div className="bg-emerald-50 border border-emerald-300 p-3 text-xs flex justify-between items-center rounded-2xl">
+                  <div className="bg-[var(--color-card-bg)] border border-[var(--color-line)] p-3 text-xs flex justify-between items-center rounded-2xl shadow-2xs">
                     <div>
-                      <p className="font-bold text-emerald-900 flex items-center gap-1">
-                        ✨ {activeCoupon.code} ({activeCoupon.label})
+                      <p className="font-bold text-[var(--color-ink)] flex items-center gap-1">
+                        {activeCoupon.code} ({activeCoupon.label})
                       </p>
-                      <p className="text-[0.65rem] text-emerald-700">Saved {formatPrice(activeCoupon.discountAmount)}</p>
+                      <p className="text-[0.65rem] text-[var(--color-primary)]">Saved {formatPrice(activeCoupon.discountAmount)}</p>
                     </div>
                     <button
                       onClick={handleRemoveCoupon}
-                      className="text-rose-600 font-bold uppercase text-[0.62rem] hover:underline cursor-pointer"
+                      className="text-[0.65rem] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] font-bold uppercase underline cursor-pointer transition-colors"
                     >
                       Remove
                     </button>
@@ -172,7 +172,7 @@ export default function CartDrawer() {
                 )}
 
                 {!activeCoupon && couponMsg && (
-                  <div className={`text-[0.68rem] p-2 rounded-xl ${couponMsg.success ? 'bg-emerald-100 text-emerald-900 font-bold' : 'bg-rose-100 text-rose-800'}`}>
+                  <div className={`text-[0.68rem] p-2 rounded-xl ${couponMsg.success ? 'bg-[#212B1C]/10 text-[#212B1C] font-bold' : 'bg-rose-100 text-rose-800'}`}>
                     {couponMsg.message}
                   </div>
                 )}
@@ -180,7 +180,7 @@ export default function CartDrawer() {
                 <div className="space-y-2 text-xs sm:text-sm">
                   <div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
                   {discountAmount > 0 && (
-                    <div className="flex justify-between text-emerald-700 font-bold">
+                    <div className="flex justify-between text-[var(--color-primary)] font-bold">
                       <span>Promo Discount ({activeCoupon?.code})</span>
                       <span>-{formatPrice(discountAmount)}</span>
                     </div>
@@ -191,7 +191,7 @@ export default function CartDrawer() {
                       {shippingLoading ? (
                         <span className="text-[var(--color-ink-soft)] font-mono animate-pulse">Calculating...</span>
                       ) : shipping === 0 ? (
-                        <span className="text-emerald-700 font-mono">
+                        <span className="text-[var(--color-primary)] font-mono">
                           Free {isShippingEnabled && subtotal >= freeThreshold ? `(> ₹${freeThreshold.toLocaleString('en-IN')})` : ''}
                         </span>
                       ) : (
@@ -200,8 +200,8 @@ export default function CartDrawer() {
                     </span>
                   </div>
                   {isShippingEnabled && shipping > 0 && subtotal < freeThreshold && (
-                    <p className="text-[0.65rem] text-emerald-800 bg-emerald-50 border border-emerald-200 p-2 rounded-xl font-semibold text-center">
-                      ✨ Add {formatPrice(freeThreshold - subtotal)} more for <strong>FREE Shipping!</strong>
+                    <p className="text-[0.68rem] text-[var(--color-ink-soft)] text-center font-normal pt-1">
+                      Add {formatPrice(freeThreshold - subtotal)} more for free shipping
                     </p>
                   )}
                   <div className="flex justify-between font-[var(--font-display)] text-base sm:text-lg pt-2.5 border-t border-black/10 text-[var(--color-ink)] font-bold">
@@ -227,12 +227,17 @@ export default function CartDrawer() {
                 )}
                 {hasOutOfStockItems && (
                   <p className="text-[0.62rem] text-rose-800 bg-rose-50 border border-rose-200 p-2 rounded-xl text-center leading-tight">
-                    ⚠️ <strong>Unable to Checkout:</strong> One or more items in your bag are out of stock. Please remove them to proceed.
+                    <strong>Unable to Checkout:</strong> One or more items in your bag are out of stock. Please remove them to proceed.
                   </p>
                 )}
-                <p className="text-[0.6rem] text-amber-900 bg-amber-50/80 border border-amber-200 p-2 rounded-xl text-center leading-tight">
-                  ℹ️ <strong>Cancellation Policy:</strong> Customer cancellations incur a 3% fee (97% refund). Studio Admin cancellations = 100% full refund.
-                </p>
+                <div className="p-2.5 bg-[var(--color-card-bg)] border border-[var(--color-line)] rounded-xl text-[0.63rem] text-[var(--color-ink-soft)] text-center leading-normal space-y-0.5">
+                  <p className="font-semibold text-[var(--color-ink)] uppercase tracking-wider text-[0.6rem]">
+                    Cancellation Policy
+                  </p>
+                  <p>
+                    Customer cancellations incur a 3% fee (97% refund). Studio Admin cancellations receive 100% full refund.
+                  </p>
+                </div>
               </div>
             )}
           </motion.aside>

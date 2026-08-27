@@ -34,8 +34,8 @@ export class ErrorBoundary extends React.Component {
       return (
         <div className="min-h-screen bg-[#FAF7F2] text-[#212B1C] flex flex-col items-center justify-center p-6 text-center">
           <div className="max-w-md w-full bg-white border border-[#E5DFD5] p-8 sm:p-10 rounded-3xl shadow-xl space-y-6">
-            <div className="w-16 h-16 rounded-full bg-[#2D402B]/10 text-[#2D402B] flex items-center justify-center mx-auto text-2xl">
-              🌸
+            <div className="w-16 h-16 rounded-full bg-[#2D402B]/10 text-[#2D402B] flex items-center justify-center mx-auto text-sm font-bold font-serif">
+              LC
             </div>
             
             <div className="space-y-2">

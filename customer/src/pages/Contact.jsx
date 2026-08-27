@@ -147,19 +147,26 @@ export default function Contact() {
         {/* Contact Form Card */}
         <div className="border border-[var(--color-line)] bg-[var(--color-bg)] rounded-3xl p-4 sm:p-6 md:p-10 shadow-lg">
           {sentMessage ? (
-            <div className="p-6 sm:p-8 border border-emerald-300 bg-emerald-50 text-emerald-950 space-y-3 text-center rounded-2xl">
-              <div className="w-12 h-12 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center mx-auto">
-                <CheckCircle2 size={26} />
+            <div className="p-8 sm:p-12 border border-[var(--color-line)] bg-[var(--color-card-bg)] text-[var(--color-ink)] space-y-4 text-center rounded-3xl luxury-shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-[#212B1C]/10 text-[#212B1C] flex items-center justify-center mx-auto">
+                <CheckCircle2 size={24} />
               </div>
-              <h3 className="font-bold text-lg sm:text-xl font-[var(--font-display)] uppercase">Message Sent Successfully!</h3>
-              <p className="text-xs sm:text-sm leading-relaxed max-w-md mx-auto text-emerald-900">
+              <div className="space-y-1.5">
+                <span className="eyebrow text-[0.62rem] font-bold uppercase tracking-[0.22em] text-[var(--color-brown)] font-sans">
+                  Lily Charm Studio Direct Dispatch
+                </span>
+                <h3 className="font-bold text-xl sm:text-2xl font-[var(--font-display)] uppercase tracking-tight">
+                  Message Sent Successfully
+                </h3>
+              </div>
+              <p className="text-xs sm:text-sm leading-relaxed max-w-md mx-auto text-[var(--color-ink-soft)] font-normal">
                 {sentMessage}
               </p>
-              <div className="pt-2">
+              <div className="pt-3">
                 <button
                   type="button"
                   onClick={() => setSentMessage(null)}
-                  className="btn-primary py-2.5 px-6 text-xs uppercase font-bold tracking-wider rounded-full"
+                  className="btn-primary py-3 px-8 text-xs uppercase font-bold tracking-widest rounded-full shadow-sm cursor-pointer"
                 >
                   Send Another Message
                 </button>
@@ -217,15 +224,15 @@ export default function Contact() {
                     Messages are sent directly to <strong className="text-[var(--color-primary)] font-mono">keerthanabm@lilycharm.in</strong>.
                   </p>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-300 text-emerald-800 text-[0.68rem] font-bold rounded-full self-start sm:self-auto">
-                  <ShieldCheck size={13} className="text-emerald-700" />
+                <div className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[var(--color-card-bg)] border border-[var(--color-line)] text-[var(--color-ink)] text-[0.68rem] font-bold uppercase tracking-wider rounded-full self-start sm:self-auto shadow-2xs">
+                  <ShieldCheck size={13} className="text-[var(--color-ink)] shrink-0" />
                   <span>Verified: {user.name || user.email}</span>
                 </div>
               </div>
 
               {errorMessage && (
                 <div className="p-2.5 sm:p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-semibold rounded-xl">
-                  ⚠️ {errorMessage}
+                  {errorMessage}
                 </div>
               )}
 
@@ -252,7 +259,7 @@ export default function Contact() {
                   />
                   {fieldErrors.name && (
                     <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                      ⚠️ {fieldErrors.name}
+                      {fieldErrors.name}
                     </p>
                   )}
                 </div>
@@ -278,7 +285,7 @@ export default function Contact() {
                   />
                   {fieldErrors.email && (
                     <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                      ⚠️ {fieldErrors.email}
+                      {fieldErrors.email}
                     </p>
                   )}
                 </div>
@@ -329,7 +336,7 @@ export default function Contact() {
                 />
                 {fieldErrors.message && (
                   <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                    ⚠️ {fieldErrors.message}
+                    {fieldErrors.message}
                   </p>
                 )}
               </div>

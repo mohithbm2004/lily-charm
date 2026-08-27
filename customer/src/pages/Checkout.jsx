@@ -5,7 +5,8 @@ import { useAuth } from '../context/AuthContext'
 import { formatPrice } from '../lib/format'
 import Reveal from '../components/Reveal'
 import AuthModal from '../components/AuthModal'
-import { CheckCircle2, ShoppingBag, AlertTriangle, Package } from 'lucide-react'
+import TermsModal from '../components/TermsModal'
+import { CheckCircle2, ShoppingBag, AlertTriangle, Package, MapPin } from 'lucide-react'
 
 import { useStudio } from '../context/StudioContext'
 import { API_URL, RAZORPAY_KEY_ID } from '../config/api'
@@ -22,6 +23,7 @@ export default function Checkout() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authInitialMode, setAuthInitialMode] = useState('login')
   const [termsAccepted, setTermsAccepted] = useState(false)
+  const [showTermsModal, setShowTermsModal] = useState(false)
 
   useEffect(() => {
     if (refreshSettingsFromApi) {
@@ -51,10 +53,12 @@ export default function Checkout() {
     setCouponMsg(null)
   }
 
+  const extract10Digits = (ph) => (ph || '').replace(/\D/g, '').slice(-10)
+
   const [form, setForm] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    phone: user?.phone || '',
+    phone: extract10Digits(user?.phone),
     address: user?.address || '',
     city: user?.city || '',
     pincode: user?.pincode || '',
@@ -63,12 +67,12 @@ export default function Checkout() {
   useEffect(() => {
     if (user) {
       setForm((prev) => ({
-        name: prev.name || user.name || '',
-        email: prev.email || user.email || '',
-        phone: prev.phone || user.phone || '',
-        address: prev.address || user.address || '',
-        city: prev.city || user.city || '',
-        pincode: prev.pincode || user.pincode || '',
+        name: prev.name !== undefined && prev.name !== '' ? prev.name : (user.name || ''),
+        email: prev.email !== undefined && prev.email !== '' ? prev.email : (user.email || ''),
+        phone: prev.phone !== undefined ? prev.phone : extract10Digits(user.phone),
+        address: prev.address !== undefined && prev.address !== '' ? prev.address : (user.address || ''),
+        city: prev.city !== undefined && prev.city !== '' ? prev.city : (user.city || ''),
+        pincode: prev.pincode !== undefined && prev.pincode !== '' ? prev.pincode : (user.pincode || ''),
       }))
     }
   }, [user])
@@ -102,7 +106,7 @@ export default function Checkout() {
     }
 
     // Auto-fetch location when exactly 6 digits are entered
-    setPincodeStatus({ loading: true, success: false, message: '🔍 Fetching city & location...' })
+    setPincodeStatus({ loading: true, success: false, message: 'Fetching city & location...' })
     try {
       const res = await fetch(`https://api.postalpincode.in/pincode/${digitsOnly}`)
       const data = await res.json()
@@ -121,19 +125,28 @@ export default function Checkout() {
         setPincodeStatus({
           loading: false,
           success: true,
-          message: `📍 ${city}${state ? `, ${state}` : ''}`,
+          message: `${city}${state ? `, ${state}` : ''}`,
         })
       } else {
         setPincodeStatus({
           loading: false,
           success: false,
-          message: '⚠️ Invalid PIN code or postal data not found',
+          message: 'Invalid PIN code or postal data not found',
         })
       }
     } catch (err) {
       console.error('Pincode auto-fetch error:', err)
       setPincodeStatus({ loading: false, success: false, message: '' })
     }
+  }
+
+  const getRawPhoneDigits = (phoneVal) => {
+    if (!phoneVal) return ''
+    let str = String(phoneVal).trim()
+    if (str.startsWith('+91')) str = str.slice(3)
+    else if (str.startsWith('91') && str.length > 10) str = str.slice(2)
+    else if (str.startsWith('0') && str.length > 10) str = str.slice(1)
+    return str.replace(/\D/g, '').slice(0, 10)
   }
 
   const loadRazorpayScript = () => {
@@ -160,8 +173,14 @@ export default function Checkout() {
     const errs = {}
     if (!form.name?.trim()) errs.name = 'Full name is required.'
     if (!form.email?.trim()) errs.email = 'Email address is required.'
-    if (!form.phone?.trim()) errs.phone = 'Phone number is required.'
-    else if (!/^\+?[0-9\s\-]{8,15}$/.test(form.phone.trim())) errs.phone = 'Please enter a valid phone number.'
+    const phoneDigits = getRawPhoneDigits(form.phone)
+    if (!phoneDigits) {
+      errs.phone = 'Phone number is required.'
+    } else if (phoneDigits.length !== 10) {
+      errs.phone = `Phone number must be exactly 10 digits (${phoneDigits.length}/10).`
+    } else if (!/^[6-9]\d{9}$/.test(phoneDigits)) {
+      errs.phone = 'Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.'
+    }
     if (!form.address?.trim()) errs.address = 'Street address is required.'
     if (!form.city?.trim()) errs.city = 'City / District is required.'
     if (!/^\d{6}$/.test(form.pincode)) errs.pincode = 'Please enter a valid 6-digit PIN code.'
@@ -169,6 +188,15 @@ export default function Checkout() {
 
     if (Object.keys(errs).length > 0) {
       setFormErrors(errs)
+
+      setTimeout(() => {
+        const errorKey = Object.keys(errs)[0]
+        const firstErrorEl = document.getElementsByName(errorKey)[0] || document.querySelector('[data-error="true"]')
+        if (firstErrorEl) {
+          firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          firstErrorEl.focus({ preventScroll: true })
+        }
+      }, 50)
       return
     }
 
@@ -195,7 +223,7 @@ export default function Checkout() {
         shippingAddress: {
           name: form.name,
           email: form.email,
-          phone: form.phone,
+          phone: form.phone ? `+91${form.phone}` : '',
           line1: form.address,
           address: form.address,
           city: form.city,
@@ -363,41 +391,60 @@ export default function Checkout() {
     }
   }
 
+  useEffect(() => {
+    if (orderConfirmed) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [orderConfirmed])
+
   if (orderConfirmed) {
     return (
-      <div className="max-w-3xl mx-auto px-6 pt-36 pb-24 text-center space-y-6">
-        <div className="w-20 h-20 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto">
-          <CheckCircle2 size={48} />
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-28 sm:pt-36 pb-20 sm:pb-28 text-center space-y-6 sm:space-y-8">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#212B1C]/10 text-[#212B1C] border border-black/10 flex items-center justify-center mx-auto luxury-shadow-sm">
+          <CheckCircle2 size={40} className="sm:w-12 sm:h-12" />
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold font-[var(--font-display)] uppercase">Order Confirmed!</h1>
-        <p className="text-sm text-[var(--color-ink-soft)] max-w-md mx-auto leading-relaxed">
-          Thank you for your order, <strong className="text-[var(--color-ink)]">{orderConfirmed.shippingAddress?.name || form.name}</strong>! Your order number is{' '}
-          <strong className="text-[var(--color-primary)] font-mono">{orderConfirmed.orderNumber || orderConfirmed._id}</strong>.
-        </p>
-        <div className="bg-[var(--color-beige)]/40 p-6 border border-[var(--color-line)] max-w-lg mx-auto text-left text-xs space-y-2">
-          <div className="flex justify-between border-b border-[var(--color-line)] pb-2 font-bold uppercase">
-            <span>Payment Status</span>
-            <span className="text-emerald-700 font-mono">PAID (Razorpay)</span>
+        <div className="space-y-2">
+          <span className="eyebrow block text-[var(--color-primary)] font-bold text-xs uppercase tracking-[0.24em]">
+            Studio Direct Dispatch
+          </span>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-[var(--font-display)] uppercase tracking-tight text-[var(--color-ink)]">
+            Order Confirmed!
+          </h1>
+          <p className="text-xs sm:text-sm text-[var(--color-ink-soft)] max-w-md mx-auto leading-relaxed">
+            Thank you for your order, <strong className="text-[var(--color-ink)]">{orderConfirmed.shippingAddress?.name || form.name}</strong>! Your order number is{' '}
+            <strong className="text-[var(--color-primary)] font-mono font-bold">{orderConfirmed.orderNumber || orderConfirmed._id}</strong>.
+          </p>
+        </div>
+
+        <div className="bg-[var(--color-card-bg)] p-5 sm:p-7 border border-[var(--color-line)] rounded-3xl luxury-shadow-sm max-w-lg mx-auto text-left text-xs space-y-3">
+          <div className="flex justify-between items-center border-b border-[var(--color-line)] pb-3 font-bold uppercase text-[0.68rem] tracking-wider">
+            <span className="text-[var(--color-ink-soft)]">Payment Status</span>
+            <span className="bg-[var(--color-bg)] px-3 py-1 border border-[var(--color-line)] text-[var(--color-ink)] rounded-full font-mono text-[0.68rem] font-bold">
+              PAID (Razorpay)
+            </span>
           </div>
           <div className="flex justify-between pt-1">
-            <span>Shipping To:</span>
-            <span className="font-semibold text-right">{orderConfirmed.shippingAddress?.address}, {orderConfirmed.shippingAddress?.city} - {orderConfirmed.shippingAddress?.pincode}</span>
+            <span className="text-[var(--color-ink-soft)]">Shipping To:</span>
+            <span className="font-semibold text-right text-[var(--color-ink)] max-w-[240px]">
+              {orderConfirmed.shippingAddress?.address}, {orderConfirmed.shippingAddress?.city} - {orderConfirmed.shippingAddress?.pincode}
+            </span>
           </div>
-          <div className="flex justify-between pt-1 border-t border-[var(--color-line)] font-bold text-sm">
+          <div className="flex justify-between items-center pt-2 border-t border-[var(--color-line)] font-bold text-sm text-[var(--color-ink)]">
             <span>Total Paid:</span>
-            <span className="text-[var(--color-primary)]">{formatPrice(orderConfirmed.grandTotal ?? orderConfirmed.total ?? total)}</span>
+            <span className="text-[var(--color-primary)] font-bold">{formatPrice(orderConfirmed.grandTotal ?? orderConfirmed.total ?? total)}</span>
           </div>
         </div>
-        <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
+
+        <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
           <button
             onClick={() => navigate('/dashboard?tab=My Orders&order=confirmed')}
-            className="btn-primary px-8 py-3 text-xs uppercase tracking-widest font-bold flex items-center gap-2 shadow-sm"
+            className="btn-primary px-8 py-3.5 text-xs uppercase tracking-widest font-bold flex items-center gap-2 rounded-full shadow-md cursor-pointer"
           >
-            <Package size={14} /> View in My Orders
+            <Package size={15} /> View in My Orders
           </button>
           <button
             onClick={() => navigate('/shop')}
-            className="btn-outline px-8 py-3 text-xs uppercase tracking-widest font-bold"
+            className="btn-outline px-8 py-3.5 text-xs uppercase tracking-widest font-bold rounded-full cursor-pointer"
           >
             Continue Shopping
           </button>
@@ -420,15 +467,15 @@ export default function Checkout() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pt-20 sm:pt-28 pb-16 sm:pb-24 grid grid-cols-1 lg:grid-cols-[1fr_390px] gap-8 lg:gap-14 w-full max-w-full">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pt-20 sm:pt-28 pb-16 sm:pb-24 space-y-6 sm:space-y-8 w-full max-w-full">
       <Reveal>
-        <h1 className="text-2xl sm:text-3xl md:text-4xl mb-4 sm:mb-6 font-[var(--font-display)] font-bold uppercase tracking-tight">Checkout</h1>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-[var(--font-display)] font-bold uppercase tracking-tight">Checkout</h1>
 
         {!authLoading && (!user || !token) && (
-          <div className="bg-amber-50/90 border border-amber-300 rounded-2xl p-4 sm:p-5 mb-6 text-xs text-[var(--color-ink)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div className="bg-amber-50/90 border border-amber-300 rounded-2xl p-4 sm:p-5 mt-4 text-xs text-[var(--color-ink)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
             <div className="space-y-1">
               <p className="font-bold text-sm text-amber-950 flex items-center gap-1.5">
-                <span>🌸</span> Please log in to complete your order.
+                <span>Studio Account:</span> Please log in to complete your order.
               </p>
               <p className="text-[0.72rem] text-amber-900/80 leading-relaxed">
                 Log in with your email or Google account. Your bag will be safely merged and kept intact.
@@ -458,7 +505,9 @@ export default function Checkout() {
             </div>
           </div>
         )}
+      </Reveal>
 
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_390px] gap-8 lg:gap-14 items-start">
         <form onSubmit={handlePay} className="space-y-6 sm:space-y-8">
           <div className="bg-[var(--color-card-bg)]/80 backdrop-blur-sm p-5 sm:p-7 border border-black/10 rounded-3xl luxury-shadow-sm space-y-4">
             <p className="eyebrow mb-1 sm:mb-2">Contact Information</p>
@@ -477,13 +526,13 @@ export default function Checkout() {
                   placeholder="e.g. Eleanor Vance"
                   className={`border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none w-full transition-colors ${
                     formErrors.name
-                      ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                      ? 'border-black focus:border-black ring-1 ring-black/40 bg-black/5'
                       : 'border-black/15 focus:border-[var(--color-primary)]'
                   }`}
                 />
                 {formErrors.name && (
-                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                    ⚠️ {formErrors.name}
+                  <p className="text-black font-bold text-[0.68rem] mt-1 flex items-center gap-1">
+                    {formErrors.name}
                   </p>
                 )}
               </div>
@@ -502,38 +551,53 @@ export default function Checkout() {
                   placeholder="e.g. customer@example.com"
                   className={`border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none w-full transition-colors ${
                     formErrors.email
-                      ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                      ? 'border-black focus:border-black ring-1 ring-black/40 bg-black/5'
                       : 'border-black/15 focus:border-[var(--color-primary)]'
                   }`}
                 />
                 {formErrors.email && (
-                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                    ⚠️ {formErrors.email}
+                  <p className="text-black font-bold text-[0.68rem] mt-1 flex items-center gap-1">
+                    {formErrors.email}
                   </p>
                 )}
               </div>
 
               <div className="col-span-1 sm:col-span-2">
                 <label className="block font-bold uppercase mb-1 text-[0.68rem] tracking-wider text-[var(--color-ink)]">
-                  Phone Number <span className="text-red-500 font-bold ml-0.5">*</span>
+                  Phone Number (10 Digits) <span className="text-red-500 font-bold ml-0.5">*</span>
                 </label>
-                <input
-                  name="phone"
-                  type="tel"
-                  required
-                  aria-required="true"
-                  value={form.phone}
-                  onChange={handleChange}
-                  placeholder="e.g. +91 98765 43210"
-                  className={`border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none font-mono w-full transition-colors ${
-                    formErrors.phone
-                      ? 'border-red-500 focus:border-red-500 bg-red-50/20'
-                      : 'border-black/15 focus:border-[var(--color-primary)]'
-                  }`}
-                />
+                <div className="flex">
+                  <div className={`bg-[var(--color-card-bg)] text-[var(--color-ink)] px-3.5 py-3 border border-r-0 font-mono text-xs rounded-l-xl font-bold flex items-center shrink-0 select-none ${
+                    formErrors.phone ? 'border-black' : 'border-black/15'
+                  }`}>
+                    +91
+                  </div>
+                  <input
+                    name="phone"
+                    type="tel"
+                    required
+                    aria-required="true"
+                    maxLength={10}
+                    inputMode="numeric"
+                    value={form.phone || ''}
+                    onChange={(e) => {
+                      const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10)
+                      setForm((prev) => ({ ...prev, phone: digitsOnly }))
+                      if (formErrors.phone) {
+                        setFormErrors((prev) => ({ ...prev, phone: '' }))
+                      }
+                    }}
+                    placeholder="9876543210"
+                    className={`border bg-transparent rounded-r-xl rounded-l-none px-4 py-3 text-xs focus:outline-none font-mono w-full transition-colors ${
+                      formErrors.phone
+                        ? 'border-black focus:border-black ring-1 ring-black/40 bg-black/5'
+                        : 'border-black/15 focus:border-[var(--color-primary)]'
+                    }`}
+                  />
+                </div>
                 {formErrors.phone && (
-                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                    ⚠️ {formErrors.phone}
+                  <p className="text-black font-bold text-[0.68rem] mt-1 flex items-center gap-1">
+                    {formErrors.phone}
                   </p>
                 )}
               </div>
@@ -557,13 +621,13 @@ export default function Checkout() {
                   placeholder="e.g. Flat 402, Lotus Bloom Residences, 12th Main Rd"
                   className={`border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none w-full transition-colors ${
                     formErrors.address
-                      ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                      ? 'border-black focus:border-black ring-1 ring-black/40 bg-black/5'
                       : 'border-black/15 focus:border-[var(--color-primary)]'
                   }`}
                 />
                 {formErrors.address && (
-                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                    ⚠️ {formErrors.address}
+                  <p className="text-black font-bold text-[0.68rem] mt-1 flex items-center gap-1">
+                    {formErrors.address}
                   </p>
                 )}
               </div>
@@ -582,13 +646,13 @@ export default function Checkout() {
                   placeholder="e.g. Bengaluru"
                   className={`border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none font-semibold w-full transition-colors ${
                     formErrors.city
-                      ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                      ? 'border-black focus:border-black ring-1 ring-black/40 bg-black/5'
                       : 'border-black/15 focus:border-[var(--color-primary)]'
                   }`}
                 />
                 {formErrors.city && (
-                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                    ⚠️ {formErrors.city}
+                  <p className="text-black font-bold text-[0.68rem] mt-1 flex items-center gap-1">
+                    {formErrors.city}
                   </p>
                 )}
               </div>
@@ -610,27 +674,28 @@ export default function Checkout() {
                   placeholder="e.g. 560001"
                   className={`w-full border bg-transparent rounded-xl px-4 py-3 text-xs focus:outline-none font-mono transition-colors ${
                     formErrors.pincode
-                      ? 'border-red-500 focus:border-red-500 bg-red-50/20'
+                      ? 'border-black focus:border-black ring-1 ring-black/40 bg-black/5'
                       : pincodeStatus.message && !pincodeStatus.success && !pincodeStatus.loading
                       ? 'border-amber-600 focus:border-amber-600'
                       : pincodeStatus.success
-                      ? 'border-emerald-600 focus:border-emerald-600'
+                      ? 'border-black focus:border-black'
                       : 'border-black/15 focus:border-[var(--color-primary)]'
                   }`}
                 />
                 {formErrors.pincode ? (
-                  <p className="text-red-600 text-[0.68rem] mt-1 font-medium flex items-center gap-1">
-                    ⚠️ {formErrors.pincode}
+                  <p className="text-black font-bold text-[0.68rem] mt-1 flex items-center gap-1">
+                    {formErrors.pincode}
                   </p>
                 ) : pincodeStatus.message ? (
-                  <p className={`text-[0.68rem] mt-1 font-semibold ${
+                  <p className={`text-[0.68rem] mt-1.5 font-bold uppercase tracking-wider flex items-center gap-1.5 ${
                     pincodeStatus.loading
-                      ? 'text-blue-600 animate-pulse'
+                      ? 'text-[var(--color-primary)] animate-pulse'
                       : pincodeStatus.success
-                      ? 'text-emerald-700 font-mono'
-                      : 'text-amber-700'
+                      ? 'text-[var(--color-ink)]'
+                      : 'text-amber-800'
                   }`}>
-                    {pincodeStatus.message}
+                    {pincodeStatus.success && <MapPin size={12} className="text-[var(--color-ink)] shrink-0" />}
+                    <span>{pincodeStatus.message}</span>
                   </p>
                 ) : null}
               </div>
@@ -645,9 +710,8 @@ export default function Checkout() {
           </div>
 
           {/* Cancellation Policy Disclaimer */}
-          <div className="p-4 sm:p-5 bg-amber-50/90 border border-amber-300 text-[0.7rem] sm:text-[0.72rem] text-amber-900 leading-relaxed rounded-3xl space-y-2 shadow-2xs">
-            <div className="font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-950 text-xs">
-              <AlertTriangle size={15} className="text-amber-700 shrink-0" />
+          <div className="p-4 sm:p-5 bg-[var(--color-card-bg)] border border-[var(--color-line)] text-[0.7rem] sm:text-[0.72rem] text-[var(--color-ink-soft)] leading-relaxed rounded-2xl space-y-2 shadow-2xs">
+            <div className="font-bold uppercase tracking-wider text-[var(--color-primary)] text-xs">
               Studio Cancellation & Refund Policy
             </div>
             <p className="text-[0.68rem] sm:text-[0.7rem]">
@@ -659,9 +723,12 @@ export default function Checkout() {
           </div>
 
           {/* Mandatory Handmade Product Terms & Conditions */}
-          <div className={`p-4 sm:p-5 bg-[var(--color-card-bg)]/80 border rounded-3xl space-y-2 transition-colors ${
-            formErrors.terms ? 'border-red-500 bg-red-50/20' : 'border-black/10'
-          }`}>
+          <div
+            data-error={formErrors.terms ? 'true' : undefined}
+            className={`p-4 sm:p-5 bg-[var(--color-card-bg)]/80 border rounded-3xl space-y-2 transition-colors ${
+              formErrors.terms ? 'border-black bg-black/5 ring-1 ring-black/40' : 'border-black/10'
+            }`}
+          >
             <label
               htmlFor="handmadeTermsCheckbox"
               className="flex items-start gap-3 text-xs text-[var(--color-ink)] cursor-pointer select-none"
@@ -679,25 +746,27 @@ export default function Checkout() {
                     setFormErrors((prev) => ({ ...prev, terms: '' }))
                   }
                 }}
-                className="mt-0.5 w-4 h-4 rounded border-black/20 text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer shrink-0 accent-[var(--color-primary)]"
+                className="mt-0.5 w-4 h-4 rounded border-black/30 text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer shrink-0"
               />
-              <span className="leading-relaxed text-[0.74rem] sm:text-[0.76rem] text-[var(--color-ink)] font-normal">
+              <span className="leading-snug font-medium">
                 I understand and agree that handmade products may have slight variations from the product images due to their handmade nature.{' '}
-                <a
-                  href="/terms"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[var(--color-primary)] underline font-bold hover:opacity-80 inline-block"
-                  onClick={(e) => e.stopPropagation()}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setShowTermsModal(true)
+                  }}
+                  className="text-[var(--color-primary)] underline font-bold hover:opacity-80 inline-block cursor-pointer"
                 >
                   View Terms & Conditions
-                </a>
+                </button>
               </span>
             </label>
 
             {formErrors.terms && (
               <p className="text-red-600 text-[0.7rem] font-bold flex items-center gap-1">
-                ⚠️ {formErrors.terms}
+                {formErrors.terms}
               </p>
             )}
           </div>
@@ -706,10 +775,9 @@ export default function Checkout() {
             {processing ? 'Processing Payment & Saving Order...' : `Pay ${formatPrice(total)} Now`}
           </button>
         </form>
-      </Reveal>
 
-      <Reveal delay={0.1}>
-        <div className="bg-[var(--color-card-bg)]/80 backdrop-blur-md p-5 sm:p-7 lg:sticky lg:top-28 border border-black/10 rounded-3xl space-y-4 sm:space-y-5 w-full luxury-shadow-md">
+        <Reveal delay={0.1}>
+          <div className="bg-[var(--color-card-bg)]/80 backdrop-blur-md p-5 sm:p-7 lg:sticky lg:top-28 border border-black/10 rounded-3xl space-y-4 sm:space-y-5 w-full luxury-shadow-md">
           <p className="eyebrow mb-2">Order Summary</p>
           <div className="space-y-3 sm:space-y-4 max-h-56 overflow-y-auto pr-1 scrollbar-thin">
             {items.map((item) => (
@@ -727,17 +795,17 @@ export default function Checkout() {
           {/* Promo Code Entry Box */}
           <div className="pt-3.5 border-t border-black/10 space-y-2">
             {activeCoupon ? (
-              <div className="bg-emerald-50 border border-emerald-300 p-3 text-xs flex justify-between items-center rounded-2xl">
+              <div className="bg-[var(--color-card-bg)] border border-[var(--color-line)] p-3 text-xs flex justify-between items-center rounded-2xl shadow-2xs">
                 <div>
-                  <p className="font-bold text-emerald-900 flex items-center gap-1">
-                    ✨ {activeCoupon.code}
+                  <p className="font-bold text-[var(--color-ink)] flex items-center gap-1">
+                    {activeCoupon.code}
                   </p>
-                  <p className="text-[0.68rem] text-emerald-700">{activeCoupon.label}</p>
+                  <p className="text-[0.68rem] text-[var(--color-primary)]">{activeCoupon.label}</p>
                 </div>
                 <button
                   type="button"
                   onClick={handleRemoveCoupon}
-                  className="text-rose-600 font-bold uppercase text-[0.65rem] hover:underline cursor-pointer"
+                  className="text-[0.65rem] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] font-bold uppercase underline cursor-pointer transition-colors"
                 >
                   Remove
                 </button>
@@ -763,7 +831,7 @@ export default function Checkout() {
             )}
 
             {!activeCoupon && couponMsg && (
-              <div className={`text-[0.68rem] p-2 rounded-xl ${couponMsg.success ? 'bg-emerald-100 text-emerald-900 font-bold' : 'bg-rose-100 text-rose-800'}`}>
+              <div className={`text-[0.68rem] p-2 rounded-xl ${couponMsg.success ? 'bg-[#212B1C]/10 text-[#212B1C] font-bold' : 'bg-rose-100 text-rose-800'}`}>
                 {couponMsg.message}
               </div>
             )}
@@ -772,7 +840,7 @@ export default function Checkout() {
           <div className="space-y-2 text-xs pt-3 border-t border-black/10">
             <div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
             {discountAmount > 0 && (
-              <div className="flex justify-between text-emerald-700 font-bold">
+              <div className="flex justify-between text-[var(--color-primary)] font-bold">
                 <span>Promo Discount ({activeCoupon?.code})</span>
                 <span>-{formatPrice(discountAmount)}</span>
               </div>
@@ -783,7 +851,7 @@ export default function Checkout() {
                 {shippingLoading ? (
                   <span className="text-[var(--color-ink-soft)] font-mono animate-pulse">Calculating...</span>
                 ) : shipping === 0 ? (
-                  <span className="text-emerald-700 font-mono">
+                  <span className="text-[var(--color-primary)] font-mono">
                     FREE {isShippingEnabled && subtotal >= freeThreshold ? `(> ₹${freeThreshold.toLocaleString('en-IN')})` : ''}
                   </span>
                 ) : (
@@ -792,8 +860,8 @@ export default function Checkout() {
               </span>
             </div>
             {isShippingEnabled && shipping > 0 && subtotal < freeThreshold && (
-              <p className="text-[0.65rem] text-emerald-800 bg-emerald-50 border border-emerald-200 p-2 rounded-xl font-semibold text-center">
-                ✨ Add {formatPrice(freeThreshold - subtotal)} more for <strong>FREE Shipping!</strong>
+              <p className="text-[0.68rem] text-[var(--color-ink-soft)] text-center font-normal pt-1">
+                Add {formatPrice(freeThreshold - subtotal)} more for free shipping
               </p>
             )}
             <div className="flex justify-between font-[var(--font-display)] text-base sm:text-lg font-bold pt-3 border-t border-black/10 text-[var(--color-ink)]">
@@ -802,6 +870,7 @@ export default function Checkout() {
           </div>
         </div>
       </Reveal>
+    </div>
 
       <AuthModal
         isOpen={isAuthModalOpen}
@@ -813,13 +882,18 @@ export default function Checkout() {
             ...prev,
             name: loggedInUser.name || prev.name,
             email: loggedInUser.email || prev.email,
-            phone: loggedInUser.phone || prev.phone,
+            phone: extract10Digits(loggedInUser.phone) || prev.phone,
             address: loggedInUser.address || prev.address,
             city: loggedInUser.city || prev.city,
             pincode: loggedInUser.pincode || prev.pincode,
           }))
           setIsAuthModalOpen(false)
         }}
+      />
+
+      <TermsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
       />
     </div>
   )

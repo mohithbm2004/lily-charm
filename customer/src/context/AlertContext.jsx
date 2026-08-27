@@ -24,8 +24,8 @@ export function AlertProvider({ children }) {
 
   const showAlert = useCallback((options) => {
     if (typeof options === 'string') {
-      const isSuccess = options.includes('✨') || options.includes('🎉') || options.toLowerCase().includes('success') || options.toLowerCase().includes('confirmed')
-      const isError = options.toLowerCase().includes('failed') || options.toLowerCase().includes('error') || options.toLowerCase().includes('invalid') || options.includes('⚠️')
+      const isSuccess = options.toLowerCase().includes('success') || options.toLowerCase().includes('confirmed')
+      const isError = options.toLowerCase().includes('failed') || options.toLowerCase().includes('error') || options.toLowerCase().includes('invalid')
       setAlertConfig({
         isOpen: true,
         isConfirm: false,
@@ -171,12 +171,12 @@ export function AlertProvider({ children }) {
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border ${
                     alertConfig.type === 'success'
-                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      ? 'bg-[#212B1C]/10 text-[#212B1C] border-[#212B1C]/20'
                       : alertConfig.type === 'error'
-                      ? 'bg-rose-100 text-rose-800 border-rose-300'
+                      ? 'bg-rose-100 text-rose-900 border-rose-300'
                       : alertConfig.type === 'warning'
-                      ? 'bg-amber-100 text-amber-900 border-amber-300'
-                      : 'bg-[#2D3926]/10 text-[var(--color-primary)] border-[var(--color-line)]'
+                      ? 'bg-amber-100 text-amber-950 border-amber-300'
+                      : 'bg-[#212B1C]/10 text-[#212B1C] border-[var(--color-line)]'
                   }`}
                 >
                   {alertConfig.type === 'success' && <Sparkles size={20} />}
@@ -223,17 +223,13 @@ export function AlertProvider({ children }) {
 
               {/* Optional Refund & Cancellation Policy Disclaimer */}
               {alertConfig.disclaimer && (
-                <div className="p-3.5 bg-amber-50/90 border border-amber-300 rounded text-amber-950 text-[0.7rem] leading-relaxed space-y-1">
-                  <div className="font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-900 text-[0.72rem]">
-                    <AlertTriangle size={13} className="text-amber-700 shrink-0" />
-                    Refund & Cancellation Disclaimer
-                  </div>
+                <div className="p-3 bg-amber-50/90 border border-amber-300 rounded text-amber-950 text-[0.7rem] leading-relaxed">
                   <p>{alertConfig.disclaimer}</p>
                 </div>
               )}
 
               {/* Action Buttons */}
-              <div className="pt-2 flex flex-wrap items-center justify-end gap-3">
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5">
                 {alertConfig.isConfirm && (
                   <button
                     type="button"
@@ -243,16 +239,10 @@ export function AlertProvider({ children }) {
                     {alertConfig.cancelText}
                   </button>
                 )}
-
                 <button
                   type="button"
                   onClick={handleConfirm}
-                  autoFocus
-                  className={`px-6 py-2.5 font-bold uppercase tracking-widest text-[0.72rem] shadow-sm hover:shadow transition-all ${
-                    alertConfig.isConfirm && alertConfig.type === 'warning'
-                      ? 'bg-rose-800 hover:bg-rose-900 text-white border border-rose-950'
-                      : 'btn-primary'
-                  }`}
+                  className="px-6 py-2.5 bg-[var(--color-primary)] text-[var(--color-bg)] font-bold uppercase tracking-widest text-[0.72rem] rounded-xl hover:opacity-90 transition-opacity"
                 >
                   {alertConfig.confirmText}
                 </button>
@@ -262,41 +252,40 @@ export function AlertProvider({ children }) {
         )}
       </AnimatePresence>
 
-      {/* Fixed Bottom Popup Toast Notification */}
       <AnimatePresence>
         {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 30, scale: 0.95 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 z-[9999] bg-[#1C2518]/95 text-[#FAF7F2] backdrop-blur-md px-4 py-3 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-3.5 min-w-[280px] max-w-sm"
-          >
-            {toast.image ? (
-              <img src={toast.image} alt="Added Product" className="w-10 h-12 object-cover rounded-xl shrink-0 shadow-2xs" />
-            ) : (
-              <div className="w-9 h-9 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-400 flex items-center justify-center shrink-0">
-                <Sparkles size={16} />
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-xs uppercase tracking-wider text-[#F5E8D0] flex items-center gap-1.5 font-[var(--font-button)]">
-                <span>🌸</span> {toast.title || 'Added to Cart'}
-              </p>
-              {toast.message && (
-                <p className="text-[0.72rem] text-[#E2DACB] truncate leading-tight mt-0.5 font-normal">
-                  {toast.message}
-                </p>
-              )}
-            </div>
-            <button
-              onClick={() => setToast(null)}
-              className="text-[#E2DACB] hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
-              aria-label="Close notification"
+          <div className="fixed bottom-6 inset-x-0 z-[9999] pointer-events-none flex items-center justify-center px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.96 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="pointer-events-auto bg-[#212B1C]/95 text-[#FAF7F2] backdrop-blur-md px-4 py-2.5 rounded-full shadow-2xl border border-white/15 flex items-center gap-3 max-w-[calc(100vw-2rem)] sm:max-w-md w-auto"
             >
-              <X size={15} />
-            </button>
-          </motion.div>
+              {toast.image ? (
+                <img src={toast.image} alt={toast.message || 'Product'} className="w-7 h-7 object-cover rounded-full shrink-0 shadow-2xs" />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                  <Check size={13} strokeWidth={2.5} />
+                </div>
+              )}
+              <span className="text-xs font-medium tracking-wide text-[#FAF7F2] truncate min-w-0">
+                Added to cart
+                {toast.message && (
+                  <span className="text-[#D5C29D] font-serif italic ml-1.5 opacity-90 truncate inline-block max-w-[140px] sm:max-w-[220px] align-bottom">
+                    • {toast.message}
+                  </span>
+                )}
+              </span>
+              <button
+                onClick={() => setToast(null)}
+                className="text-[#FAF7F2]/70 hover:text-white ml-1 p-0.5 rounded-full transition-colors cursor-pointer shrink-0"
+                aria-label="Close notification"
+              >
+                <X size={14} />
+              </button>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </AlertContext.Provider>

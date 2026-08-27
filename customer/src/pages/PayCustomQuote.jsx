@@ -211,9 +211,9 @@ export default function PayCustomQuote() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
           <button
             onClick={fetchQuoteSummary}
-            className="btn-outline px-6 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5"
+            className="group btn-outline px-6 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5"
           >
-            <RefreshCw size={14} /> Retry
+            <RefreshCw size={14} className={`transition-transform duration-500 ${loading ? 'animate-spin' : 'group-hover:rotate-180'}`} /> Retry
           </button>
           <Link
             to="/shop"
@@ -252,22 +252,22 @@ export default function PayCustomQuote() {
       {/* SUCCESS CARD IF ALREADY PAID */}
       {isAlreadyPaid ? (
         <Reveal>
-          <div className="border border-emerald-300 bg-emerald-50/50 p-6 sm:p-8 rounded-2xl text-center space-y-4 shadow-sm">
-            <div className="w-16 h-16 bg-emerald-600 text-white rounded-full flex items-center justify-center mx-auto shadow-md">
+          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-6 sm:p-8 rounded-2xl text-center space-y-4 shadow-sm">
+            <div className="w-16 h-16 bg-[#212B1C]/10 text-[#212B1C] rounded-full flex items-center justify-center mx-auto shadow-md border border-[#212B1C]/20">
               <CheckCircle2 size={36} />
             </div>
             <div className="space-y-1">
-              <h2 className="text-xl sm:text-2xl font-bold font-[var(--font-display)] text-emerald-950 uppercase">
+              <h2 className="text-xl sm:text-2xl font-bold font-[var(--font-display)] text-[var(--color-ink)] uppercase">
                 Payment Successful!
               </h2>
-              <p className="text-xs text-emerald-900">
+              <p className="text-xs text-[var(--color-ink-soft)]">
                 Official Order Reference:{' '}
-                <strong className="font-mono">{quote.convertedOrderId || confirmedOrder?.orderNumber || 'LC-CQ-CONFIRMED'}</strong>
+                <strong className="font-mono text-[var(--color-primary)]">{quote.convertedOrderId || confirmedOrder?.orderNumber || 'LC-CQ-CONFIRMED'}</strong>
               </p>
             </div>
-            <p className="text-xs text-emerald-800 max-w-md mx-auto leading-relaxed">
+            <p className="text-xs text-[var(--color-ink-soft)] max-w-md mx-auto leading-relaxed">
               A confirmation receipt and tax invoice have been dispatched to{' '}
-              <strong className="font-mono text-emerald-950">{quote.email}</strong>.
+              <strong className="font-mono text-[var(--color-ink)]">{quote.email}</strong>.
             </p>
             <div className="pt-4 flex flex-col sm:flex-row justify-center gap-3">
               <Link
@@ -302,7 +302,6 @@ export default function PayCustomQuote() {
                 />
               ) : (
                 <div className="text-center p-4 text-xs text-[var(--color-ink-soft)]">
-                  <div className="text-3xl mb-1">🌸</div>
                   <p className="font-bold">Bespoke Floral Concept</p>
                 </div>
               )}
@@ -337,7 +336,7 @@ export default function PayCustomQuote() {
             {quote.adminNotes && (
               <div className="p-3.5 bg-amber-50/70 border border-amber-200 rounded-xl space-y-1">
                 <span className="text-[0.65rem] font-bold text-amber-900 uppercase flex items-center gap-1 font-mono">
-                  ✨ Artisan Note from Keerthana Bapu:
+                  Artisan Note from Keerthana Bapu:
                 </span>
                 <p className="text-xs text-amber-950 italic leading-relaxed">{quote.adminNotes}</p>
               </div>
@@ -355,7 +354,7 @@ export default function PayCustomQuote() {
                   {quote.shippingCharge > 0 ? (
                     formatPrice(quote.shippingCharge)
                   ) : (
-                    <span className="text-emerald-800 font-bold">✨ FREE Shipping</span>
+                    <span className="text-emerald-800 font-bold">FREE Shipping</span>
                   )}
                 </span>
               </div>
