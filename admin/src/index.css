@@ -123,3 +123,30 @@ body.modal-open {
   overscroll-behavior: contain !important;
 }
 
+/* Custom visible horizontal scrollbar for admin navigation tabs */
+.admin-tabs-scrollbar {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(45, 57, 38, 0.45) rgba(0, 0, 0, 0.06);
+}
+
+.admin-tabs-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.admin-tabs-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 9999px;
+  margin: 0 4px;
+}
+
+.admin-tabs-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(45, 57, 38, 0.4);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+.admin-tabs-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-primary);
+}
+

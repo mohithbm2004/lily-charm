@@ -316,7 +316,7 @@ export default function Dashboard() {
         setDashPincodeStatus({
           loading: false,
           success: true,
-          message: `📍 Auto-filled City: ${city}`,
+          message: '',
         })
       } else {
         setDashPincodeStatus({
@@ -589,7 +589,7 @@ export default function Dashboard() {
   // If customer is signed out, render a clean login prompt screen with zero previous user details
   if (!user) {
     return (
-      <div className="max-w-xl mx-auto px-6 pt-36 sm:pt-40 pb-28 text-center space-y-6 text-[var(--color-ink)]">
+      <div className="max-w-xl mx-auto px-6 pt-16 sm:pt-20 pb-20 text-center space-y-6 text-[var(--color-ink)]">
         <div className="w-20 h-20 rounded-full bg-[var(--color-card-bg)] border border-[var(--color-line)] flex items-center justify-center mx-auto text-[var(--color-primary)] shadow-sm">
           <User size={36} />
         </div>
@@ -629,8 +629,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pt-24 sm:pt-32 pb-16 sm:pb-24 text-[var(--color-ink)] w-full max-w-full">
-      <div className="sticky top-[89px] md:top-[105px] z-20 bg-[var(--color-bg)] opacity-100 py-4 mb-6 border-b border-[var(--color-line)] transition-all">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pt-12 sm:pt-16 pb-16 sm:pb-24 text-[var(--color-ink)] w-full max-w-full">
+      <div className="sticky top-[89px] md:top-[105px] z-20 bg-[var(--color-bg)] opacity-100 py-2.5 sm:py-3 mb-4 sm:mb-6 border-b border-[var(--color-line)] transition-all">
         <Reveal>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5 sm:gap-4">
@@ -1216,7 +1216,7 @@ export default function Dashboard() {
               ) : (
                 <div className="space-y-4">
                   {userCustomRequests.map((req) => (
-                    <div key={req._id} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5 space-y-4 shadow-sm">
+                    <div key={req._id} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-5 space-y-4 shadow-sm rounded-3xl">
                       <div className="flex flex-wrap justify-between items-start border-b border-[var(--color-line)] pb-3 gap-2">
                         <div>
                           <h4 className="font-bold text-sm font-[var(--font-display)]">{req.stylePreference || 'Custom Botanical Artwork'}</h4>
@@ -1236,7 +1236,7 @@ export default function Dashboard() {
                       </div>
 
                       {req.notes && (
-                        <p className="text-xs text-[var(--color-ink-soft)] italic bg-[var(--color-bg)] p-2.5 border border-[var(--color-line)]">
+                        <p className="text-xs text-[var(--color-ink-soft)] italic bg-[var(--color-bg)] p-3 border border-[var(--color-line)] rounded-xl">
                           "{req.notes}"
                         </p>
                       )}
@@ -1245,36 +1245,47 @@ export default function Dashboard() {
                         const customShipping = getCustomOrderShipping(req.quotedPrice)
                         const totalCustomAmount = (req.quotedPrice || 0) + customShipping
                         return (
-                          <div className="p-4 bg-amber-50 border border-amber-200 space-y-2">
-                            <span className="eyebrow text-[0.65rem] font-bold text-amber-900 uppercase">Studio Quoted Price</span>
-                            <p className="text-xl font-bold font-mono text-[var(--color-ink)]">{formatPrice(req.quotedPrice)}</p>
+                          <div className="p-5 bg-[var(--color-bg)] border border-[var(--color-line)] rounded-2xl space-y-3 shadow-2xs">
+                            <div>
+                              <span className="eyebrow text-[0.65rem] font-bold text-[var(--color-primary)] uppercase tracking-wider font-mono">Studio Quoted Price</span>
+                              <p className="text-2xl sm:text-3xl font-bold font-mono text-[var(--color-ink)] mt-0.5">{formatPrice(req.quotedPrice)}</p>
+                            </div>
                             {customShipping > 0 ? (
-                              <p className="text-[0.68rem] text-amber-900 font-mono">+ {formatPrice(customShipping)} Standard Shipping (Total: <strong>{formatPrice(totalCustomAmount)}</strong>)</p>
+                              <p className="text-xs text-[var(--color-ink-soft)] font-mono">+ {formatPrice(customShipping)} Standard Shipping (Total: <strong className="text-[var(--color-ink)] font-bold">{formatPrice(totalCustomAmount)}</strong>)</p>
                             ) : (
-                              <p className="text-[0.68rem] text-[var(--color-primary)] font-mono font-bold">FREE Shipping (Total: {formatPrice(totalCustomAmount)})</p>
+                              <p className="text-xs text-[var(--color-primary)] font-mono font-bold">FREE Studio Shipping (Total: {formatPrice(totalCustomAmount)})</p>
                             )}
-                            {req.adminNotes && <p className="text-xs italic text-amber-900 font-medium">Studio Note: {req.adminNotes}</p>}
+                            {req.adminNotes && (
+                              <p className="text-xs italic text-[var(--color-ink-soft)] bg-[var(--color-card-bg)] p-3 rounded-xl border border-[var(--color-line)] font-medium">
+                                Studio Note: {req.adminNotes}
+                              </p>
+                            )}
 
                             {/* Accept / Decline Action Bar if status is Quoted */}
                             {req.status === 'Quoted' && (
-                              <div className="pt-2 flex flex-wrap gap-2 items-center">
+                              <div className="pt-2 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
                                 <button
+                                  type="button"
                                   onClick={() => handleAcceptQuoteAndPay(req)}
-                                  className="btn-primary py-2.5 px-5 text-[0.68rem] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm"
+                                  className="btn-primary py-3 px-6 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 rounded-xl shadow-xs cursor-pointer"
                                 >
                                   Accept Quote & Pay Now ({formatPrice(totalCustomAmount)})
                                 </button>
 
                                 <button
+                                  type="button"
                                   onClick={async () => {
                                     try {
-                                      await fetch(`${API_URL}/custom-requests/${req._id}/decline`, { method: 'PATCH' })
+                                      await fetch(`${API_URL}/custom-requests/${req._id}/decline`, {
+                                        method: 'PATCH',
+                                        headers: token ? { Authorization: `Bearer ${token}` } : {},
+                                      })
                                       fetchUserOrdersAndRequests()
                                     } catch (e) {
                                       console.error('Error declining quote:', e)
                                     }
                                   }}
-                                  className="px-4 py-2 border border-black/20 text-[var(--color-ink)] hover:bg-black/5 text-[0.65rem] font-bold uppercase rounded-full"
+                                  className="btn-outline py-3 px-6 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 rounded-xl border border-[var(--color-line)] text-rose-700 hover:bg-rose-50 hover:border-rose-300 transition-all shadow-xs cursor-pointer"
                                 >
                                   Decline Quote
                                 </button>

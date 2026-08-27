@@ -1576,7 +1576,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
         </div>
 
         {/* Admin Navigation Tabs (Sticky) */}
-        <div className="sticky top-14 sm:top-16 z-40 bg-[var(--color-bg)]/95 backdrop-blur-md pt-2 flex border-b border-[var(--color-line)] overflow-x-auto gap-1 sm:gap-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 shadow-2xs">
+        <div className="sticky top-14 sm:top-16 z-40 bg-[var(--color-bg)]/95 backdrop-blur-md pt-2 flex border-b border-[var(--color-line)] admin-tabs-scrollbar gap-1 sm:gap-2 pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 shadow-2xs">
           <button
             onClick={() => handleTabChange('products', '/admin/products')}
             className={`px-3 py-2 sm:px-4 sm:py-3 text-[0.68rem] sm:text-xs font-semibold tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-lg sm:rounded-t-xl shrink-0 ${

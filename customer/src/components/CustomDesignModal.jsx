@@ -1,33 +1,18 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Sparkles, Upload, CheckCircle2, Search, Check, Ban, Link as LinkIcon, Package, MapPin } from 'lucide-react'
+import { X, Sparkles, Upload, CheckCircle2, MapPin } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { formatPrice } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
-import { useAlert } from '../context/AlertContext'
-import { useStudio } from '../context/StudioContext'
 import AuthModal from './AuthModal'
-import { API_URL, RAZORPAY_KEY_ID } from '../config/api'
+import { API_URL } from '../config/api'
 import { useScrollLock } from '../lib/useScrollLock'
 
 export default function CustomDesignModal({ isOpen, onClose }) {
   const { user, token } = useAuth()
-  const { showAlert, showConfirm } = useAlert()
-  const { shippingSettings } = useStudio()
-  const [activeTab, setActiveTab] = useState('submit') // 'submit' | 'check-quotes'
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authInitialMode, setAuthInitialMode] = useState('login')
 
   useScrollLock(isOpen)
-
-  const isShippingEnabled = shippingSettings?.shippingFeeEnabled ?? true
-  const standardShippingFee = shippingSettings?.standardShippingFee ?? 100
-  const freeThreshold = shippingSettings?.freeShippingThreshold ?? 2500
-
-  const getCustomOrderShipping = (price) => {
-    if (!isShippingEnabled) return 0
-    return (price || 0) >= freeThreshold ? 0 : standardShippingFee
-  }
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -51,7 +36,6 @@ export default function CustomDesignModal({ isOpen, onClose }) {
         city: prev.city || user.city || '',
         pincode: prev.pincode || user.pincode || '',
       }))
-      setSearchEmail(user.email || '')
     }
   }, [user])
   const [selectedImages, setSelectedImages] = useState([])
@@ -59,13 +43,6 @@ export default function CustomDesignModal({ isOpen, onClose }) {
   const [submittedSuccess, setSubmittedSuccess] = useState(false)
   const [errors, setErrors] = useState({})
   const [pincodeStatus, setPincodeStatus] = useState({ loading: false, success: false, message: '' })
-
-  // Quote Checking state
-  const [searchEmail, setSearchEmail] = useState('')
-  const [myRequests, setMyRequests] = useState([])
-  const [isSearchingQuotes, setIsSearchingQuotes] = useState(false)
-  const [acceptingId, setAcceptingId] = useState(null)
-  const [acceptedSuccessDoc, setAcceptedSuccessDoc] = useState(null)
 
   const handlePincodeChange = async (e) => {
     const rawVal = e.target.value || ''
@@ -103,7 +80,7 @@ export default function CustomDesignModal({ isOpen, onClose }) {
         setPincodeStatus({
           loading: false,
           success: true,
-          message: `Auto-filled City: ${city}`,
+          message: '',
         })
       } else {
         setPincodeStatus({
@@ -190,7 +167,6 @@ export default function CustomDesignModal({ isOpen, onClose }) {
 
       if (res.ok) {
         setSubmittedSuccess(true)
-        setSearchEmail(formData.email)
       } else {
         const errData = await res.json().catch(() => ({}))
         alert(errData.message || 'We could not send your request. Please try again.')
@@ -203,161 +179,8 @@ export default function CustomDesignModal({ isOpen, onClose }) {
     }
   }
 
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      if (window.Razorpay) {
-        resolve(true)
-        return
-      }
-      const script = document.createElement('script')
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-      script.onload = () => resolve(true)
-      script.onerror = () => resolve(false)
-      document.body.appendChild(script)
-    })
-  }
-
-  const fetchCustomerQuotes = async (emailToSearch) => {
-    if (!emailToSearch || !emailToSearch.trim()) return
-    setIsSearchingQuotes(true)
-    try {
-      const res = await fetch(`${API_URL}/custom-requests/mine`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (res.ok) {
-        const allData = await res.json()
-        const rawList = Array.isArray(allData) ? allData : []
-        setMyRequests(rawList)
-      }
-    } catch (e) {
-      console.error('Failed to search quotes:', e)
-    } finally {
-      setIsSearchingQuotes(false)
-    }
-  }
-
-  const handleAcceptQuote = async (reqDoc) => {
-    setAcceptingId(reqDoc._id)
-    try {
-      const isLoaded = await loadRazorpayScript()
-      if (!isLoaded) {
-        alert('Unable to load payment screen. Please check your internet connection and try again.')
-        return
-      }
-
-      const shipping = getCustomOrderShipping(reqDoc.quotedPrice)
-      const totalAmount = (reqDoc.quotedPrice || 0) + shipping
-
-      // 1. Create a Razorpay order bound to this authenticated custom request.
-      const rzpOrderRes = await fetch(`${API_URL}/custom-requests/${reqDoc._id}/create-razorpay-order`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      const rzpOrderData = rzpOrderRes.ok ? await rzpOrderRes.json() : null
-
-      const razorpayOrderId = rzpOrderData?.id || rzpOrderData?.order_id
-      if (!razorpayOrderId) {
-        alert('We could not start your payment. Please try again.')
-        return
-      }
-
-      // 2. Open Razorpay Payment Gateway Modal
-      const options = {
-        key: rzpOrderData.key_id || RAZORPAY_KEY_ID,
-        amount: rzpOrderData.amount,
-        currency: 'INR',
-        name: 'Lily Charm Flower Studio',
-        description: `Payment for Custom Artwork Quote #${reqDoc._id.slice(-6)}`,
-        order_id: razorpayOrderId,
-        prefill: {
-          name: user?.name || reqDoc.name || '',
-          email: user?.email || reqDoc.email || '',
-          contact: user?.phone || reqDoc.phone || '',
-        },
-        theme: { color: '#2B3925' },
-        handler: async function (response) {
-          try {
-            const acceptRes = await fetch(`${API_URL}/custom-requests/${reqDoc._id}/accept`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                razorpayOrderId: response.razorpay_order_id,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature,
-                shippingAddress: {
-                  name: reqDoc.name,
-                  email: reqDoc.email,
-                  phone: reqDoc.phone || '',
-                  address: reqDoc.address || 'Bespoke Custom Address',
-                  city: reqDoc.city || 'Bengaluru',
-                  pincode: reqDoc.pincode || '560001',
-                },
-              }),
-            })
-            const data = await acceptRes.json()
-            if (acceptRes.ok) {
-              setAcceptedSuccessDoc(data.order)
-              fetchCustomerQuotes(searchEmail || reqDoc.email)
-            } else {
-              alert(data.message || 'Unable to complete order confirmation. Please contact support.')
-            }
-          } catch (err) {
-            console.error('Error recording payment:', err)
-            alert('Connection interrupted. Please refresh to check your confirmed quote.')
-          }
-        },
-      }
-
-      const rzp = new window.Razorpay(options)
-      rzp.open()
-    } catch (e) {
-      console.error('Error accepting quote with Razorpay:', e)
-      alert('Something went wrong starting payment. Please try again.')
-    } finally {
-      setAcceptingId(null)
-    }
-  }
-
-  const handleDeclineQuote = (reqDoc) => {
-    showConfirm({
-      title: 'Decline Price Quote',
-      type: 'warning',
-      message: `Are you sure you want to decline the custom design price quote of ${formatPrice(reqDoc.quotedPrice)}?`,
-      confirmText: 'Decline Quote',
-      cancelText: 'Keep Quote',
-      onConfirm: async () => {
-        try {
-          await fetch(`${API_URL}/custom-requests/${reqDoc._id}/decline`, {
-            method: 'PATCH',
-            headers: { Authorization: `Bearer ${token}` },
-          })
-          showAlert({
-            title: 'Quote Declined',
-            type: 'info',
-            message: 'Price quote has been declined.',
-          })
-          fetchCustomerQuotes(searchEmail || reqDoc.email)
-        } catch (e) {
-          console.error('Error declining quote:', e)
-          showAlert({
-            title: 'Error',
-            type: 'error',
-            message: 'Failed to decline price quote.',
-          })
-        }
-      },
-    })
-  }
-
   const handleResetAndClose = () => {
     setSubmittedSuccess(false)
-    setAcceptedSuccessDoc(null)
     setFormData({
       name: '',
       email: '',
@@ -392,66 +215,64 @@ export default function CustomDesignModal({ isOpen, onClose }) {
             <X size={20} />
           </button>
 
-          {/* Modal Header Tabs */}
-          <div className="flex flex-col sm:flex-row border-b border-[var(--color-line)] gap-2 sm:gap-4 pt-1">
-            <button
-              onClick={() => setActiveTab('submit')}
-              className={`pb-2 sm:pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 text-left sm:text-center ${
-                activeTab === 'submit'
-                  ? 'border-[var(--color-primary)] text-[var(--color-primary)] font-bold'
-                  : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
-              }`}
-            >
-              1. Request Custom Design
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('check-quotes')
-                if (searchEmail) fetchCustomerQuotes(searchEmail)
-              }}
-              className={`pb-2 sm:pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 text-left sm:text-center ${
-                activeTab === 'check-quotes'
-                  ? 'border-[var(--color-primary)] text-[var(--color-primary)] font-bold'
-                  : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
-              }`}
-            >
-              2. Check Quotes & Orders
-            </button>
+          {/* Modal Header */}
+          <div className="border-b border-[var(--color-line)] pb-3 pt-1 pr-8">
+            <div className="flex items-center gap-1.5 text-[var(--color-primary)] font-bold text-xs uppercase tracking-widest mb-1 font-mono">
+              <Sparkles size={13} /> Bespoke Floral Commissions
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold font-[var(--font-display)] uppercase tracking-tight text-[var(--color-ink)]">
+              Request Custom Design
+            </h2>
+            <p className="text-xs text-[var(--color-ink-soft)] mt-0.5">
+              Submit your reference photos, preferred flower styles, and personalized notes for our artisans.
+            </p>
           </div>
 
-          {activeTab === 'submit' && (
-            <>
-              {submittedSuccess ? (
-                <div className="py-10 text-center space-y-4">
-                  <div className="w-14 h-14 bg-[#212B1C]/10 text-[#212B1C] rounded-full flex items-center justify-center mx-auto">
-                    <CheckCircle2 size={36} />
-                  </div>
-                  <h2 className="text-2xl font-bold font-[var(--font-display)] uppercase">Request Submitted!</h2>
-                  <p className="text-sm text-[var(--color-ink-soft)] max-w-md mx-auto leading-relaxed">
-                    Thank you, <strong className="text-[var(--color-ink)]">{formData.name}</strong>! Your reference photo and design request have been received by our studio.
-                  </p>
-                  <p className="text-xs text-[var(--color-primary)] font-semibold font-mono">
-                    Our lead artisan will review your design and quote a price shortly! You can check your quote under the "Check Price Quotes" tab.
-                  </p>
-                  <div className="flex justify-center gap-3 pt-4">
-                    <button
-                      onClick={() => {
-                        setActiveTab('check-quotes')
-                        fetchCustomerQuotes(formData.email)
-                      }}
-                      className="btn-primary px-6 py-2.5 text-xs uppercase font-bold tracking-wider"
-                    >
-                      Check Price Quote Status
-                    </button>
-                    <button
-                      onClick={handleResetAndClose}
-                      className="btn-outline px-6 py-2.5 text-xs uppercase font-bold tracking-wider rounded-full"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              ) : (
+          {submittedSuccess ? (
+            <div className="py-8 sm:py-10 text-center space-y-4 max-w-lg mx-auto">
+              <div className="w-16 h-16 bg-[#212B1C]/10 text-[#212B1C] rounded-full flex items-center justify-center mx-auto shadow-sm">
+                <CheckCircle2 size={38} />
+              </div>
+              <div className="space-y-1">
+                <span className="eyebrow text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-primary)] font-mono">
+                  Bespoke Request Received
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-bold font-[var(--font-display)] uppercase">
+                  Quote Request Submitted!
+                </h2>
+              </div>
+              <p className="text-sm text-[var(--color-ink-soft)] leading-relaxed">
+                Thank you, <strong className="text-[var(--color-ink)]">{formData.name}</strong>! Your reference photos and custom design request have been sent directly to our atelier.
+              </p>
+
+              {/* Notice to check quote in Profile section */}
+              <div className="p-4 bg-[var(--color-card-bg)] border border-[var(--color-line)] rounded-2xl text-left space-y-2 text-xs shadow-2xs">
+                <p className="font-bold text-[var(--color-ink)] flex items-center gap-1.5 text-xs sm:text-sm">
+                  <Sparkles size={15} className="text-[var(--color-primary)] shrink-0" /> Where to check your quote price:
+                </p>
+                <p className="text-[var(--color-ink-soft)] leading-relaxed text-xs">
+                  Our lead artisan will review your design and provide a personalized price quote. <strong>You can view, track, and accept your price quote anytime in your Profile under the "Custom Price Quotes" section.</strong>
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-center gap-3 pt-2">
+                <Link
+                  to="/dashboard?tab=Custom+Price+Quotes"
+                  onClick={handleResetAndClose}
+                  className="btn-primary py-3 px-6 text-xs uppercase font-bold tracking-wider rounded-full shadow-sm text-center cursor-pointer"
+                >
+                  View Custom Price Quotes in Profile →
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleResetAndClose}
+                  className="btn-outline py-3 px-6 text-xs uppercase font-bold tracking-wider rounded-full cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          ) : (
                 <>
                   {!user && (
                     <div className="bg-amber-50/90 border border-amber-300 rounded-2xl p-4 sm:p-5 mb-4 text-xs text-[var(--color-ink)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
@@ -714,183 +535,8 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                     </button>
                   </div>
                 </form>
-                </>
-              )}
-            </>
-          )}
-
-          {/* TAB 2: CHECK PRICE QUOTES & ACCEPT ORDER */}
-          {activeTab === 'check-quotes' && (
-            <div className="space-y-6 text-xs">
-              <div className="space-y-1">
-                <h3 className="font-bold text-lg font-[var(--font-display)] uppercase">Check Your Custom Price Quotes</h3>
-                <p className="text-xs text-[var(--color-ink-soft)]">
-                  Enter your email address below to view your custom design requests, admin price quotes, and accept quotes to place your order.
-                </p>
-              </div>
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  fetchCustomerQuotes(searchEmail)
-                }}
-                className="flex gap-2"
-              >
-                <input
-                  type="email"
-                  placeholder="Enter your email (e.g. customer@example.com)..."
-                  value={searchEmail}
-                  onChange={(e) => setSearchEmail(e.target.value)}
-                  required
-                  className="flex-1 border border-[var(--color-line)] p-3 bg-[var(--color-card-bg)] text-xs font-semibold"
-                />
-                <button type="submit" className="btn-primary px-6 py-3 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <Search size={14} /> Search Quotes
-                </button>
-              </form>
-
-              {acceptedSuccessDoc && (
-                <div className="p-6 md:p-8 bg-[var(--color-bg)] border border-[var(--color-line)] text-center space-y-4 rounded shadow-sm">
-                  <div className="w-16 h-16 bg-[#212B1C]/10 text-[#212B1C] rounded-full flex items-center justify-center mx-auto border border-[#212B1C]/20">
-                    <CheckCircle2 size={36} />
-                  </div>
-                  <h3 className="text-2xl font-bold font-[var(--font-display)] uppercase">ORDER CONFIRMED!</h3>
-                  <p className="text-xs text-[var(--color-ink-soft)] max-w-sm mx-auto">
-                    Thank you for your order, <strong className="text-[var(--color-ink)]">{acceptedSuccessDoc.shippingAddress?.name || searchEmail}</strong>! Your order number is{' '}
-                    <strong className="text-[var(--color-primary)] font-mono">{acceptedSuccessDoc.orderNumber || acceptedSuccessDoc._id}</strong>.
-                  </p>
-                  <div className="bg-[var(--color-card-bg)] p-4 border border-[var(--color-line)] max-w-md mx-auto text-left text-xs space-y-2">
-                    <div className="flex justify-between border-b border-[var(--color-line)] pb-2 font-bold uppercase">
-                      <span>Payment Status</span>
-                      <span className="text-[var(--color-primary)] font-mono">PAID (RAZORPAY)</span>
-                    </div>
-                    <div className="flex justify-between pt-1">
-                      <span>Shipping To:</span>
-                      <span className="font-semibold text-right">
-                        {acceptedSuccessDoc.shippingAddress?.address}, {acceptedSuccessDoc.shippingAddress?.city} - {acceptedSuccessDoc.shippingAddress?.pincode}
-                      </span>
-                    </div>
-                    <div className="flex justify-between pt-1 border-t border-[var(--color-line)] font-bold text-sm">
-                      <span>Total Paid:</span>
-                      <span className="text-[var(--color-primary)]">
-                        {formatPrice(acceptedSuccessDoc.grandTotal ?? acceptedSuccessDoc.total ?? 0)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="pt-2 flex justify-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleResetAndClose()
-                        navigate('/dashboard')
-                      }}
-                      className="btn-primary px-6 py-2.5 text-xs uppercase tracking-widest font-bold"
-                    >
-                      View in My Orders
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleResetAndClose()
-                        navigate('/shop')
-                      }}
-                      className="btn-outline px-6 py-2.5 text-xs uppercase tracking-widest font-bold"
-                    >
-                      Continue Shopping
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {isSearchingQuotes ? (
-                <p className="text-center py-8 text-[var(--color-ink-soft)] font-mono">Finding your design quotes...</p>
-              ) : myRequests.length === 0 ? (
-                <div className="border border-dashed border-[var(--color-line)] p-8 text-center text-[var(--color-ink-soft)] space-y-1">
-                  <p className="font-bold">No Custom Requests Found for this Email</p>
-                  <p className="text-[0.7rem]">Submit a request using Tab 1 or search with another email.</p>
-                </div>
-              ) : (
-                <div className="space-y-4 max-h-96 overflow-y-auto pr-1">
-                  {myRequests.map((req) => (
-                    <div key={req._id} className="border border-[var(--color-line)] bg-[var(--color-card-bg)] p-4 space-y-3">
-                      <div className="flex justify-between items-start border-b border-[var(--color-line)] pb-2">
-                        <div>
-                          <h4 className="font-bold text-sm font-[var(--font-display)]">{req.stylePreference}</h4>
-                          <p className="text-[0.68rem] text-[var(--color-ink-soft)]">Submitted: {req.createdAt && !isNaN(new Date(req.createdAt)) ? new Date(req.createdAt).toLocaleDateString() : 'Recently Submitted'}</p>
-                        </div>
-                        <span className={`px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-wider rounded border ${
-                          req.status === 'Accepted & Order Created'
-                            ? 'bg-[#212B1C]/10 text-[#212B1C] border-[#212B1C]/20'
-                            : req.status === 'Quoted'
-                            ? 'bg-amber-100 text-amber-900 border-amber-400 animate-pulse'
-                            : req.status === 'Quote Declined'
-                            ? 'bg-rose-100 text-rose-800 border-rose-300'
-                            : 'bg-stone-100 text-stone-700 border-stone-300'
-                        }`}>
-                          {req.status}
-                        </span>
-                      </div>
-
-                      {req.notes && <p className="text-xs text-[var(--color-ink-soft)] italic">"{req.notes}"</p>}
-
-                      {/* Quoted Price Display & Acceptance Actions */}
-                      {req.status === 'Quoted' && req.quotedPrice > 0 && (() => {
-                        const quoteShipping = getCustomOrderShipping(req.quotedPrice)
-                        const quoteTotal = (req.quotedPrice || 0) + quoteShipping
-                        return (
-                          <div className="p-3 bg-amber-50/80 border border-amber-200 space-y-3">
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <span className="text-[0.65rem] uppercase font-bold text-amber-900">Admin Quoted Price:</span>
-                                <p className="text-lg font-bold text-[var(--color-ink)]">{formatPrice(req.quotedPrice)}</p>
-                                {quoteShipping > 0 ? (
-                                  <p className="text-[0.68rem] text-amber-900 font-mono">+ {formatPrice(quoteShipping)} Standard Shipping (Total: <strong>{formatPrice(quoteTotal)}</strong>)</p>
-                                ) : (
-                                  <p className="text-[0.68rem] text-[var(--color-primary)] font-mono font-bold">FREE Shipping (Total: {formatPrice(quoteTotal)})</p>
-                                )}
-                                {req.adminNotes && <p className="text-[0.68rem] text-amber-900 italic mt-0.5">{req.adminNotes}</p>}
-                              </div>
-                            </div>
-
-                            <div className="flex gap-2 pt-1">
-                              <button
-                                onClick={() => handleAcceptQuote(req)}
-                                disabled={acceptingId === req._id}
-                                className="btn-primary flex-1 py-2 text-[0.68rem] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 disabled:opacity-50"
-                              >
-                                <Check size={14} /> {acceptingId === req._id ? 'Placing Order...' : `Accept Quote & Pay (${formatPrice(quoteTotal)})`}
-                              </button>
-                              <button
-                                onClick={() => handleDeclineQuote(req)}
-                                className="border border-rose-300 text-rose-700 px-3 py-2 text-[0.68rem] font-bold uppercase tracking-wider hover:bg-rose-50 flex items-center gap-1 rounded-full"
-                              >
-                                <Ban size={13} /> Decline Quote
-                              </button>
-                            </div>
-                          </div>
-                        )
-                      })()}
-
-                      {req.status === 'Accepted & Order Created' && (
-                        <div className="p-3 bg-[var(--color-card-bg)] text-[var(--color-ink)] border border-[var(--color-line)] text-xs font-bold space-y-2">
-                          <p className="flex items-center gap-2">
-                            <CheckCircle2 size={16} className="text-[var(--color-primary)]" /> Quote Accepted & Converted to Order! Total: {formatPrice(req.quotedPrice)}
-                          </p>
-                          <Link
-                            to="/dashboard"
-                            onClick={onClose}
-                            className="btn-primary py-2 px-4 text-[0.65rem] font-bold uppercase tracking-wider inline-flex items-center gap-1.5"
-                          >
-                            <Package size={13} /> View Order in My Orders Tab ➔
-                          </Link>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+              </>
+            )}
         </motion.div>
       </div>
 
@@ -909,7 +555,6 @@ export default function CustomDesignModal({ isOpen, onClose }) {
             city: loggedInUser.city || prev.city,
             pincode: loggedInUser.pincode || prev.pincode,
           }))
-          setSearchEmail(loggedInUser.email || '')
           setIsAuthModalOpen(false)
         }}
       />
