@@ -24,14 +24,14 @@
             <td style="padding: 36px 32px; background-color: #FAF7F2;">
               <h1 style="font-family: 'Cormorant Garamond', Georgia, Times, serif; font-size: 22px; font-weight: 600; color: #212B1C; margin: 0 0 16px 0; letter-spacing: 0.5px; text-align: center;">Order Cancelled & Refunded</h1>
               <p style="font-size: 14px; line-height: 1.6; color: #212B1C; margin: 0 0 12px 0;">Hello {{customerName}},</p>
-              <p style="font-size: 14px; line-height: 1.6; color: #212B1C; margin: 0 0 24px 0;">{{{cancellationNoticeText}}}</p>
+              <p style="font-size: 14px; line-height: 1.6; color: #212B1C; margin: 0 0 24px 0;">{{cancellationNoticeText}}</p>
               
               <!-- Info Box -->
               <div style="background-color: #FAF7F2; border: 1px solid #3D5E33; padding: 20px; margin-bottom: 24px;">
                 <p style="margin: 0 0 6px 0; font-size: 13px; color: #212B1C;"><strong>Order Reference:</strong> #{{orderNumber}}</p>
                 <p style="margin: 0 0 6px 0; font-size: 13px; color: #212B1C;"><strong>Reason:</strong> {{cancellationReason}}</p>
                 <p style="margin: 0 0 6px 0; font-size: 13px; color: #212B1C;"><strong>Original Amount:</strong> ₹{{originalAmount}}</p>
-                {{{cancellationFeeHtml}}}
+                {{cancellationFeeHtml}}
                 <p style="margin: 0 0 6px 0; font-size: 13px; color: #156E1F;"><strong>Net Refund Amount:</strong> ₹{{refundAmount}}</p>
                 <p style="margin: 0 0 6px 0; font-size: 13px; color: #212B1C; font-family: monospace;"><strong>Refund ID:</strong> {{refundId}}</p>
                 <p style="margin: 0; font-size: 13px; color: #156E1F;"><strong>Status:</strong> Processed</p>

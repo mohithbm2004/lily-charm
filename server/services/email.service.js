@@ -39,9 +39,11 @@ export function compileTemplate(templateName, data = {}) {
 
     let templateContent = fs.readFileSync(filePath, 'utf-8')
     Object.keys(data).forEach((key) => {
-      const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g')
+      const regex = new RegExp(`\\{{2,3}\\s*${key}\\s*\\}{2,3}`, 'g')
       templateContent = templateContent.replace(regex, data[key] !== undefined && data[key] !== null ? data[key] : '')
     })
+    // Strip any remaining unpopulated template placeholders
+    templateContent = templateContent.replace(/\{{2,3}\s*[\w.-]+\s*\}{2,3}/g, '')
 
     return templateContent
   } catch (err) {

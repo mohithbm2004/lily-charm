@@ -255,18 +255,18 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row justify-center gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row justify-center gap-2.5 pt-2">
                 <Link
                   to="/dashboard?tab=Custom+Price+Quotes"
                   onClick={handleResetAndClose}
-                  className="btn-primary py-3 px-6 text-xs uppercase font-bold tracking-wider rounded-full shadow-sm text-center cursor-pointer"
+                  className="btn-primary !py-2.5 sm:!py-3 !px-5 text-[0.72rem] sm:text-xs uppercase font-semibold !tracking-wider rounded-xl shadow-sm text-center cursor-pointer"
                 >
-                  View Custom Price Quotes in Profile →
+                  View Custom Quotes in Profile →
                 </Link>
                 <button
                   type="button"
                   onClick={handleResetAndClose}
-                  className="btn-outline py-3 px-6 text-xs uppercase font-bold tracking-wider rounded-full cursor-pointer"
+                  className="btn-outline !py-2.5 sm:!py-3 !px-5 text-[0.72rem] sm:text-xs uppercase font-semibold !tracking-wider rounded-xl cursor-pointer"
                 >
                   Close
                 </button>
@@ -511,26 +511,28 @@ export default function CustomDesignModal({ isOpen, onClose }) {
                     )}
                   </div>
 
-                  <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-line)]">
+                  <div className="flex items-center justify-end gap-2.5 sm:gap-3 pt-3.5 sm:pt-4 border-t border-[var(--color-line)]">
                     <button
                       type="button"
                       onClick={handleResetAndClose}
                       disabled={isSubmitting}
-                      className="btn-outline px-6 py-2.5 font-bold uppercase tracking-wider text-[0.7rem] rounded-full"
+                      className="btn-outline !py-2 sm:!py-2.5 !px-4 sm:!px-5 !text-[0.68rem] sm:!text-xs font-semibold uppercase !tracking-wider rounded-xl transition-all"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="btn-primary px-6 py-2.5 font-bold uppercase tracking-wider text-[0.7rem] flex items-center gap-2 disabled:opacity-50"
+                      className="btn-primary !py-2 sm:!py-2.5 !px-4 sm:!px-5 !text-[0.68rem] sm:!text-xs font-semibold uppercase !tracking-wider rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all whitespace-nowrap"
                     >
                       {isSubmitting ? (
                         <>
-                          <Sparkles size={14} className="animate-spin" /> Uploading & Sending...
+                          <Sparkles size={13} className="animate-spin" /> Submitting...
                         </>
                       ) : (
-                        'Submit Custom Design Request'
+                        <span>
+                          Submit <span className="hidden sm:inline">Custom </span>Request
+                        </span>
                       )}
                     </button>
                   </div>
