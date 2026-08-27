@@ -1575,8 +1575,8 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
           </div>
         </div>
 
-        {/* Admin Navigation Tabs */}
-        <div className="flex border-b border-[var(--color-line)] overflow-x-auto gap-1 sm:gap-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
+        {/* Admin Navigation Tabs (Sticky) */}
+        <div className="sticky top-14 sm:top-16 z-40 bg-[var(--color-bg)]/95 backdrop-blur-md pt-2 flex border-b border-[var(--color-line)] overflow-x-auto gap-1 sm:gap-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 shadow-2xs">
           <button
             onClick={() => handleTabChange('products', '/admin/products')}
             className={`px-3 py-2 sm:px-4 sm:py-3 text-[0.68rem] sm:text-xs font-semibold tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-lg sm:rounded-t-xl shrink-0 ${
@@ -1713,136 +1713,139 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
         {/* TAB 1: PRODUCTS MANAGER */}
         {activeTab === 'products' && (
           <div className="space-y-6">
-            {/* Filter Bar: Search + Collection Select + Add Button */}
-            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
-                {/* Search Input */}
-                <div className="relative w-full sm:w-72">
-                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-soft)]" />
-                  <input
-                    type="text"
-                    placeholder="Search flower title or specimen code..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full border border-[var(--color-line)] pl-9 pr-4 py-2 text-xs bg-[var(--color-card-bg)] rounded-xl focus:outline-none focus:border-[var(--color-primary)]"
-                  />
-                </div>
+            {/* Sticky Filter & Search Control Bar */}
+            <div className="sticky top-[102px] sm:top-[114px] z-30 bg-[var(--color-bg)]/95 backdrop-blur-md border border-[var(--color-line)] p-3.5 sm:p-4 rounded-2xl shadow-sm space-y-3">
+              {/* Filter Bar: Search + Collection Select + Add Button */}
+              <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 flex-wrap">
+                  {/* Search Input */}
+                  <div className="relative w-full sm:w-72">
+                    <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-soft)]" />
+                    <input
+                      type="text"
+                      placeholder="Search flower title or specimen code..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full border border-[var(--color-line)] pl-9 pr-4 py-2 text-xs bg-[var(--color-card-bg)] rounded-xl focus:outline-none focus:border-[var(--color-primary)]"
+                    />
+                  </div>
 
-                {/* Collection Filter Dropdown */}
-                <div className="relative w-full sm:w-64">
-                  <select
-                    value={selectedCollectionFilter}
-                    onChange={(e) => setSelectedCollectionFilter(e.target.value)}
-                    className="w-full border border-[var(--color-line)] px-3 py-2 text-xs bg-[var(--color-card-bg)] rounded-xl font-medium focus:outline-none focus:border-[var(--color-primary)] cursor-pointer"
-                  >
-                    <option value="all">🌸 All Collections ({products.length})</option>
-                    {collections.map((col) => {
-                      const count = products.filter((p) => isProductInCollection(p, col.slug || col.id || col._id)).length
-                      return (
-                        <option key={col.id || col._id || col.slug} value={col.slug || col.id || col._id}>
-                          📁 {col.title} ({count})
-                        </option>
-                      )
-                    })}
-                    {products.some((p) => !collections.some((col) => isProductInCollection(p, col.slug || col.id || col._id))) && (
-                      <option value="uncategorized">
-                        📂 Uncategorized ({products.filter((p) => !collections.some((col) => isProductInCollection(p, col.slug || col.id || col._id))).length})
-                      </option>
-                    )}
-                  </select>
-                </div>
-
-                {/* Sort Field Select */}
-                <div className="relative w-full sm:w-44">
-                  <select
-                    value={productSortField}
-                    onChange={(e) => setProductSortField(e.target.value)}
-                    className="w-full border border-[var(--color-line)] px-3 py-2 text-xs bg-[var(--color-card-bg)] rounded-xl font-medium focus:outline-none focus:border-[var(--color-primary)] cursor-pointer"
-                  >
-                    <option value="createdAt">📅 Sort by Date Added</option>
-                    <option value="title">🔤 Sort by Title</option>
-                    <option value="price">💰 Sort by Price</option>
-                    <option value="stock">📦 Sort by Qty (Stock)</option>
-                  </select>
-                </div>
-
-                {/* Sort Order Select */}
-                <div className="relative w-full sm:w-36">
-                  <select
-                    value={productSortOrder}
-                    onChange={(e) => setProductSortOrder(e.target.value)}
-                    className="w-full border border-[var(--color-line)] px-3 py-2 text-xs bg-[var(--color-card-bg)] rounded-xl font-medium focus:outline-none focus:border-[var(--color-primary)] cursor-pointer"
-                  >
-                    <option value="desc">⬇️ Descending</option>
-                    <option value="asc">⬆️ Ascending</option>
-                  </select>
-                </div>
-
-                {(selectedCollectionFilter !== 'all' || searchQuery) && (
-                  <button
-                    onClick={() => {
-                      setSelectedCollectionFilter('all')
-                      setSearchQuery('')
-                    }}
-                    className="text-xs text-[var(--color-primary)] hover:underline font-semibold flex items-center gap-1 shrink-0 self-center"
-                  >
-                    ✕ Reset Filter
-                  </button>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => setShowAddModal(true)}
-                  className="btn-primary py-2.5 px-4 text-xs flex items-center gap-1.5 rounded-full"
-                >
-                  <Plus size={14} /> Add New Flower Creation
-                </button>
-              </div>
-            </div>
-
-            {/* Quick Collection Filter Pills */}
-            {collections.length > 0 && (
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
-                <button
-                  type="button"
-                  onClick={() => setSelectedCollectionFilter('all')}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all shrink-0 flex items-center gap-1.5 ${
-                    selectedCollectionFilter === 'all'
-                      ? 'bg-[var(--color-primary)] text-white shadow-sm font-bold'
-                      : 'border border-[var(--color-line)] bg-[var(--color-card-bg)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] hover:border-[var(--color-primary)]'
-                  }`}
-                >
-                  <span>All</span>
-                  <span className={`text-[0.62rem] px-1.5 py-0.2 rounded-full ${selectedCollectionFilter === 'all' ? 'bg-white/20 text-white' : 'bg-black/5 text-[var(--color-ink-soft)]'}`}>
-                    {products.length}
-                  </span>
-                </button>
-
-                {collections.map((col) => {
-                  const val = col.slug || col.id || col._id
-                  const isSelected = selectedCollectionFilter === val
-                  const count = products.filter((p) => isProductInCollection(p, val)).length
-                  return (
-                    <button
-                      key={col.id || col._id || col.slug}
-                      type="button"
-                      onClick={() => setSelectedCollectionFilter(isSelected ? 'all' : val)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold tracking-wider transition-all shrink-0 flex items-center gap-1.5 ${
-                        isSelected
-                          ? 'bg-[var(--color-primary)] text-white shadow-sm font-bold'
-                          : 'border border-[var(--color-line)] bg-[var(--color-card-bg)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] hover:border-[var(--color-primary)]'
-                      }`}
+                  {/* Collection Filter Dropdown */}
+                  <div className="relative w-full sm:w-64">
+                    <select
+                      value={selectedCollectionFilter}
+                      onChange={(e) => setSelectedCollectionFilter(e.target.value)}
+                      className="w-full border border-[var(--color-line)] px-3 py-2 text-xs bg-[var(--color-card-bg)] rounded-xl font-medium focus:outline-none focus:border-[var(--color-primary)] cursor-pointer"
                     >
-                      <span>{col.title}</span>
-                      <span className={`text-[0.62rem] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-black/5 text-[var(--color-ink-soft)]'}`}>
-                        {count}
-                      </span>
+                      <option value="all">🌸 All Collections ({products.length})</option>
+                      {collections.map((col) => {
+                        const count = products.filter((p) => isProductInCollection(p, col.slug || col.id || col._id)).length
+                        return (
+                          <option key={col.id || col._id || col.slug} value={col.slug || col.id || col._id}>
+                            📁 {col.title} ({count})
+                          </option>
+                        )
+                      })}
+                      {products.some((p) => !collections.some((col) => isProductInCollection(p, col.slug || col.id || col._id))) && (
+                        <option value="uncategorized">
+                          📂 Uncategorized ({products.filter((p) => !collections.some((col) => isProductInCollection(p, col.slug || col.id || col._id))).length})
+                        </option>
+                      )}
+                    </select>
+                  </div>
+
+                  {/* Sort Field Select */}
+                  <div className="relative w-full sm:w-44">
+                    <select
+                      value={productSortField}
+                      onChange={(e) => setProductSortField(e.target.value)}
+                      className="w-full border border-[var(--color-line)] px-3 py-2 text-xs bg-[var(--color-card-bg)] rounded-xl font-medium focus:outline-none focus:border-[var(--color-primary)] cursor-pointer"
+                    >
+                      <option value="createdAt">📅 Sort by Date Added</option>
+                      <option value="title">🔤 Sort by Title</option>
+                      <option value="price">💰 Sort by Price</option>
+                      <option value="stock">📦 Sort by Qty (Stock)</option>
+                    </select>
+                  </div>
+
+                  {/* Sort Order Select */}
+                  <div className="relative w-full sm:w-36">
+                    <select
+                      value={productSortOrder}
+                      onChange={(e) => setProductSortOrder(e.target.value)}
+                      className="w-full border border-[var(--color-line)] px-3 py-2 text-xs bg-[var(--color-card-bg)] rounded-xl font-medium focus:outline-none focus:border-[var(--color-primary)] cursor-pointer"
+                    >
+                      <option value="desc">⬇️ Descending</option>
+                      <option value="asc">⬆️ Ascending</option>
+                    </select>
+                  </div>
+
+                  {(selectedCollectionFilter !== 'all' || searchQuery) && (
+                    <button
+                      onClick={() => {
+                        setSelectedCollectionFilter('all')
+                        setSearchQuery('')
+                      }}
+                      className="text-xs text-[var(--color-primary)] hover:underline font-semibold flex items-center gap-1 shrink-0 self-center"
+                    >
+                      ✕ Reset Filter
                     </button>
-                  )
-                })}
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => setShowAddModal(true)}
+                    className="btn-primary py-2.5 px-4 text-xs flex items-center gap-1.5 rounded-full"
+                  >
+                    <Plus size={14} /> Add New Flower Creation
+                  </button>
+                </div>
               </div>
-            )}
+
+              {/* Quick Collection Filter Pills */}
+              {collections.length > 0 && (
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin pt-2 border-t border-[var(--color-line)]/50">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCollectionFilter('all')}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all shrink-0 flex items-center gap-1.5 ${
+                      selectedCollectionFilter === 'all'
+                        ? 'bg-[var(--color-primary)] text-white shadow-sm font-bold'
+                        : 'border border-[var(--color-line)] bg-[var(--color-card-bg)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] hover:border-[var(--color-primary)]'
+                    }`}
+                  >
+                    <span>All</span>
+                    <span className={`text-[0.62rem] px-1.5 py-0.2 rounded-full ${selectedCollectionFilter === 'all' ? 'bg-white/20 text-white' : 'bg-black/5 text-[var(--color-ink-soft)]'}`}>
+                      {products.length}
+                    </span>
+                  </button>
+
+                  {collections.map((col) => {
+                    const val = col.slug || col.id || col._id
+                    const isSelected = selectedCollectionFilter === val
+                    const count = products.filter((p) => isProductInCollection(p, val)).length
+                    return (
+                      <button
+                        key={col.id || col._id || col.slug}
+                        type="button"
+                        onClick={() => setSelectedCollectionFilter(isSelected ? 'all' : val)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold tracking-wider transition-all shrink-0 flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-[var(--color-primary)] text-white shadow-sm font-bold'
+                            : 'border border-[var(--color-line)] bg-[var(--color-card-bg)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] hover:border-[var(--color-primary)]'
+                        }`}
+                      >
+                        <span>{col.title}</span>
+                        <span className={`text-[0.62rem] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-black/5 text-[var(--color-ink-soft)]'}`}>
+                          {count}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
 
             {/* Products Table */}
             {filteredProducts.length === 0 ? (
@@ -1867,19 +1870,20 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                 )}
               </div>
             ) : (
-              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] overflow-x-auto shadow-sm rounded-2xl">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-[var(--color-line)] text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[var(--color-ink-soft)] bg-[var(--color-bg)]">
-                      <th className="p-4">Photo</th>
-                      <th className="p-4">Specimen</th>
-                      <th className="p-4">Creation Title</th>
-                      <th className="p-4">Collection / Category</th>
-                      <th className="p-4">Price (₹)</th>
-                      <th className="p-4">Stock</th>
-                      <th className="p-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
+              <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-2xl overflow-hidden shadow-sm">
+                <div className="overflow-x-auto max-h-[72vh] overflow-y-auto scrollbar-thin">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="sticky top-0 z-20 shadow-[0_1px_0_0_rgba(0,0,0,0.08)]">
+                      <tr className="border-b border-[var(--color-line)] text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[var(--color-ink-soft)] bg-[var(--color-bg)]">
+                        <th className="p-4 bg-[var(--color-bg)] sticky top-0 z-20">Photo</th>
+                        <th className="p-4 bg-[var(--color-bg)] sticky top-0 z-20">Specimen</th>
+                        <th className="p-4 bg-[var(--color-bg)] sticky top-0 z-20">Creation Title</th>
+                        <th className="p-4 bg-[var(--color-bg)] sticky top-0 z-20">Collection / Category</th>
+                        <th className="p-4 bg-[var(--color-bg)] sticky top-0 z-20">Price (₹)</th>
+                        <th className="p-4 bg-[var(--color-bg)] sticky top-0 z-20">Stock</th>
+                        <th className="p-4 text-right bg-[var(--color-bg)] sticky top-0 z-20">Actions</th>
+                      </tr>
+                    </thead>
                   <tbody className="divide-y divide-[var(--color-line)] text-xs">
                     {filteredProducts.map((p) => (
                       <tr key={p.id || p._id} className="hover:bg-[var(--color-bg)]/60 transition-colors">
@@ -1930,7 +1934,8 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                   </tbody>
                 </table>
               </div>
-            )}
+            </div>
+          )}
           </div>
         )}
 
@@ -2110,15 +2115,15 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Search & Filter Controls */}
-                <div className="bg-[var(--color-card-bg)] border border-[var(--color-line)] p-4 flex flex-col md:flex-row items-stretch md:items-center gap-4 text-xs">
+                {/* Search & Filter Controls (Sticky on scroll) */}
+                <div className="sticky top-[102px] sm:top-[114px] z-30 bg-[var(--color-card-bg)] border border-[var(--color-line)] p-3.5 sm:p-4 flex flex-col md:flex-row items-stretch md:items-center gap-3 sm:gap-4 text-xs shadow-sm rounded-2xl">
                   <div className="flex-1 relative">
                     <input
                       type="text"
                       placeholder="Search by Order ID / Number or Razorpay Payment ID..."
                       value={orderSearch}
                       onChange={(e) => setOrderSearch(e.target.value)}
-                      className="w-full pl-8 pr-3 py-2 border border-[var(--color-line)] focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)] rounded"
+                      className="w-full pl-8 pr-3 py-2 border border-[var(--color-line)] focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)] rounded-xl"
                     />
                     <Search className="absolute left-2.5 top-2.5 text-[var(--color-ink-soft)]" size={14} />
                   </div>
@@ -2128,7 +2133,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                     <select
                       value={orderDateRange}
                       onChange={(e) => setOrderDateRange(e.target.value)}
-                      className="border border-[var(--color-line)] p-2 focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)] rounded"
+                      className="border border-[var(--color-line)] p-2 focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)] rounded-xl"
                     >
                       <option value="all">📅 All Time</option>
                       <option value="today">Today</option>
@@ -2144,14 +2149,14 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                         type="date"
                         value={orderDateFrom}
                         onChange={(e) => setOrderDateFrom(e.target.value)}
-                        className="border border-[var(--color-line)] p-1.5 focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)] rounded"
+                        className="border border-[var(--color-line)] p-1.5 focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)] rounded-xl"
                       />
                       <span className="text-[var(--color-ink-soft)]">to</span>
                       <input
                         type="date"
                         value={orderDateTo}
                         onChange={(e) => setOrderDateTo(e.target.value)}
-                        className="border border-[var(--color-line)] p-1.5 focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)] rounded"
+                        className="border border-[var(--color-line)] p-1.5 focus:outline-none focus:border-[var(--color-primary)] bg-[var(--color-bg)] rounded-xl"
                       />
                     </div>
                   )}
@@ -2164,26 +2169,29 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                         setOrderDateFrom('')
                         setOrderDateTo('')
                       }}
-                      className="px-3 py-2 text-[var(--color-primary)] hover:text-white border border-[var(--color-primary)] hover:bg-[var(--color-primary)] transition-colors rounded font-bold"
+                      className="px-3 py-2 text-[var(--color-primary)] hover:text-white border border-[var(--color-primary)] hover:bg-[var(--color-primary)] transition-colors rounded-xl font-bold cursor-pointer"
                     >
                       Clear Filters
                     </button>
                   )}
                 </div>
-                <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] overflow-x-auto shadow-sm">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-[var(--color-line)] text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[var(--color-ink-soft)] bg-[var(--color-bg)]">
-                        <th className="p-4">Order ID & Timestamp</th>
-                        <th className="p-4">Account Owner</th>
-                        <th className="p-4">Shipping Details</th>
-                        <th className="p-4">Items Ordered</th>
-                        <th className="p-4">Amount & Payment</th>
-                        <th className="p-4">Courier Tracking</th>
-                        <th className="p-4">Fulfillment Status</th>
-                        <th className="p-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
+
+                {/* Orders Table Container with Sticky Column Header */}
+                <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-2xl overflow-hidden shadow-sm">
+                  <div className="overflow-x-auto max-h-[72vh] overflow-y-auto scrollbar-thin">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="sticky top-0 z-20 shadow-[0_1px_0_0_rgba(0,0,0,0.08)]">
+                        <tr className="border-b border-[var(--color-line)] text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[var(--color-ink-soft)]">
+                          <th className="p-4 bg-[var(--color-bg)] sticky top-0 z-20">Order ID & Timestamp</th>
+                          <th className="p-4 bg-[var(--color-bg)] sticky top-0 z-20">Account Owner</th>
+                          <th className="p-4 bg-[var(--color-bg)] sticky top-0 z-20">Shipping Details</th>
+                          <th className="p-4 bg-[var(--color-bg)] sticky top-0 z-20">Items Ordered</th>
+                          <th className="p-4 bg-[var(--color-bg)] sticky top-0 z-20">Amount & Payment</th>
+                          <th className="p-4 bg-[var(--color-bg)] sticky top-0 z-20">Courier Tracking</th>
+                          <th className="p-4 bg-[var(--color-bg)] sticky top-0 z-20">Fulfillment Status</th>
+                          <th className="p-4 text-right bg-[var(--color-bg)] sticky top-0 z-20">Actions</th>
+                        </tr>
+                      </thead>
                     <tbody className="divide-y divide-[var(--color-line)] text-xs">
                       {filteredOrders.length === 0 ? (
                         <tr>
@@ -2563,7 +2571,8 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                   </table>
                 </div>
               </div>
-            )}
+            </div>
+          )}
           </div>
         )}
 

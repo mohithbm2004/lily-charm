@@ -148,14 +148,37 @@ export default function Shop() {
     </div>
   )
 
+  const currentCollection = useMemo(() => {
+    if (!activeCategory || activeCategory === 'all') return null
+    const catLower = activeCategory.toLowerCase()
+    return collections.find(
+      (c) => (c.slug || '').toLowerCase() === catLower ||
+             (c.id || c._id || '').toString() === activeCategory ||
+             (c.title || '').toLowerCase() === catLower
+    )
+  }, [collections, activeCategory])
+
+  const pageTitle = currentCollection ? currentCollection.title : (activeCategory !== 'all' ? (activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)) : 'The Full Collection')
+  const pageEyebrow = activeCategory !== 'all' ? 'COLLECTION ARCHIVE' : 'STUDIO CATALOG'
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-20 sm:pt-28 pb-16 sm:pb-24 w-full max-w-full">
-      <div className="sticky top-[89px] md:top-[105px] z-20 bg-[var(--color-bg)] opacity-100 py-4 mb-8 border-b border-black/10 transition-all">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-3 sm:pt-6 md:pt-8 pb-16 sm:pb-24 w-full max-w-full">
+      <div className="sticky top-[89px] md:top-[105px] z-20 bg-[var(--color-bg)] opacity-100 py-2.5 sm:py-3.5 mb-4 sm:mb-6 border-b border-black/10 transition-all">
         <Reveal>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div>
-              <span className="eyebrow block mb-1 text-[var(--color-brown)] tracking-[0.28em]">STUDIO CATALOG</span>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-normal font-[var(--font-display)] tracking-tight text-[var(--color-ink)]">The Full Collection</h1>
+              <div className="flex items-center gap-2 mb-0.5 sm:mb-1 flex-wrap">
+                <span className="eyebrow text-[var(--color-brown)] tracking-[0.28em]">{pageEyebrow}</span>
+                {activeCategory !== 'all' && (
+                  <button
+                    onClick={() => setParams({})}
+                    className="text-[0.62rem] font-bold text-[var(--color-primary)] hover:underline uppercase tracking-wider bg-[var(--color-primary)]/10 px-2 py-0.5 rounded-full cursor-pointer"
+                  >
+                    ✕ View All
+                  </button>
+                )}
+              </div>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-normal font-[var(--font-display)] tracking-tight text-[var(--color-ink)]">{pageTitle}</h1>
             </div>
             <div className="flex items-center gap-4">
               <p className="text-xs sm:text-sm text-[var(--color-brown)] font-semibold uppercase tracking-wider font-mono">
@@ -174,7 +197,7 @@ export default function Shop() {
       </div>
 
       {/* Mobile Filters Bar (Circled duplicate Featured sort removed) */}
-      <div className="flex items-center justify-between mb-6 md:hidden">
+      <div className="flex items-center justify-between mb-4 sm:mb-6 md:hidden">
         <button
           onClick={() => setFiltersOpen(true)}
           className="flex items-center gap-2 text-xs sm:text-sm border border-black/15 bg-[var(--color-card-bg)] rounded-xl px-4 py-2.5 font-bold uppercase tracking-wider shadow-2xs cursor-pointer"
