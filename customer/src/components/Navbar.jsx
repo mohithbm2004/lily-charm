@@ -227,12 +227,27 @@ export default function Navbar() {
                   <Sparkles size={16} /> REQUEST CUSTOM DESIGN
                 </button>
 
-                <div className="pt-3 border-t border-[var(--color-line)]">
+                <div className="pt-3 border-t border-[var(--color-line)] space-y-3">
+                  <button
+                    onClick={() => {
+                      if (user) {
+                        navigate('/dashboard?tab=My Orders')
+                      } else {
+                        setAuthMode('login')
+                        setIsAuthModalOpen(true)
+                      }
+                      setMenuOpen(false)
+                    }}
+                    className="text-xs sm:text-sm tracking-[0.16em] uppercase font-bold text-[var(--color-ink)] flex items-center gap-2 text-left w-full cursor-pointer hover:text-[var(--color-primary)] transition-colors"
+                  >
+                    <Package size={16} className="text-[var(--color-primary)] shrink-0" /> MY ORDERS
+                  </button>
+
                   {user ? (
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center justify-between gap-3 pt-1 border-t border-black/10">
                       <button
                         onClick={() => {
-                          navigate('/dashboard')
+                          navigate('/dashboard?tab=Profile Details')
                           setMenuOpen(false)
                         }}
                         className="text-xs sm:text-sm tracking-[0.16em] uppercase font-bold text-[var(--color-primary)] flex items-center gap-2 truncate"
