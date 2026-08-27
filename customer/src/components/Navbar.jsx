@@ -58,7 +58,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className={`sticky top-0 z-[1000] glass-nav transition-all duration-300 w-full max-w-full ${scrolled ? 'shadow-md' : ''}`}>
+      <header className={`sticky top-0 z-[1000] bg-[var(--color-bg)] opacity-100 transition-all duration-300 w-full max-w-full ${scrolled ? 'shadow-md border-b border-black/10' : ''}`}>
         {/* Top Main Navigation */}
         <div className="bg-transparent">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 h-16 md:h-20 flex items-center justify-between gap-3 sm:gap-6">

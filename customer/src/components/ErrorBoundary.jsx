@@ -34,7 +34,7 @@ export class ErrorBoundary extends React.Component {
       return (
         <div className="min-h-screen bg-[#FAF7F2] text-[#212B1C] flex flex-col items-center justify-center p-6 text-center">
           <div className="max-w-md w-full bg-white border border-[#E5DFD5] p-8 sm:p-10 rounded-3xl shadow-xl space-y-6">
-            <div className="w-16 h-16 rounded-full bg-[#2D402B]/10 text-[#2D402B] flex items-center justify-center mx-auto text-sm font-bold font-serif">
+            <div className="w-16 h-16 rounded-full bg-[#2D402B]/10 text-[#2D402B] flex items-center justify-center mx-auto text-sm font-bold font-mono">
               LC
             </div>
             
@@ -42,7 +42,7 @@ export class ErrorBoundary extends React.Component {
               <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#2D402B] font-mono">
                 Lily Charm Floral Studio
               </span>
-              <h2 className="text-xl sm:text-2xl font-bold font-serif">
+              <h2 className="text-xl sm:text-2xl font-bold font-[var(--font-display)]">
                 Something Went Temporarily Wrong
               </h2>
               <p className="text-xs text-[#5A6553] leading-relaxed">

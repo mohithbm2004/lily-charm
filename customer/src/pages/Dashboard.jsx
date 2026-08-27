@@ -630,7 +630,7 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pt-24 sm:pt-32 pb-16 sm:pb-24 text-[var(--color-ink)] w-full max-w-full">
-      <div className="sticky top-[104px] z-20 bg-[var(--color-bg)]/95 backdrop-blur-md py-4 mb-6 border-b border-[var(--color-line)] transition-all">
+      <div className="sticky top-[89px] md:top-[105px] z-20 bg-[var(--color-bg)] opacity-100 py-4 mb-6 border-b border-[var(--color-line)] transition-all">
         <Reveal>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5 sm:gap-4">

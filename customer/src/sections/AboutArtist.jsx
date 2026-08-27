@@ -14,7 +14,7 @@ export default function AboutArtist() {
             <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold uppercase tracking-tight text-[var(--color-ink)] leading-tight font-[var(--font-display)]">
               A DREAM THAT GREW WITH ME
             </h2>
-            <p className="text-sm sm:text-base font-serif italic font-bold text-[var(--color-primary)] mt-2">
+            <p className="text-sm sm:text-base font-semibold text-[var(--color-primary)] mt-2">
               "Where childhood creativity blossomed into timeless artistry."
             </p>
             <p className="text-[var(--color-ink-soft)] text-xs sm:text-sm md:text-base leading-relaxed max-w-lg mt-3">

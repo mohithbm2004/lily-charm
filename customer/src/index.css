@@ -11,10 +11,10 @@
   --color-ink-soft: #52504A;
   --color-line: #23221E;
 
-  --font-display: "Playfair Display", "Cinzel", "Cormorant Garamond", serif;
-  --font-logo: "Cinzel", "Playfair Display", serif;
-  --font-body: "Inter", sans-serif;
-  --font-button: "Poppins", sans-serif;
+  --font-display: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-logo: "Plus Jakarta Sans", "Inter", sans-serif;
+  --font-body: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-button: "Plus Jakarta Sans", "Inter", sans-serif;
 
   --animate-fade-up: fade-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   --animate-fade-in: fade-in 1.1s ease forwards;
@@ -189,16 +189,12 @@
     border-radius: 4px;
   }
 
-  /* Glass & Luxury effects */
+  /* 100% Opaque Solid Header & Card Surfaces */
   .glass-nav {
-    background-color: rgba(234, 230, 222, 0.88);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background-color: var(--color-bg);
   }
   .glass-card {
-    background-color: rgba(244, 241, 234, 0.85);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background-color: var(--color-card-bg);
   }
   .luxury-shadow-sm {
     box-shadow: 0 4px 20px -2px rgba(28, 27, 24, 0.06);

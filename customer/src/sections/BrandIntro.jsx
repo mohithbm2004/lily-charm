@@ -57,7 +57,7 @@ export default function BrandIntro() {
             </Reveal>
 
             <Reveal delay={0.15}>
-              <div className="p-6 border-l-2 border-[var(--color-primary)] bg-[var(--color-bg)]/90 rounded-r-2xl text-sm md:text-base leading-relaxed text-[var(--color-ink)] space-y-3 font-serif italic font-medium shadow-2xs">
+              <div className="p-6 border-l-2 border-[var(--color-primary)] bg-[var(--color-bg)]/90 rounded-r-2xl text-sm md:text-base leading-relaxed text-[var(--color-ink)] space-y-3 font-medium shadow-2xs">
                 <p>
                   "Lily Charm is more than a brand—it's a story of love, patience, and everlasting botanical creations designed to outlast every season."
                 </p>

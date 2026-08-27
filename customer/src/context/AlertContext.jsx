@@ -272,7 +272,7 @@ export function AlertProvider({ children }) {
               <span className="text-xs font-medium tracking-wide text-[#FAF7F2] truncate min-w-0">
                 Added to cart
                 {toast.message && (
-                  <span className="text-[#D5C29D] font-serif italic ml-1.5 opacity-90 truncate inline-block max-w-[140px] sm:max-w-[220px] align-bottom">
+                  <span className="text-[#D5C29D] font-medium ml-1.5 opacity-90 truncate inline-block max-w-[140px] sm:max-w-[220px] align-bottom">
                     • {toast.message}
                   </span>
                 )}

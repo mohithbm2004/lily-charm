@@ -22,7 +22,7 @@ export default function FeaturedCategories() {
               Signature Botanical Collections
             </h2>
           </div>
-          <p className="text-xs sm:text-sm text-[var(--color-ink-soft)] font-serif italic max-w-xs">
+          <p className="text-xs sm:text-sm text-[var(--color-ink-soft)] font-medium max-w-xs">
             Handpicked velvet floral sculptures, thoughtfully arranged for enduring elegance.
           </p>
         </div>

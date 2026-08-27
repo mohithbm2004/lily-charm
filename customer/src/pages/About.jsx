@@ -14,7 +14,7 @@ export default function About() {
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold font-[var(--font-display)] uppercase tracking-tight text-[var(--color-ink)] leading-tight">
             A Dream That Grew With Me
           </h1>
-          <p className="text-sm sm:text-lg md:text-xl font-serif italic text-[var(--color-primary)] font-semibold pt-1">
+          <p className="text-sm sm:text-lg md:text-xl text-[var(--color-primary)] font-semibold pt-1">
             "Where childhood creativity blossomed into timeless artistry."
           </p>
         </div>
@@ -42,7 +42,7 @@ export default function About() {
         {/* Right Story Text */}
         <div className="md:col-span-7 space-y-4 sm:space-y-6 text-xs sm:text-sm md:text-base leading-relaxed text-[var(--color-ink)] font-normal">
           <Reveal delay={0.15}>
-            <p className="text-base sm:text-lg font-serif italic font-bold text-[var(--color-primary)] border-l-4 border-[var(--color-primary)] rounded-r-2xl pl-3 sm:pl-4 py-1.5 bg-[var(--color-card-bg)]">
+            <p className="text-base sm:text-lg font-semibold text-[var(--color-primary)] border-l-4 border-[var(--color-primary)] rounded-r-2xl pl-3 sm:pl-4 py-1.5 bg-[var(--color-card-bg)]">
               Lily Charm is more than a brand—it's a dream that grew with me.
             </p>
           </Reveal>
@@ -55,7 +55,7 @@ export default function About() {
 
           <Reveal delay={0.25}>
             <p className="text-[var(--color-ink)]">
-              As I continued my education, one question stayed with me: <em className="font-serif text-[var(--color-primary)] font-semibold">Why not build a future around the one thing I've always loved?</em> That thought inspired me to transform my lifelong passion into a business, where every creation reflects the same love, patience, and creativity that has been with me since childhood.
+              As I continued my education, one question stayed with me: <span className="text-[var(--color-primary)] font-semibold">Why not build a future around the one thing I've always loved?</span> That thought inspired me to transform my lifelong passion into a business, where every creation reflects the same love, patience, and creativity that has been with me since childhood.
             </p>
           </Reveal>
         </div>
@@ -80,7 +80,7 @@ export default function About() {
               Today, every everlasting flower, bouquet, and handcrafted gift is thoughtfully designed to celebrate life's most precious moments. Each piece is made with meticulous attention to detail, ensuring it becomes more than a gift—it becomes a cherished keepsake that lasts for years.
             </p>
             <div className="pt-4 border-t border-[var(--color-line)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <p className="text-sm sm:text-base md:text-lg font-serif font-bold text-[var(--color-primary)] leading-snug flex-1">
+              <p className="text-sm sm:text-base md:text-lg font-semibold text-[var(--color-primary)] leading-snug flex-1">
                 At Lily Charm, we don't simply create flowers; we create timeless memories, handcrafted with love, inspired by creativity, and made to be treasured forever.
               </p>
               <div className="flex items-center gap-3 bg-[var(--color-card-bg)] border border-[var(--color-line)] rounded-2xl p-2.5 sm:p-3 shadow-sm shrink-0 w-full sm:w-auto">
@@ -93,7 +93,7 @@ export default function About() {
                 </div>
                 <div>
                   <p className="text-xs font-bold font-[var(--font-display)] uppercase text-[var(--color-ink)]">Keerthana Bapu</p>
-                  <p className="text-[0.58rem] sm:text-[0.62rem] font-serif uppercase tracking-widest text-[var(--color-primary)] font-semibold">Founder & Lead Artisan</p>
+                  <p className="text-[0.58rem] sm:text-[0.62rem] uppercase tracking-widest text-[var(--color-primary)] font-semibold">Founder & Lead Artisan</p>
                 </div>
               </div>
             </div>

@@ -5,7 +5,7 @@ export default function NotFound() {
   return (
     <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4 py-20">
       <div className="max-w-md w-full bg-[var(--color-card-bg)] border border-[var(--color-line)] p-8 sm:p-12 rounded-3xl shadow-sm space-y-6">
-        <div className="w-16 h-16 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center mx-auto text-sm font-bold font-serif">
+        <div className="w-16 h-16 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center mx-auto text-sm font-bold font-mono">
           LC
         </div>
         

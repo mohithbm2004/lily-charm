@@ -30,7 +30,7 @@ export default function Hero() {
               <h1 className="text-3xl xs:text-4xl md:text-5xl lg:text-6xl font-normal tracking-tight text-[var(--color-ink)] leading-[1.08] font-[var(--font-display)] break-words">
                 Flowers, Thoughtfully Composed.
               </h1>
-              <p className="text-[var(--color-ink-soft)] text-xs sm:text-sm md:text-base leading-relaxed font-serif italic font-medium max-w-md">
+              <p className="text-[var(--color-ink-soft)] text-xs sm:text-sm md:text-base leading-relaxed font-medium max-w-md">
                 Archival velvet sculptures &amp; everlasting botanical art, handcrafted to outlast every season.
               </p>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-3 w-full">
@@ -52,7 +52,7 @@ export default function Hero() {
             {/* Quiet Luxury Emblem (Desktop) */}
             <div className="hidden md:flex bg-[var(--color-primary)]/90 backdrop-blur-md text-white p-5 border border-white/20 shadow-2xl flex-col items-center justify-center text-center w-32 h-32 rounded-full shrink-0">
               <span className="text-[0.55rem] uppercase tracking-[0.24em] font-bold text-[#F5E8D0]">100% Handcrafted</span>
-              <span className="text-[0.7rem] font-serif italic font-medium mt-1 text-white/90">Archival Quality</span>
+              <span className="text-[0.7rem] font-medium mt-1 text-white/90">Archival Quality</span>
             </div>
           </div>
         </div>

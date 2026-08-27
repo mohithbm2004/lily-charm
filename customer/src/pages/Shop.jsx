@@ -102,7 +102,7 @@ export default function Shop() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-20 sm:pt-28 pb-16 sm:pb-24 w-full max-w-full">
-      <div className="sticky top-[104px] z-20 bg-[var(--color-bg)]/95 backdrop-blur-md py-4 mb-8 border-b border-black/10 transition-all">
+      <div className="sticky top-[89px] md:top-[105px] z-20 bg-[var(--color-bg)] opacity-100 py-4 mb-8 border-b border-black/10 transition-all">
         <Reveal>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
