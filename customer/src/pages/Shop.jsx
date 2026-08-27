@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router-dom'
 import { useStudio } from '../context/StudioContext'
 import ProductCard from '../components/ProductCard'
@@ -18,6 +19,30 @@ export default function Shop() {
   const [sort, setSort] = useState('featured')
   const [inStockOnly, setInStockOnly] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
+
+  // Lock body scroll on mobile devices when filter modal is open to prevent background/footer scrolling
+  useEffect(() => {
+    if (filtersOpen) {
+      const scrollY = window.scrollY || document.documentElement.scrollTop || 0
+      const originalOverflow = document.body.style.overflow
+      const originalPosition = document.body.style.position
+      const originalTop = document.body.style.top
+      const originalWidth = document.body.style.width
+
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.width = '100%'
+
+      return () => {
+        document.body.style.overflow = originalOverflow
+        document.body.style.position = originalPosition
+        document.body.style.top = originalTop
+        document.body.style.width = originalWidth
+        window.scrollTo(0, scrollY)
+      }
+    }
+  }, [filtersOpen])
 
   // Compute dynamic min & max prices from actual catalog products, rounded to clean figures
   const { catalogMinPrice, catalogMaxPrice } = useMemo(() => {
@@ -268,15 +293,15 @@ export default function Shop() {
         </div>
       </div>
 
-      {/* Mobile Filter Modal with Apply Button */}
-      {filtersOpen && (
-        <div className="fixed inset-0 z-[1100] bg-[var(--color-bg)] p-5 sm:p-6 overflow-y-auto md:hidden rounded-t-3xl shadow-2xl flex flex-col justify-between">
-          <div>
-            <div className="flex justify-between items-center mb-6 pb-4 border-b border-black/10">
-              <p className="font-[var(--font-display)] text-xl font-bold uppercase">Filter Creations</p>
+      {/* Mobile Filter Modal with Apply Button (Rendered via Portal to completely isolate from page layout) */}
+      {filtersOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[99999] bg-[var(--color-bg)] h-[100dvh] w-screen overflow-y-auto overscroll-contain md:hidden p-5 sm:p-6 shadow-2xl flex flex-col justify-between">
+          <div className="flex-1 pb-6">
+            <div className="sticky top-0 z-20 bg-[var(--color-bg)] flex justify-between items-center pb-4 mb-4 border-b border-black/10">
+              <p className="font-[var(--font-display)] text-xl font-bold uppercase tracking-tight text-[var(--color-ink)]">Filter Creations</p>
               <button
                 onClick={() => setFiltersOpen(false)}
-                className="p-1.5 text-[var(--color-ink)] rounded-full hover:bg-black/5 cursor-pointer"
+                className="p-2 text-[var(--color-ink)] rounded-full hover:bg-black/5 cursor-pointer"
                 aria-label="Close filters"
               >
                 <X size={22} />
@@ -284,7 +309,8 @@ export default function Shop() {
             </div>
             {renderFilterPanel(true)}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
