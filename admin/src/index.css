@@ -3,21 +3,21 @@
 @layer base {
   :root {
     color-scheme: light;
-    --color-bg: #F4F1EA;
-    --color-card-bg: #EAE6DE;
-    --color-ink: #1C2018;
-    --color-ink-soft: #5C6256;
+    --color-bg: #EAE6DE;
+    --color-card-bg: #F4F1EA;
+    --color-ink: #1C1B18;
+    --color-ink-soft: #52504A;
     --color-primary: #2D3926;
-    --color-primary-hover: #1E2719;
+    --color-primary-hover: #3E4D35;
     --color-accent: #C86D51;
-    --color-line: #C5BFB2;
-    --color-line-dark: #1C2018;
-    --color-beige: #D8D2C4;
+    --color-line: #23221E;
+    --color-line-dark: #1C1B18;
+    --color-beige: #DCD6C9;
     --color-cream: #F9F8F5;
 
-    --font-display: 'Cinzel', 'Playfair Display', Georgia, serif;
-    --font-body: 'Plus Jakarta Sans', sans-serif;
-    --font-button: 'Cinzel', serif;
+    --font-display: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    --font-body: 'Inter', 'Plus Jakarta Sans', sans-serif;
+    --font-button: 'Plus Jakarta Sans', 'Inter', sans-serif;
   }
 
   *, *::before, *::after {

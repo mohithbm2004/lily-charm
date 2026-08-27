@@ -11,6 +11,8 @@ import {
   adminLogoutAll,
   getAdminMe,
   adminLogout,
+  getAdminSessions,
+  revokeAdminSession,
 } from '../controllers/adminAuthController.js'
 import { protectAdmin } from '../middleware/adminAuth.js'
 
@@ -102,6 +104,8 @@ router.post('/auth/reset-password', adminAuthLimiter, adminResetPassword)
 // 2. PROTECTED ADMIN AUTHENTICATION ENDPOINTS
 // ==========================================
 router.get('/auth/me', protectAdmin, getAdminMe)
+router.get('/auth/sessions', protectAdmin, getAdminSessions)
+router.delete('/auth/sessions/:sessionId', protectAdmin, revokeAdminSession)
 router.post('/auth/change-password', protectAdmin, adminChangePassword)
 router.post('/auth/logout-all', protectAdmin, adminLogoutAll)
 router.post('/auth/logout', protectAdmin, adminLogout)

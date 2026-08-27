@@ -416,3 +416,78 @@ export async function adminLogout(req, res) {
     return res.status(500).json({ success: false, message: 'Server error during logout.' })
   }
 }
+
+/**
+ * Parse User Agent into Human Readable Device Name
+ */
+export function parseDeviceName(userAgent = '') {
+  if (!userAgent) return 'Unknown Device'
+  let os = 'Unknown OS'
+  let browser = 'Unknown Browser'
+
+  if (/windows nt 10/i.test(userAgent)) os = 'Windows 10/11'
+  else if (/windows nt 6.3/i.test(userAgent)) os = 'Windows 8.1'
+  else if (/windows nt 6.1/i.test(userAgent)) os = 'Windows 7'
+  else if (/mac os x/i.test(userAgent)) os = 'macOS'
+  else if (/android/i.test(userAgent)) os = 'Android Phone'
+  else if (/iphone/i.test(userAgent)) os = 'iPhone'
+  else if (/ipad/i.test(userAgent)) os = 'iPad'
+  else if (/linux/i.test(userAgent)) os = 'Linux'
+
+  if (/edg/i.test(userAgent)) browser = 'Microsoft Edge'
+  else if (/chrome|crios/i.test(userAgent)) browser = 'Google Chrome'
+  else if (/firefox|fxios/i.test(userAgent)) browser = 'Mozilla Firefox'
+  else if (/safari/i.test(userAgent)) browser = 'Apple Safari'
+  else if (/opera|opr/i.test(userAgent)) browser = 'Opera'
+
+  return `${browser} on ${os}`
+}
+
+/**
+ * Get All Admin Login Sessions with IP, Time, and Device Info
+ */
+export async function getAdminSessions(req, res) {
+  try {
+    const currentSessionId = req.cookies?.lily_admin_session || req.admin?.sessionId
+    const sessions = await AdminSession.find({}).sort({ createdAt: -1 }).lean()
+
+    const formattedSessions = sessions.map((s) => ({
+      sessionId: s.sessionId,
+      adminEmail: s.adminEmail,
+      createdAt: s.createdAt,
+      lastActiveAt: s.lastActiveAt,
+      expiresAt: s.expiresAt,
+      ipAddress: s.ipAddress || '127.0.0.1',
+      userAgent: s.userAgent || 'Unknown Agent',
+      deviceName: parseDeviceName(s.userAgent),
+      isCurrentSession: s.sessionId === currentSessionId,
+    }))
+
+    return res.status(200).json({
+      success: true,
+      count: formattedSessions.length,
+      sessions: formattedSessions,
+    })
+  } catch (err) {
+    console.error('getAdminSessions Error:', err)
+    return res.status(500).json({ success: false, message: 'Failed to fetch admin login sessions.' })
+  }
+}
+
+/**
+ * Revoke Specific Admin Login Session
+ */
+export async function revokeAdminSession(req, res) {
+  try {
+    const { sessionId } = req.params
+    if (!sessionId) {
+      return res.status(400).json({ success: false, message: 'Session ID is required.' })
+    }
+
+    await AdminSession.deleteOne({ sessionId })
+    return res.status(200).json({ success: true, message: 'Session revoked successfully.' })
+  } catch (err) {
+    console.error('revokeAdminSession Error:', err)
+    return res.status(500).json({ success: false, message: 'Failed to revoke session.' })
+  }
+}

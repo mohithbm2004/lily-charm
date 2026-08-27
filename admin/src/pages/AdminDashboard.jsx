@@ -36,6 +36,9 @@ import {
   Activity,
   Receipt,
   GripVertical,
+  Laptop,
+  Smartphone,
+  Globe,
 } from 'lucide-react'
 import { useStudio } from '../context/StudioContext'
 import { useAdminAuth } from '../context/AdminAuthContext'
@@ -68,7 +71,7 @@ function normalizeAdminFulfillment(st) {
 }
 
 export default function AdminDashboard({ activeTabName = 'Products' }) {
-  const { admin, logout, changePassword, logoutAllSessions } = useAdminAuth()
+  const { admin, logout, changePassword, logoutAllSessions, getSessions, revokeSession } = useAdminAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -143,6 +146,17 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     setTimeout(() => setSavedShippingMsg(false), 3000)
   }
 
+  const [adminSessions, setAdminSessions] = useState([])
+  const [loadingSessions, setLoadingSessions] = useState(false)
+
+  const loadSessions = useCallback(async () => {
+    if (!getSessions) return
+    setLoadingSessions(true)
+    const list = await getSessions()
+    setAdminSessions(list || [])
+    setLoadingSessions(false)
+  }, [getSessions])
+
   const [activeTab, setActiveTab] = useState(() => {
     const p = location.pathname
     if (p.includes('/admin/orders')) return 'orders'
@@ -153,6 +167,7 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     if (p.includes('/admin/refunds')) return 'refunds'
     if (p.includes('/admin/coupons')) return 'coupons'
     if (p.includes('/admin/email-security')) return 'email-security'
+    if (p.includes('/admin/sessions')) return 'sessions'
     if (p.includes('/admin/settings')) return 'offers'
     if (p.includes('/admin/dashboard')) return 'dashboard'
     return activeTabName ? activeTabName.toLowerCase().replace(/\s+/g, '-') : 'products'
@@ -168,10 +183,17 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     else if (p.includes('/admin/refunds')) setActiveTab('refunds')
     else if (p.includes('/admin/coupons')) setActiveTab('coupons')
     else if (p.includes('/admin/email-security')) setActiveTab('email-security')
+    else if (p.includes('/admin/sessions')) setActiveTab('sessions')
     else if (p.includes('/admin/settings')) setActiveTab('offers')
     else if (p.includes('/admin/dashboard')) setActiveTab('dashboard')
     else if (p.includes('/admin/products')) setActiveTab('products')
   }, [location.pathname])
+
+  useEffect(() => {
+    if (activeTab === 'sessions') {
+      loadSessions()
+    }
+  }, [activeTab, loadSessions])
 
   const handleTabChange = (tabKey, routePath) => {
     setActiveTab(tabKey)
@@ -1675,6 +1697,17 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
             }`}
           >
             <CreditCard size={15} className="text-indigo-600" /> Payment Tracking
+          </button>
+
+          <button
+            onClick={() => handleTabChange('sessions', '/admin/sessions')}
+            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+              activeTab === 'sessions'
+                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
+                : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
+            }`}
+          >
+            <Laptop size={15} className="text-[var(--color-primary)]" /> Login Sessions & Devices ({adminSessions.length})
           </button>
         </div>
 
@@ -3925,6 +3958,142 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* TAB: LOGIN SESSIONS & DEVICE SECURITY */}
+        {activeTab === 'sessions' && (
+          <div className="space-y-6">
+            <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <span className="eyebrow block mb-1 text-[var(--color-primary)] font-bold">Studio Security Audit</span>
+                <h2 className="text-xl sm:text-2xl font-bold font-[var(--font-display)] uppercase text-[var(--color-ink)] flex items-center gap-2">
+                  <Laptop size={20} className="text-[var(--color-primary)]" /> Admin Login Sessions & Devices
+                </h2>
+                <p className="text-xs text-[var(--color-ink-soft)] mt-1">
+                  Monitor all authenticated admin login sessions, IP addresses, timestamps, and active device signatures.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={loadSessions}
+                  disabled={loadingSessions}
+                  className="btn-outline px-4 py-2.5 text-xs rounded-full flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RefreshCw size={13} className={loadingSessions ? 'animate-spin' : ''} /> Refresh Logs
+                </button>
+                <button
+                  onClick={async () => {
+                    if (window.confirm('Revoke all active admin sessions across all devices? You will be logged out.')) {
+                      await logoutAllSessions()
+                      navigate('/admin/login')
+                    }
+                  }}
+                  className="btn-primary py-2.5 px-4 text-xs rounded-full bg-rose-700 hover:bg-rose-800 text-white cursor-pointer"
+                >
+                  Revoke All Sessions
+                </button>
+              </div>
+            </div>
+
+            {/* Sessions Table Card */}
+            <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl overflow-hidden shadow-sm">
+              <div className="p-4 border-b border-[var(--color-line)] bg-[var(--color-bg)]/60 flex justify-between items-center text-xs">
+                <span className="font-bold text-[var(--color-ink)] uppercase tracking-wider font-mono">
+                  Active Logged In Sessions ({adminSessions.length})
+                </span>
+                <span className="text-[0.68rem] text-[var(--color-ink-soft)]">
+                  Session Token Lifetime: 12 Hours
+                </span>
+              </div>
+
+              {loadingSessions ? (
+                <div className="p-12 text-center text-xs font-mono text-[var(--color-ink-soft)] animate-pulse">
+                  Loading active login sessions & security audit logs...
+                </div>
+              ) : adminSessions.length === 0 ? (
+                <div className="p-12 text-center text-xs text-[var(--color-ink-soft)]">
+                  No session logs found.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-[var(--color-line)] bg-[var(--color-bg)] text-[var(--color-ink-soft)] uppercase text-[0.64rem] tracking-wider">
+                        <th className="p-3.5 pl-5 font-bold">Device & OS</th>
+                        <th className="p-3.5 font-bold">IP Address</th>
+                        <th className="p-3.5 font-bold">Login Date & Time</th>
+                        <th className="p-3.5 font-bold">Last Active</th>
+                        <th className="p-3.5 font-bold">Status</th>
+                        <th className="p-3.5 pr-5 text-right font-bold">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--color-line)]/50">
+                      {adminSessions.map((s) => (
+                        <tr key={s.sessionId} className={`hover:bg-[var(--color-bg)]/40 transition-colors ${s.isCurrentSession ? 'bg-emerald-900/5' : ''}`}>
+                          <td className="p-3.5 pl-5">
+                            <div className="flex items-center gap-2.5">
+                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center border ${s.isCurrentSession ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-[var(--color-bg)] text-[var(--color-ink)] border-[var(--color-line)]'}`}>
+                                {s.deviceName?.toLowerCase().includes('phone') || s.deviceName?.toLowerCase().includes('iphone') || s.deviceName?.toLowerCase().includes('android') ? (
+                                  <Smartphone size={16} />
+                                ) : (
+                                  <Laptop size={16} />
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-bold text-xs text-[var(--color-ink)]">{s.deviceName}</p>
+                                <p className="text-[0.62rem] text-[var(--color-ink-soft)] font-mono truncate max-w-[200px]" title={s.userAgent}>{s.userAgent}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3.5 font-mono text-[var(--color-primary)] font-bold">
+                            <div className="flex items-center gap-1.5">
+                              <Globe size={13} className="text-[var(--color-ink-soft)]" />
+                              <span>{s.ipAddress}</span>
+                            </div>
+                          </td>
+                          <td className="p-3.5 text-[var(--color-ink)] font-mono text-[0.68rem]">
+                            {s.createdAt ? formatDateTime(s.createdAt) : 'Recently'}
+                          </td>
+                          <td className="p-3.5 text-[var(--color-ink-soft)] font-mono text-[0.68rem]">
+                            {s.lastActiveAt ? formatDateTime(s.lastActiveAt) : 'Active now'}
+                          </td>
+                          <td className="p-3.5">
+                            {s.isCurrentSession ? (
+                              <span className="text-[0.6rem] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-full inline-flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                                Current Device
+                              </span>
+                            ) : (
+                              <span className="text-[0.6rem] font-bold uppercase tracking-wider text-stone-700 bg-stone-100 border border-stone-300 px-2.5 py-1 rounded-full">
+                                Active Session
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3.5 pr-5 text-right">
+                            {s.isCurrentSession ? (
+                              <span className="text-[0.65rem] text-[var(--color-ink-soft)] italic font-mono">This Device</span>
+                            ) : (
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm('Revoke this admin login session?')) {
+                                    await revokeSession(s.sessionId)
+                                    loadSessions()
+                                  }
+                                }}
+                                className="text-[0.64rem] font-bold uppercase tracking-wider text-rose-700 hover:text-rose-900 border border-rose-300 hover:bg-rose-50 px-3 py-1 rounded-full transition-colors cursor-pointer"
+                              >
+                                Revoke Session
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>

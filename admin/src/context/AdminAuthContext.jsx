@@ -214,6 +214,47 @@ export function AdminAuthProvider({ children }) {
     }
   }
 
+  const getSessions = async () => {
+    try {
+      const storedSessionId = localStorage.getItem('lilycharm_admin_session_id')
+      const headers = { 'Content-Type': 'application/json' }
+      if (storedSessionId) headers['x-admin-session-id'] = storedSessionId
+
+      const res = await fetch(`${API_URL}/admin/auth/sessions`, {
+        method: 'GET',
+        headers,
+        credentials: 'include',
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        return data.sessions || []
+      }
+      return []
+    } catch (err) {
+      console.error('getSessions Error:', err)
+      return []
+    }
+  }
+
+  const revokeSession = async (sessionId) => {
+    try {
+      const storedSessionId = localStorage.getItem('lilycharm_admin_session_id')
+      const headers = { 'Content-Type': 'application/json' }
+      if (storedSessionId) headers['x-admin-session-id'] = storedSessionId
+
+      const res = await fetch(`${API_URL}/admin/auth/sessions/${sessionId}`, {
+        method: 'DELETE',
+        headers,
+        credentials: 'include',
+      })
+      const data = await res.json()
+      return data
+    } catch (err) {
+      console.error('revokeSession Error:', err)
+      return { success: false, message: err.message }
+    }
+  }
+
   return (
     <AdminAuthContext.Provider
       value={{
@@ -230,6 +271,8 @@ export function AdminAuthProvider({ children }) {
         logoutAllSessions,
         logout,
         checkAuth,
+        getSessions,
+        revokeSession,
       }}
     >
       {children}
