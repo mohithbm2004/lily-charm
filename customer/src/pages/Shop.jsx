@@ -12,7 +12,7 @@ const sortOptions = [
 ]
 
 export default function Shop() {
-  const { products = [], collections = [] } = useStudio()
+  const { products = [], collections = [], loading = false } = useStudio()
   const [params, setParams] = useSearchParams()
   const activeCategory = params.get('category') || 'all'
   const [sort, setSort] = useState('featured')
@@ -41,13 +41,33 @@ export default function Shop() {
   const maxPrice = selectedMaxPrice !== null ? selectedMaxPrice : catalogMaxPrice
 
   const filtered = useMemo(() => {
-    let list = products.filter((p) => (activeCategory === 'all' ? true : (p.category === activeCategory || p.category === activeCategory.toLowerCase())))
+    let list = products.filter((p) => {
+      if (activeCategory === 'all') return true
+      const catLower = activeCategory.toLowerCase()
+      const pCat = (p.category || '').toLowerCase()
+      const pCatId = (p.category || '').toString()
+
+      if (pCat === catLower || pCatId === activeCategory) return true
+
+      const matchCol = collections.find(
+        (c) => (c.slug || '').toLowerCase() === catLower ||
+               (c.id || c._id || '').toString() === activeCategory ||
+               (c.title || '').toLowerCase() === catLower
+      )
+      if (matchCol) {
+        const colSlug = (matchCol.slug || '').toLowerCase()
+        const colId = (matchCol.id || matchCol._id || '').toString()
+        const colTitle = (matchCol.title || '').toLowerCase()
+        return pCat === colSlug || pCatId === colId || pCat === colTitle
+      }
+      return false
+    })
     list = list.filter((p) => (Number(p.price) || 0) <= maxPrice)
     if (inStockOnly) list = list.filter((p) => p.stock === undefined || p.stock > 0)
     if (sort === 'price-asc') list = [...list].sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0))
     if (sort === 'price-desc') list = [...list].sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0))
     return list
-  }, [products, activeCategory, sort, maxPrice, inStockOnly])
+  }, [products, collections, activeCategory, sort, maxPrice, inStockOnly])
 
   const renderFilterPanel = (isMobile = false) => (
     <div className="space-y-6 sm:space-y-8">
@@ -182,7 +202,7 @@ export default function Shop() {
             </div>
             <div className="flex items-center gap-4">
               <p className="text-xs sm:text-sm text-[var(--color-brown)] font-semibold uppercase tracking-wider font-mono">
-                Showing {filtered.length} Handcrafted Pieces
+                {loading && products.length === 0 ? 'Loading Catalog...' : `Showing ${filtered.length} Handcrafted Pieces`}
               </p>
               <select
                 value={sort}
@@ -216,13 +236,25 @@ export default function Shop() {
         </aside>
 
         <div>
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-6 gap-y-5 sm:gap-y-12">
-            {filtered.map((p, i) => (
-              <ProductCard key={p.id} product={p} index={i} />
-            ))}
-          </div>
+          {loading && products.length === 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-6 gap-y-5 sm:gap-y-12">
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <div key={n} className="bg-[var(--color-card-bg)] rounded-2xl p-3 sm:p-4 animate-pulse space-y-3">
+                  <div className="aspect-[4/5] bg-black/5 rounded-xl" />
+                  <div className="h-4 bg-black/5 rounded w-3/4 mx-auto" />
+                  <div className="h-3 bg-black/5 rounded w-1/2 mx-auto" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-6 gap-y-5 sm:gap-y-12">
+              {filtered.map((p, i) => (
+                <ProductCard key={p.id} product={p} index={i} />
+              ))}
+            </div>
+          )}
 
-          {filtered.length === 0 && (
+          {!loading && filtered.length === 0 && (
             <div className="text-center py-16 border border-dashed border-black/20 rounded-3xl p-8 bg-[var(--color-card-bg)]/40">
               <p className="text-sm text-[var(--color-ink-soft)] font-medium">No botanical creations match those criteria.</p>
               <button

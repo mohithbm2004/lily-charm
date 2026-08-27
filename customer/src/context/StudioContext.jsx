@@ -18,10 +18,42 @@ if (typeof window !== 'undefined') {
 }
 
 export function StudioProvider({ children }) {
-  const [products, setProducts] = useState([])
-  const [collections, setCollections] = useState([])
+  const [products, setProducts] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = sessionStorage.getItem('lilycharm_cached_products')
+        if (cached) {
+          const parsed = JSON.parse(cached)
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        }
+      } catch {}
+    }
+    return []
+  })
+
+  const [collections, setCollections] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = sessionStorage.getItem('lilycharm_cached_collections')
+        if (cached) {
+          const parsed = JSON.parse(cached)
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        }
+      } catch {}
+    }
+    return []
+  })
+
   const [orders, setOrders] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = sessionStorage.getItem('lilycharm_cached_products')
+        if (cached && JSON.parse(cached)?.length > 0) return false
+      } catch {}
+    }
+    return true
+  })
 
   const [marqueeText, setMarqueeText] = useState(() => {
     const saved = localStorage.getItem('lilycharm_marquee')
@@ -83,7 +115,7 @@ export function StudioProvider({ children }) {
   const refreshProductsFromApi = async () => {
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 6000)
+      const timeoutId = setTimeout(() => controller.abort(), 25000)
       const res = await fetch(`${API_URL}/products`, { signal: controller.signal })
       clearTimeout(timeoutId)
       if (res.ok) {
@@ -105,6 +137,9 @@ export function StudioProvider({ children }) {
                 '',
             }))
           setProducts(mapped)
+          try {
+            sessionStorage.setItem('lilycharm_cached_products', JSON.stringify(mapped))
+          } catch {}
         }
       }
     } catch {
@@ -115,7 +150,7 @@ export function StudioProvider({ children }) {
   const refreshCollectionsFromApi = async () => {
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 6000)
+      const timeoutId = setTimeout(() => controller.abort(), 25000)
       const res = await fetch(`${API_URL}/collections`, { signal: controller.signal })
       clearTimeout(timeoutId)
       if (res.ok) {
@@ -127,6 +162,9 @@ export function StudioProvider({ children }) {
             mongoId: c._id,
           }))
           setCollections(mapped)
+          try {
+            sessionStorage.setItem('lilycharm_cached_collections', JSON.stringify(mapped))
+          } catch {}
         }
       }
     } catch {

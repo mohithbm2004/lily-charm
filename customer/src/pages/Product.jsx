@@ -28,6 +28,11 @@ export default function Product() {
   const { items, addItemAsync } = useCart()
   const { showAlert, showToast } = useAlert()
   const [loadingCart, setLoadingCart] = useState(false)
+  const [activeImg, setActiveImg] = useState('')
+
+  const allImages = Array.isArray(product?.images) && product.images.length > 0
+    ? product.images.map(i => typeof i === 'object' ? i.url : i)
+    : (product?.image ? [product.image] : [])
 
   const cartItem = items?.find(
     (i) =>
@@ -53,6 +58,13 @@ export default function Product() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
   }, [id])
+
+  useEffect(() => {
+    if (product) {
+      setActiveImg(product.image || allImages[0] || '')
+      setQty(1)
+    }
+  }, [product?.id, product?._id])
 
   const fetchProductReviews = async () => {
     if (!product) return
@@ -108,17 +120,6 @@ export default function Product() {
   const iy = product.imageY ?? 50
   const isc = product.imageScale ?? 1
   const isLandscape = product.imageOrientation === 'landscape'
-
-  const allImages = Array.isArray(product.images) && product.images.length > 0
-    ? product.images.map(i => typeof i === 'object' ? i.url : i)
-    : (product.image ? [product.image] : [])
-
-  const [activeImg, setActiveImg] = useState(product.image || allImages[0] || '')
-
-  useEffect(() => {
-    setActiveImg(product.image || allImages[0] || '')
-    setQty(1)
-  }, [product?.id])
 
   const currentImage = activeImg || product.image || allImages[0] || ''
 
