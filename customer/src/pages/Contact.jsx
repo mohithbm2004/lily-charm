@@ -83,7 +83,7 @@ export default function Contact() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-10 pt-20 sm:pt-24 md:pt-32 pb-16 sm:pb-24 space-y-8 sm:space-y-12 w-full max-w-full">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-10 pt-4 sm:pt-5 md:pt-6 pb-16 sm:pb-24 space-y-6 sm:space-y-10 w-full max-w-full">
       <Reveal>
         <div className="text-center max-w-2xl mx-auto space-y-2 mb-6 sm:mb-8">
           <span className="eyebrow inline-flex items-center gap-1.5 text-[var(--color-primary)] font-bold text-xs uppercase tracking-[0.24em]">

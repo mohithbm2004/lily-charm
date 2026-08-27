@@ -124,7 +124,7 @@ export default function Product() {
   const currentImage = activeImg || product.image || allImages[0] || ''
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-20 sm:pt-28 pb-16 sm:pb-24 w-full max-w-full">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-2.5 sm:pt-4 md:pt-6 pb-16 sm:pb-24 w-full max-w-full">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-14 items-start">
         {/* Left: Product Images */}
         <Reveal>

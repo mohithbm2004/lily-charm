@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 
 export default function FAQ() {
   return (
-    <div className="pt-20 sm:pt-24 md:pt-32 pb-16 sm:pb-24 w-full max-w-full">
+    <div className="pt-4 sm:pt-5 md:pt-6 pb-12 sm:pb-16 w-full max-w-full">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-10 mb-2">
         <Link
           to="/"

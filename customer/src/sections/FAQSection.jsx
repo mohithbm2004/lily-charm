@@ -48,33 +48,9 @@ export const FAQ_DATA = [
   },
   {
     id: 'faq-8',
-    question: 'Can I request a specific design?',
+    question: 'How do I place an order?',
     answer:
-      'Yes! Customers can share a reference image or describe their preferred design, and we will do our best to create it.',
-  },
-  {
-    id: 'faq-9',
-    question: 'How should I take care of the flowers?',
-    answer:
-      'Keep the flowers away from water, excessive moisture, and direct sunlight. Store them in a clean, dry place to maintain their appearance.',
-  },
-  {
-    id: 'faq-10',
-    question: 'Do you offer delivery?',
-    answer:
-      "Delivery options depend on the customer's location. Customers can contact us with their location and order details to check availability.",
-  },
-  {
-    id: 'faq-11',
-    question: 'Do you accept bulk orders?',
-    answer:
-      'Yes, bulk and multiple orders are accepted. Customers are encouraged to contact us in advance for larger orders.',
-  },
-  {
-    id: 'faq-12',
-    question: 'How can I place an order?',
-    answer:
-      'Customers can place an order through the website or contact us through the available contact/social media options.',
+      'You can browse our creations and purchase directly online, or contact us via WhatsApp, Instagram, or our contact form for custom requests.',
   },
 ]
 
@@ -106,7 +82,7 @@ export default function FAQSection({ isStandalonePage = false }) {
     <section
       className={`w-full max-w-full relative ${
         isStandalonePage
-          ? 'py-6'
+          ? 'pt-1 pb-6'
           : 'py-14 sm:py-20 md:py-24 bg-[var(--color-bg)]'
       }`}
       aria-label="Frequently Asked Questions"
@@ -140,13 +116,20 @@ export default function FAQSection({ isStandalonePage = false }) {
                     aria-expanded={isOpen}
                     aria-controls={`faq-panel-${item.id}`}
                     onClick={() => toggleItem(item.id)}
-                    className="w-full flex items-center justify-between gap-4 text-left group cursor-pointer"
+                    className="w-full flex items-center justify-between text-left gap-4 group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                   >
-                    <span className="font-bold text-xs sm:text-sm md:text-base text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors pr-2">
+                    <span className="font-semibold text-sm sm:text-base text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors">
                       {item.question}
                     </span>
-                    <span className="shrink-0 text-base sm:text-lg font-bold text-[var(--color-ink)] transition-colors select-none">
-                      {isOpen ? '—' : '+'}
+                    <span
+                      className="shrink-0 text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors"
+                      aria-hidden="true"
+                    >
+                      {isOpen ? (
+                        <Minus size={18} strokeWidth={2.2} />
+                      ) : (
+                        <Plus size={18} strokeWidth={2.2} />
+                      )}
                     </span>
                   </button>
                 </h3>
@@ -163,9 +146,9 @@ export default function FAQSection({ isStandalonePage = false }) {
                       transition={{ duration: 0.25, ease: 'easeInOut' }}
                       className="overflow-hidden"
                     >
-                      <div className="pt-3 pb-1 text-xs sm:text-sm text-[var(--color-ink-soft)] leading-relaxed font-normal">
+                      <p className="pt-3 text-xs sm:text-sm text-[var(--color-ink-soft)] leading-relaxed font-normal">
                         {item.answer}
-                      </div>
+                      </p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -173,6 +156,21 @@ export default function FAQSection({ isStandalonePage = false }) {
             )
           })}
         </div>
+
+        {/* Reassurance Footer Badge */}
+        {!isStandalonePage && (
+          <div className="mt-12 text-center">
+            <p className="text-xs text-[var(--color-ink-soft)]">
+              Have a question not answered here?{' '}
+              <a
+                href="/contact"
+                className="text-[var(--color-primary)] font-bold hover:underline"
+              >
+                Reach out to our studio →
+              </a>
+            </p>
+          </div>
+        )}
       </div>
     </section>
   )
