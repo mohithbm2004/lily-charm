@@ -1468,9 +1468,9 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
     <div className="min-h-screen bg-[var(--color-bg)]">
       {/* Dedicated Admin Header */}
       <header className="bg-[var(--color-primary)] text-white border-b border-[var(--color-line)] sticky top-0 z-50 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full border border-white/40 p-0.5 shadow-sm overflow-hidden bg-white shrink-0">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-10 h-auto min-h-14 py-2 sm:py-0 sm:h-16 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-white/40 p-0.5 shadow-sm overflow-hidden bg-white shrink-0">
               <img
                 src="/images/logo.png"
                 alt="Lily Charm Logo"
@@ -1478,20 +1478,20 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               />
             </div>
             <div>
-              <span className="font-[var(--font-display)] font-bold text-base md:text-lg tracking-[0.16em] uppercase block leading-tight text-white">
+              <span className="font-[var(--font-display)] font-bold text-xs sm:text-base md:text-lg tracking-[0.12em] sm:tracking-[0.16em] uppercase block leading-tight text-white">
                 Lily Charm Admin
               </span>
-              <span className="text-[0.52rem] md:text-[0.55rem] tracking-[0.2em] uppercase font-serif text-white/80 block">
+              <span className="hidden sm:block text-[0.52rem] md:text-[0.55rem] tracking-[0.2em] uppercase font-serif text-white/80">
                 Floral Creations by Keerthana Bapu
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {/* Uptime Robot Indicator */}
             <div
               onClick={() => setShowUptimeModal(true)}
-              className={`flex items-center gap-1.5 text-[0.68rem] font-mono px-3 py-1 rounded-full border shadow-sm cursor-pointer hover:bg-opacity-95 hover:scale-[1.02] active:scale-95 transition-all select-none ${
+              className={`flex items-center gap-1 sm:gap-1.5 text-[0.6rem] sm:text-[0.68rem] font-mono px-2 sm:px-3 py-1 rounded-full border shadow-sm cursor-pointer hover:bg-opacity-95 hover:scale-[1.02] active:scale-95 transition-all select-none shrink-0 ${
                 uptimeStatus.loading
                   ? 'bg-stone-800 text-stone-300 border-stone-700'
                   : isUptimeActive
@@ -1501,7 +1501,8 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               title={uptimeStatus.lastPing ? `Last health check ping received: ${new Date(uptimeStatus.lastPing).toLocaleString('en-IN')} (Click to view rolling logs)` : 'Awaiting first Uptime Robot request... (Click to view rolling logs)'}
             >
               <span className={`w-1.5 h-1.5 rounded-full ${uptimeStatus.loading ? 'bg-stone-500' : isUptimeActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`}></span>
-              <span>{getUptimeRobotText()}</span>
+              <span className="hidden sm:inline">{getUptimeRobotText()}</span>
+              <span className="sm:hidden font-bold">{isUptimeActive ? 'Live' : 'Check'}</span>
             </div>
 
             <div className="hidden md:flex items-center gap-2 text-xs text-emerald-200 font-mono bg-emerald-900/60 px-3 py-1 rounded-full border border-emerald-500/30">
@@ -1512,200 +1513,200 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
               href={STOREFRONT_URL || 'https://lilycharm.in'}
               target="_blank"
               rel="noreferrer"
-              className="text-xs tracking-wider uppercase font-medium bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-full border border-white/20 transition-colors inline-flex items-center gap-1.5"
+              className="text-[0.62rem] sm:text-xs tracking-wider uppercase font-medium bg-white/10 hover:bg-white/20 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-white/20 transition-colors inline-flex items-center gap-1 shrink-0"
             >
-              <ExternalLink size={13} /> Storefront ↗
+              <ExternalLink size={11} className="sm:w-3 sm:h-3" /> <span className="hidden xs:inline">Store</span>↗
             </a>
             <button
               onClick={logout}
-              className="text-xs tracking-wider uppercase font-bold bg-rose-700 hover:bg-rose-800 text-white px-3.5 py-1.5 rounded-full transition-colors inline-flex items-center gap-1.5 shadow-sm"
+              className="text-[0.62rem] sm:text-xs tracking-wider uppercase font-bold bg-rose-700 hover:bg-rose-800 text-white px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full transition-colors inline-flex items-center gap-1 shadow-sm shrink-0"
               title="Sign Out from Admin Panel"
             >
-              <LogOut size={13} /> Sign Out
+              <LogOut size={11} className="sm:w-3 sm:h-3" /> Exit
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Admin Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-8 space-y-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 md:px-10 py-4 sm:py-8 space-y-4 sm:space-y-8">
         {/* Welcome Banner */}
-        <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-sm">
+        <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 shadow-sm">
           <div>
-            <span className="eyebrow block mb-1 text-[var(--color-primary)] font-bold">Studio Administrative Portal</span>
-            <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-display)] uppercase tracking-wider text-[var(--color-ink)]">
+            <span className="eyebrow block mb-1 text-[var(--color-primary)] font-bold text-[0.62rem] sm:text-[0.65rem]">Studio Administrative Portal</span>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-[var(--font-display)] uppercase tracking-wider text-[var(--color-ink)]">
               Welcome back, Keerthana!
             </h1>
-            <p className="text-xs text-[var(--color-ink-soft)] mt-1">
+            <p className="text-[0.72rem] sm:text-xs text-[var(--color-ink-soft)] mt-1">
               Manage your handcrafted flower catalog, collections, update offers, edit prices, and track orders.
             </p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="btn-primary py-3 px-5 text-xs flex items-center gap-2 rounded-full"
+            className="btn-primary w-full sm:w-auto py-2.5 sm:py-3 px-4 sm:px-5 text-xs flex items-center justify-center gap-2 rounded-full shadow-sm"
           >
             <Plus size={15} /> Add New Flower Creation
           </button>
         </div>
 
         {/* Quick Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-5 shadow-sm">
-            <p className="eyebrow mb-1">Total Studio Sales</p>
-            <p className="text-2xl font-bold font-[var(--font-display)] text-[var(--color-primary)]">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm">
+            <p className="eyebrow mb-0.5 sm:mb-1 text-[0.6rem] sm:text-[0.65rem]">Total Studio Sales</p>
+            <p className="text-lg sm:text-2xl font-bold font-[var(--font-display)] text-[var(--color-primary)]">
               {formatPrice(totalRevenue)}
             </p>
-            <p className="text-xs text-[var(--color-ink-soft)] mt-1">Lifetime Revenue</p>
+            <p className="text-[0.65rem] sm:text-xs text-[var(--color-ink-soft)] mt-0.5 sm:mt-1">Lifetime Revenue</p>
           </div>
-          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-5 shadow-sm">
-            <p className="eyebrow mb-1">Active Creations</p>
-            <p className="text-2xl font-bold font-[var(--font-display)]">{products.length} Flowers</p>
-            <p className="text-xs text-[var(--color-ink-soft)] mt-1">Live in Store</p>
+          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm">
+            <p className="eyebrow mb-0.5 sm:mb-1 text-[0.6rem] sm:text-[0.65rem]">Active Creations</p>
+            <p className="text-lg sm:text-2xl font-bold font-[var(--font-display)]">{products.length} Flowers</p>
+            <p className="text-[0.65rem] sm:text-xs text-[var(--color-ink-soft)] mt-0.5 sm:mt-1">Live in Store</p>
           </div>
-          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-5 shadow-sm">
-            <p className="eyebrow mb-1">Live Collections</p>
-            <p className="text-2xl font-bold font-[var(--font-display)] text-emerald-800">{collections.length} Series</p>
-            <p className="text-xs text-[var(--color-ink-soft)] mt-1">Active Categories</p>
+          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm">
+            <p className="eyebrow mb-0.5 sm:mb-1 text-[0.6rem] sm:text-[0.65rem]">Live Collections</p>
+            <p className="text-lg sm:text-2xl font-bold font-[var(--font-display)] text-emerald-800">{collections.length} Series</p>
+            <p className="text-[0.65rem] sm:text-xs text-[var(--color-ink-soft)] mt-0.5 sm:mt-1">Active Categories</p>
           </div>
-          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-5 shadow-sm">
-            <p className="eyebrow mb-1">Total Orders</p>
-            <p className="text-2xl font-bold font-[var(--font-display)]">{orders.length} Received</p>
-            <p className="text-xs text-[var(--color-ink-soft)] mt-1">Customer Orders</p>
+          <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm">
+            <p className="eyebrow mb-0.5 sm:mb-1 text-[0.6rem] sm:text-[0.65rem]">Total Orders</p>
+            <p className="text-lg sm:text-2xl font-bold font-[var(--font-display)]">{orders.length} Received</p>
+            <p className="text-[0.65rem] sm:text-xs text-[var(--color-ink-soft)] mt-0.5 sm:mt-1">Customer Orders</p>
           </div>
         </div>
 
         {/* Admin Navigation Tabs */}
-        <div className="flex border-b border-[var(--color-line)] overflow-x-auto gap-2 scrollbar-thin pb-1">
+        <div className="flex border-b border-[var(--color-line)] overflow-x-auto gap-1 sm:gap-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
           <button
             onClick={() => handleTabChange('products', '/admin/products')}
-            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+            className={`px-3 py-2 sm:px-4 sm:py-3 text-[0.68rem] sm:text-xs font-semibold tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-lg sm:rounded-t-xl shrink-0 ${
               activeTab === 'products'
                 ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Package size={15} /> Products ({products.length})
+            <Package size={14} className="sm:w-3.5 sm:h-3.5" /> Products ({products.length})
           </button>
 
           <button
             onClick={() => handleTabChange('collections', '/admin/products')}
-            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+            className={`px-3 py-2 sm:px-4 sm:py-3 text-[0.68rem] sm:text-xs font-semibold tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-lg sm:rounded-t-xl shrink-0 ${
               activeTab === 'collections'
                 ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Layers size={15} /> Collections ({collections.length})
+            <Layers size={14} className="sm:w-3.5 sm:h-3.5" /> Collections ({collections.length})
           </button>
 
           <button
             onClick={() => handleTabChange('orders', '/admin/orders')}
-            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+            className={`px-3 py-2 sm:px-4 sm:py-3 text-[0.68rem] sm:text-xs font-semibold tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-lg sm:rounded-t-xl shrink-0 ${
               activeTab === 'orders'
                 ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Truck size={15} /> Orders ({orders.length})
+            <Truck size={14} className="sm:w-3.5 sm:h-3.5" /> Orders ({orders.length})
           </button>
 
           <button
             onClick={() => handleTabChange('offers', '/admin/settings')}
-            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+            className={`px-3 py-2 sm:px-4 sm:py-3 text-[0.68rem] sm:text-xs font-semibold tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-lg sm:rounded-t-xl shrink-0 ${
               activeTab === 'offers'
                 ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Tag size={15} /> Settings & Offers
+            <Tag size={14} className="sm:w-3.5 sm:h-3.5" /> Settings & Offers
           </button>
 
           <button
             onClick={() => handleTabChange('custom-requests', '/admin/custom-designs')}
-            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+            className={`px-3 py-2 sm:px-4 sm:py-3 text-[0.68rem] sm:text-xs font-semibold tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-lg sm:rounded-t-xl shrink-0 ${
               activeTab === 'custom-requests'
                 ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Sparkles size={15} /> Custom Designs ({customRequests.length})
+            <Sparkles size={14} className="sm:w-3.5 sm:h-3.5" /> Custom Designs ({customRequests.length})
           </button>
 
           <button
             onClick={() => handleTabChange('users', '/admin/customers')}
-            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+            className={`px-3 py-2 sm:px-4 sm:py-3 text-[0.68rem] sm:text-xs font-semibold tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-lg sm:rounded-t-xl shrink-0 ${
               activeTab === 'users'
                 ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Users size={15} /> Customers ({users.length})
+            <Users size={14} className="sm:w-3.5 sm:h-3.5" /> Customers ({users.length})
           </button>
 
           <button
             onClick={() => handleTabChange('reviews', '/admin/reviews')}
-            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+            className={`px-3 py-2 sm:px-4 sm:py-3 text-[0.68rem] sm:text-xs font-semibold tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-lg sm:rounded-t-xl shrink-0 ${
               activeTab === 'reviews'
                 ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Star size={15} className="text-amber-500 fill-amber-400" /> Reviews ({reviews.length})
+            <Star size={14} className="sm:w-3.5 sm:h-3.5 text-amber-500 fill-amber-400" /> Reviews ({reviews.length})
           </button>
 
           <button
             onClick={() => handleTabChange('coupons', '/admin/coupons')}
-            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+            className={`px-3 py-2 sm:px-4 sm:py-3 text-[0.68rem] sm:text-xs font-semibold tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-lg sm:rounded-t-xl shrink-0 ${
               activeTab === 'coupons'
                 ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Tag size={15} /> Coupons ({coupons.length})
+            <Tag size={14} className="sm:w-3.5 sm:h-3.5" /> Coupons ({coupons.length})
           </button>
 
           <button
             onClick={() => handleTabChange('settings', '/admin/settings')}
-            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+            className={`px-3 py-2 sm:px-4 sm:py-3 text-[0.68rem] sm:text-xs font-semibold tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-lg sm:rounded-t-xl shrink-0 ${
               activeTab === 'settings'
                 ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Truck size={15} className="text-amber-600" /> Shipping & Settings
+            <Truck size={14} className="sm:w-3.5 sm:h-3.5 text-amber-600" /> Shipping & Settings
           </button>
 
           <button
             onClick={() => handleTabChange('email-security', '/admin/email-security')}
-            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+            className={`px-3 py-2 sm:px-4 sm:py-3 text-[0.68rem] sm:text-xs font-semibold tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-lg sm:rounded-t-xl shrink-0 ${
               activeTab === 'email-security'
                 ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <ShieldCheck size={15} className="text-emerald-600" /> Email Security
+            <ShieldCheck size={14} className="sm:w-3.5 sm:h-3.5 text-emerald-600" /> Email Security
           </button>
 
           <button
             onClick={() => handleTabChange('payments', '/admin/payments')}
-            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+            className={`px-3 py-2 sm:px-4 sm:py-3 text-[0.68rem] sm:text-xs font-semibold tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-lg sm:rounded-t-xl shrink-0 ${
               activeTab === 'payments'
                 ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <CreditCard size={15} className="text-indigo-600" /> Payment Tracking
+            <CreditCard size={14} className="sm:w-3.5 sm:h-3.5 text-indigo-600" /> Payment Tracking
           </button>
 
           <button
             onClick={() => handleTabChange('sessions', '/admin/sessions')}
-            className={`px-4 py-3 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-xl ${
+            className={`px-3 py-2 sm:px-4 sm:py-3 text-[0.68rem] sm:text-xs font-semibold tracking-wider uppercase flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap transition-colors rounded-t-lg sm:rounded-t-xl shrink-0 ${
               activeTab === 'sessions'
                 ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-sm font-bold'
                 : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
             }`}
           >
-            <Laptop size={15} className="text-[var(--color-primary)]" /> Login Sessions & Devices ({adminSessions.length})
+            <Laptop size={14} className="sm:w-3.5 sm:h-3.5 text-[var(--color-primary)]" /> Login Sessions & Devices ({adminSessions.length})
           </button>
         </div>
 
@@ -3962,134 +3963,200 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
         {/* TAB: LOGIN SESSIONS & DEVICE SECURITY */}
         {activeTab === 'sessions' && (
           <div className="space-y-6">
-            <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
               <div>
-                <span className="eyebrow block mb-1 text-[var(--color-primary)] font-bold">Studio Security Audit</span>
-                <h2 className="text-xl sm:text-2xl font-bold font-[var(--font-display)] uppercase text-[var(--color-ink)] flex items-center gap-2">
-                  <Laptop size={20} className="text-[var(--color-primary)]" /> Admin Login Sessions & Devices
+                <span className="eyebrow block mb-1 text-[var(--color-primary)] font-bold text-[0.62rem] sm:text-[0.65rem]">Studio Security Audit</span>
+                <h2 className="text-lg sm:text-2xl font-bold font-[var(--font-display)] uppercase text-[var(--color-ink)] flex items-center gap-2">
+                  <Laptop size={18} className="text-[var(--color-primary)] sm:w-5 sm:h-5" /> Admin Login Sessions & Devices
                 </h2>
-                <p className="text-xs text-[var(--color-ink-soft)] mt-1">
-                  Monitor all authenticated admin login sessions, IP addresses, timestamps, and active device signatures.
+                <p className="text-[0.72rem] sm:text-xs text-[var(--color-ink-soft)] mt-0.5 sm:mt-1">
+                  Monitor authenticated admin login sessions, IP addresses, timestamps, and active device signatures.
                 </p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto justify-end">
                 <button
                   onClick={loadSessions}
                   disabled={loadingSessions}
-                  className="btn-outline px-4 py-2.5 text-xs rounded-full flex items-center gap-1.5 cursor-pointer"
+                  className="btn-outline flex-1 md:flex-initial px-3 sm:px-4 py-2 sm:py-2.5 text-[0.68rem] sm:text-xs rounded-full flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <RefreshCw size={13} className={loadingSessions ? 'animate-spin' : ''} /> Refresh Logs
+                  <RefreshCw size={12} className={loadingSessions ? 'animate-spin' : ''} /> Refresh Logs
                 </button>
                 <button
                   onClick={async () => {
-                    if (window.confirm('Revoke all active admin sessions across all devices? You will be logged out.')) {
+                    if (window.confirm('Revoke all active admin sessions across all devices? You will be logged out immediately.')) {
                       await logoutAllSessions()
                       navigate('/admin/login')
                     }
                   }}
-                  className="btn-primary py-2.5 px-4 text-xs rounded-full bg-rose-700 hover:bg-rose-800 text-white cursor-pointer"
+                  className="btn-primary flex-1 md:flex-initial py-2 sm:py-2.5 px-3 sm:px-4 text-[0.68rem] sm:text-xs rounded-full bg-rose-700 hover:bg-rose-800 text-white cursor-pointer justify-center"
                 >
                   Revoke All Sessions
                 </button>
               </div>
             </div>
 
-            {/* Sessions Table Card */}
-            <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-3xl overflow-hidden shadow-sm">
-              <div className="p-4 border-b border-[var(--color-line)] bg-[var(--color-bg)]/60 flex justify-between items-center text-xs">
-                <span className="font-bold text-[var(--color-ink)] uppercase tracking-wider font-mono">
+            {/* Sessions Card Container */}
+            <div className="border border-[var(--color-line)] bg-[var(--color-card-bg)] rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm">
+              <div className="p-3.5 sm:p-4 border-b border-[var(--color-line)] bg-[var(--color-bg)]/60 flex flex-wrap justify-between items-center gap-2 text-xs">
+                <span className="font-bold text-[var(--color-ink)] uppercase tracking-wider font-mono text-[0.68rem] sm:text-xs">
                   Active Logged In Sessions ({adminSessions.length})
                 </span>
-                <span className="text-[0.68rem] text-[var(--color-ink-soft)]">
-                  Session Token Lifetime: 12 Hours
+                <span className="text-[0.62rem] sm:text-[0.68rem] text-[var(--color-ink-soft)]">
+                  Session Lifetime: 12 Hours
                 </span>
               </div>
 
               {loadingSessions ? (
-                <div className="p-12 text-center text-xs font-mono text-[var(--color-ink-soft)] animate-pulse">
+                <div className="p-8 sm:p-12 text-center text-xs font-mono text-[var(--color-ink-soft)] animate-pulse">
                   Loading active login sessions & security audit logs...
                 </div>
               ) : adminSessions.length === 0 ? (
-                <div className="p-12 text-center text-xs text-[var(--color-ink-soft)]">
+                <div className="p-8 sm:p-12 text-center text-xs text-[var(--color-ink-soft)]">
                   No session logs found.
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-[var(--color-line)] bg-[var(--color-bg)] text-[var(--color-ink-soft)] uppercase text-[0.64rem] tracking-wider">
-                        <th className="p-3.5 pl-5 font-bold">Device & OS</th>
-                        <th className="p-3.5 font-bold">IP Address</th>
-                        <th className="p-3.5 font-bold">Login Date & Time</th>
-                        <th className="p-3.5 font-bold">Last Active</th>
-                        <th className="p-3.5 font-bold">Status</th>
-                        <th className="p-3.5 pr-5 text-right font-bold">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--color-line)]/50">
-                      {adminSessions.map((s) => (
-                        <tr key={s.sessionId} className={`hover:bg-[var(--color-bg)]/40 transition-colors ${s.isCurrentSession ? 'bg-emerald-900/5' : ''}`}>
-                          <td className="p-3.5 pl-5">
-                            <div className="flex items-center gap-2.5">
-                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center border ${s.isCurrentSession ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-[var(--color-bg)] text-[var(--color-ink)] border-[var(--color-line)]'}`}>
-                                {s.deviceName?.toLowerCase().includes('phone') || s.deviceName?.toLowerCase().includes('iphone') || s.deviceName?.toLowerCase().includes('android') ? (
-                                  <Smartphone size={16} />
-                                ) : (
-                                  <Laptop size={16} />
-                                )}
-                              </div>
-                              <div>
-                                <p className="font-bold text-xs text-[var(--color-ink)]">{s.deviceName}</p>
-                                <p className="text-[0.62rem] text-[var(--color-ink-soft)] font-mono truncate max-w-[200px]" title={s.userAgent}>{s.userAgent}</p>
+                <>
+                  {/* MOBILE VIEW (< md): Responsive Stacked Cards */}
+                  <div className="md:hidden divide-y divide-[var(--color-line)]/50">
+                    {adminSessions.map((s) => (
+                      <div key={s.sessionId} className={`p-3.5 space-y-2.5 transition-colors ${s.isCurrentSession ? 'bg-emerald-900/5' : ''}`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shrink-0 ${s.isCurrentSession ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-[var(--color-bg)] text-[var(--color-ink)] border-[var(--color-line)]'}`}>
+                              {s.deviceName?.toLowerCase().includes('phone') || s.deviceName?.toLowerCase().includes('iphone') || s.deviceName?.toLowerCase().includes('android') ? (
+                                <Smartphone size={15} />
+                              ) : (
+                                <Laptop size={15} />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-bold text-xs text-[var(--color-ink)] leading-tight">{s.deviceName}</p>
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <Globe size={11} className="text-[var(--color-ink-soft)]" />
+                                <span className="font-mono text-[0.65rem] text-[var(--color-primary)] font-bold">{s.ipAddress}</span>
                               </div>
                             </div>
-                          </td>
-                          <td className="p-3.5 font-mono text-[var(--color-primary)] font-bold">
-                            <div className="flex items-center gap-1.5">
-                              <Globe size={13} className="text-[var(--color-ink-soft)]" />
-                              <span>{s.ipAddress}</span>
-                            </div>
-                          </td>
-                          <td className="p-3.5 text-[var(--color-ink)] font-mono text-[0.68rem]">
-                            {s.createdAt ? formatDateTime(s.createdAt) : 'Recently'}
-                          </td>
-                          <td className="p-3.5 text-[var(--color-ink-soft)] font-mono text-[0.68rem]">
-                            {s.lastActiveAt ? formatDateTime(s.lastActiveAt) : 'Active now'}
-                          </td>
-                          <td className="p-3.5">
+                          </div>
+                          <div>
                             {s.isCurrentSession ? (
-                              <span className="text-[0.6rem] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-full inline-flex items-center gap-1">
+                              <span className="text-[0.58rem] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                                Current Device
+                                Current
                               </span>
                             ) : (
-                              <span className="text-[0.6rem] font-bold uppercase tracking-wider text-stone-700 bg-stone-100 border border-stone-300 px-2.5 py-1 rounded-full">
-                                Active Session
+                              <span className="text-[0.58rem] font-bold uppercase tracking-wider text-stone-700 bg-stone-100 border border-stone-300 px-2 py-0.5 rounded-full">
+                                Active
                               </span>
                             )}
-                          </td>
-                          <td className="p-3.5 pr-5 text-right">
-                            {s.isCurrentSession ? (
-                              <span className="text-[0.65rem] text-[var(--color-ink-soft)] italic font-mono">This Device</span>
-                            ) : (
-                              <button
-                                onClick={async () => {
-                                  if (window.confirm('Revoke this admin login session?')) {
-                                    await revokeSession(s.sessionId)
-                                    loadSessions()
-                                  }
-                                }}
-                                className="text-[0.64rem] font-bold uppercase tracking-wider text-rose-700 hover:text-rose-900 border border-rose-300 hover:bg-rose-50 px-3 py-1 rounded-full transition-colors cursor-pointer"
-                              >
-                                Revoke Session
-                              </button>
-                            )}
-                          </td>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-[0.64rem] font-mono text-[var(--color-ink-soft)] bg-[var(--color-bg)]/50 p-2 rounded-xl border border-[var(--color-line)]/50">
+                          <div>
+                            <span className="block text-[0.55rem] uppercase text-stone-600 font-sans font-bold">Login Time</span>
+                            <span className="text-[var(--color-ink)]">{s.createdAt ? formatDateTime(s.createdAt) : 'Recently'}</span>
+                          </div>
+                          <div>
+                            <span className="block text-[0.55rem] uppercase text-stone-600 font-sans font-bold">Last Active</span>
+                            <span className="text-[var(--color-ink)]">{s.lastActiveAt ? formatDateTime(s.lastActiveAt) : 'Now'}</span>
+                          </div>
+                        </div>
+
+                        {!s.isCurrentSession && (
+                          <button
+                            onClick={async () => {
+                              if (window.confirm('Revoke this admin login session?')) {
+                                await revokeSession(s.sessionId)
+                                loadSessions()
+                              }
+                            }}
+                            className="w-full py-1.5 text-[0.65rem] font-bold uppercase tracking-wider text-rose-700 hover:text-rose-900 border border-rose-300 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer text-center"
+                          >
+                            Revoke This Device
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* DESKTOP VIEW (>= md): Full Responsive Table */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-[var(--color-line)] bg-[var(--color-bg)] text-[var(--color-ink-soft)] uppercase text-[0.64rem] tracking-wider">
+                          <th className="p-3.5 pl-5 font-bold">Device & OS</th>
+                          <th className="p-3.5 font-bold">IP Address</th>
+                          <th className="p-3.5 font-bold">Login Date & Time</th>
+                          <th className="p-3.5 font-bold">Last Active</th>
+                          <th className="p-3.5 font-bold">Status</th>
+                          <th className="p-3.5 pr-5 text-right font-bold">Action</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--color-line)]/50">
+                        {adminSessions.map((s) => (
+                          <tr key={s.sessionId} className={`hover:bg-[var(--color-bg)]/40 transition-colors ${s.isCurrentSession ? 'bg-emerald-900/5' : ''}`}>
+                            <td className="p-3.5 pl-5">
+                              <div className="flex items-center gap-2.5">
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center border ${s.isCurrentSession ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-[var(--color-bg)] text-[var(--color-ink)] border-[var(--color-line)]'}`}>
+                                  {s.deviceName?.toLowerCase().includes('phone') || s.deviceName?.toLowerCase().includes('iphone') || s.deviceName?.toLowerCase().includes('android') ? (
+                                    <Smartphone size={16} />
+                                  ) : (
+                                    <Laptop size={16} />
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-xs text-[var(--color-ink)]">{s.deviceName}</p>
+                                  <p className="text-[0.62rem] text-[var(--color-ink-soft)] font-mono truncate max-w-[200px]" title={s.userAgent}>{s.userAgent}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-3.5 font-mono text-[var(--color-primary)] font-bold">
+                              <div className="flex items-center gap-1.5">
+                                <Globe size={13} className="text-[var(--color-ink-soft)]" />
+                                <span>{s.ipAddress}</span>
+                              </div>
+                            </td>
+                            <td className="p-3.5 text-[var(--color-ink)] font-mono text-[0.68rem]">
+                              {s.createdAt ? formatDateTime(s.createdAt) : 'Recently'}
+                            </td>
+                            <td className="p-3.5 text-[var(--color-ink-soft)] font-mono text-[0.68rem]">
+                              {s.lastActiveAt ? formatDateTime(s.lastActiveAt) : 'Active now'}
+                            </td>
+                            <td className="p-3.5">
+                              {s.isCurrentSession ? (
+                                <span className="text-[0.6rem] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-full inline-flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                                  Current Device
+                                </span>
+                              ) : (
+                                <span className="text-[0.6rem] font-bold uppercase tracking-wider text-stone-700 bg-stone-100 border border-stone-300 px-2.5 py-1 rounded-full">
+                                  Active Session
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3.5 pr-5 text-right">
+                              {s.isCurrentSession ? (
+                                <span className="text-[0.65rem] text-[var(--color-ink-soft)] italic font-mono">This Device</span>
+                              ) : (
+                                <button
+                                  onClick={async () => {
+                                    if (window.confirm('Revoke this admin login session?')) {
+                                      await revokeSession(s.sessionId)
+                                      loadSessions()
+                                    }
+                                  }}
+                                  className="text-[0.64rem] font-bold uppercase tracking-wider text-rose-700 hover:text-rose-900 border border-rose-300 hover:bg-rose-50 px-3 py-1 rounded-full transition-colors cursor-pointer"
+                                >
+                                  Revoke Session
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>

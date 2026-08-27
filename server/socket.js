@@ -299,6 +299,16 @@ export function emitCartUpdated(userId, cart) {
   io.to(`user:${String(userId)}`).emit('CART_UPDATED', cart)
 }
 
+export function emitAdminSessionRevoked(sessionId) {
+  if (!io || !sessionId) return
+  io.emit('ADMIN_SESSION_REVOKED', { sessionId: String(sessionId) })
+}
+
+export function emitAdminAllSessionsRevoked() {
+  if (!io) return
+  io.emit('ADMIN_ALL_SESSIONS_REVOKED', { timestamp: new Date() })
+}
+
 function sanitizeOrder(order) {
   const doc = typeof order.toObject === 'function' ? order.toObject() : { ...order }
   delete doc.__v

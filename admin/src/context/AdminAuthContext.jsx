@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { API_URL } from '../config/api'
+import { getSocket, subscribeToEvent, updateAdminSocketAuth } from '../services/socket'
 
 const AdminAuthContext = createContext(null)
 
@@ -28,6 +29,7 @@ export function AdminAuthProvider({ children }) {
           setIsAuthenticated(true)
           setAdmin(data.admin)
           setError(null)
+          if (storedSessionId) updateAdminSocketAuth(storedSessionId)
         } else {
           setIsAuthenticated(false)
           setAdmin(null)
@@ -49,6 +51,35 @@ export function AdminAuthProvider({ children }) {
     checkAuth()
   }, [checkAuth])
 
+  // Real-time WebSocket Session Revocation Listener
+  useEffect(() => {
+    const handleSessionRevoked = (data) => {
+      const storedSessionId =
+        localStorage.getItem('lilycharm_admin_session_id') || localStorage.getItem('lily_admin_session_id')
+      if (data?.sessionId && storedSessionId === data.sessionId) {
+        localStorage.removeItem('lilycharm_admin_session_id')
+        localStorage.removeItem('lily_admin_session_id')
+        setIsAuthenticated(false)
+        setAdmin(null)
+      }
+    }
+
+    const handleAllSessionsRevoked = () => {
+      localStorage.removeItem('lilycharm_admin_session_id')
+      localStorage.removeItem('lily_admin_session_id')
+      setIsAuthenticated(false)
+      setAdmin(null)
+    }
+
+    const unsub1 = subscribeToEvent('ADMIN_SESSION_REVOKED', handleSessionRevoked)
+    const unsub2 = subscribeToEvent('ADMIN_ALL_SESSIONS_REVOKED', handleAllSessionsRevoked)
+
+    return () => {
+      unsub1()
+      unsub2()
+    }
+  }, [])
+
   const login = async (email, password) => {
     setError(null)
     try {
@@ -67,6 +98,7 @@ export function AdminAuthProvider({ children }) {
 
       if (data.sessionId) {
         localStorage.setItem('lilycharm_admin_session_id', data.sessionId)
+        updateAdminSocketAuth(data.sessionId)
       }
 
       setIsAuthenticated(true)

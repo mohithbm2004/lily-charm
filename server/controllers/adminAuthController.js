@@ -5,6 +5,7 @@ import AdminSession from '../models/AdminSession.js'
 import { getAdminEmail, getOrCreateAdminUser, validatePasswordStrength } from '../utils/adminUserHelper.js'
 import { generate6DigitOtp, hashToken, sendOtpEmail } from '../services/otp.service.js'
 import { ENV } from '../config/env.js'
+import { emitAdminSessionRevoked, emitAdminAllSessionsRevoked } from '../socket.js'
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -353,6 +354,8 @@ export async function adminChangePassword(req, res) {
     await AdminSession.deleteMany({ adminEmail: expectedEmail })
     res.clearCookie('lily_admin_session', COOKIE_OPTIONS)
 
+    emitAdminAllSessionsRevoked()
+
     return res.status(200).json({
       success: true,
       message: 'Password changed successfully. Please log in with your new password.',
@@ -368,9 +371,11 @@ export async function adminChangePassword(req, res) {
  */
 export async function adminLogoutAll(req, res) {
   try {
-    const expectedEmail = req.admin.email || getAdminEmail()
+    const expectedEmail = req.admin?.email || getAdminEmail()
     await AdminSession.deleteMany({ adminEmail: expectedEmail })
     res.clearCookie('lily_admin_session', COOKIE_OPTIONS)
+
+    emitAdminAllSessionsRevoked()
 
     return res.status(200).json({ success: true, message: 'All active admin sessions have been logged out.' })
   } catch (err) {
@@ -406,6 +411,7 @@ export async function adminLogout(req, res) {
     const sessionId = req.cookies?.lily_admin_session || req.admin?.sessionId
     if (sessionId) {
       await AdminSession.deleteOne({ sessionId })
+      emitAdminSessionRevoked(sessionId)
     }
 
     res.clearCookie('lily_admin_session', COOKIE_OPTIONS)
@@ -485,6 +491,8 @@ export async function revokeAdminSession(req, res) {
     }
 
     await AdminSession.deleteOne({ sessionId })
+    emitAdminSessionRevoked(sessionId)
+
     return res.status(200).json({ success: true, message: 'Session revoked successfully.' })
   } catch (err) {
     console.error('revokeAdminSession Error:', err)
