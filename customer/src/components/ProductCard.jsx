@@ -44,7 +44,11 @@ function ProductCard({ product, index = 0 }) {
       >
         {/* Vertically Centered Image Section */}
         <div className="flex-1 flex flex-col justify-center items-center my-auto w-full py-1">
-          <Link to={`/product/${product.id}`} className="block relative overflow-hidden bg-[var(--color-bg)] w-full rounded-xl">
+          <Link
+            to={`/product/${product.id}`}
+            onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' })}
+            className="block relative overflow-hidden bg-[var(--color-bg)] w-full rounded-xl"
+          >
             <div className={`${isLandscape ? 'aspect-[16/11]' : 'aspect-[4/5]'} overflow-hidden relative flex items-center justify-center w-full rounded-xl`}>
               {firstImg ? (
                 <>
@@ -114,6 +118,7 @@ function ProductCard({ product, index = 0 }) {
           <div className="space-y-0.5 sm:space-y-1 w-full flex flex-col items-center text-center">
             <Link
               to={`/product/${product.id}`}
+              onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' })}
               className="font-[var(--font-display)] text-xs sm:text-base md:text-lg font-medium leading-tight sm:leading-snug tracking-tight text-[var(--color-ink)] hover:text-[var(--color-primary)] transition-colors block text-center break-words line-clamp-2 max-w-full"
             >
               {product.title}

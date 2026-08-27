@@ -41,9 +41,16 @@ export default function ScrollToTop() {
 
     prevPathRef.current = currentPath
 
-    // Check if target route has a previously stored scroll position
-    const savedY = scrollMap.current[currentPath]
-    const targetY = typeof savedY === 'number' ? savedY : currentScrollY
+    // Check if target route is a product detail page
+    const isProductPage = location.pathname.startsWith('/product/')
+
+    // For product detail pages, ALWAYS start from the very top (0)
+    // For other routes (e.g. returning to /shop), restore previously saved scroll position if available
+    let targetY = 0
+    if (!isProductPage) {
+      const savedY = scrollMap.current[currentPath]
+      targetY = typeof savedY === 'number' ? savedY : 0
+    }
 
     // Helper to apply scroll position across window and DOM roots
     const applyScroll = () => {
