@@ -190,10 +190,8 @@ export default function AdminDashboard({ activeTabName = 'Products' }) {
   }, [location.pathname])
 
   useEffect(() => {
-    if (activeTab === 'sessions') {
-      loadSessions()
-    }
-  }, [activeTab, loadSessions])
+    loadSessions()
+  }, [loadSessions])
 
   const handleTabChange = (tabKey, routePath) => {
     setActiveTab(tabKey)

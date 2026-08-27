@@ -114,6 +114,14 @@ export default function App() {
           }
         />
         <Route
+          path="/admin/sessions"
+          element={
+            <ProtectedAdminRoute>
+              <AdminDashboard activeTabName="Sessions" />
+            </ProtectedAdminRoute>
+          }
+        />
+        <Route
           path="/admin/email-security"
           element={
             <ProtectedAdminRoute>
