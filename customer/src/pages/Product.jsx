@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { Heart, Minus, Plus, Star, Edit3, CheckCircle2, Loader2 } from 'lucide-react'
 import { useStudio } from '../context/StudioContext'
 import { formatPrice } from '../lib/format'
@@ -28,6 +29,7 @@ export default function Product() {
   const { items, addItemAsync } = useCart()
   const { showAlert, showToast } = useAlert()
   const [loadingCart, setLoadingCart] = useState(false)
+  const [justAdded, setJustAdded] = useState(false)
   const [activeImg, setActiveImg] = useState('')
 
   const allImages = Array.isArray(product?.images) && product.images.length > 0
@@ -209,12 +211,15 @@ export default function Product() {
                   </button>
                 </div>
 
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
                   onClick={async () => {
                     if (loadingCart || isMaxQty || product.stock === 0) return
                     setLoadingCart(true)
                     const res = await addItemAsync(product, qty)
                     if (res && res.success) {
+                      setJustAdded(true)
+                      setTimeout(() => setJustAdded(false), 900)
                       showToast({
                         title: 'Added to Cart',
                         message: `${product.title} (${qty})`,
@@ -230,14 +235,23 @@ export default function Product() {
                     setLoadingCart(false)
                   }}
                   disabled={loadingCart || isMaxQty || product.stock === 0}
-                  className={`btn-primary flex-1 py-3.5 text-xs uppercase font-bold tracking-widest text-center rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-2 ${
-                    product.stock === 0 ? 'bg-rose-600/10 border border-rose-300 text-rose-700/60 shadow-none cursor-not-allowed' :
-                    isMaxQty ? 'bg-amber-600/10 border border-amber-600/20 text-amber-800/60 shadow-none cursor-not-allowed' : ''
+                  className={`btn-primary flex-1 py-3.5 text-xs uppercase font-bold tracking-widest text-center rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-2 transition-all duration-300 ${
+                    justAdded
+                      ? '!bg-emerald-800 !border-emerald-700 text-white shadow-lg'
+                      : product.stock === 0
+                      ? 'bg-rose-600/10 border border-rose-300 text-rose-700/60 shadow-none cursor-not-allowed'
+                      : isMaxQty
+                      ? 'bg-amber-600/10 border border-amber-600/20 text-amber-800/60 shadow-none cursor-not-allowed'
+                      : ''
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {loadingCart ? (
                     <>
                       <Loader2 size={13} className="animate-spin" /> ADDING...
+                    </>
+                  ) : justAdded ? (
+                    <>
+                      <CheckCircle2 size={14} className="text-emerald-300 animate-pulse" /> ADDED TO CART!
                     </>
                   ) : product.stock === 0 ? (
                     <>OUT OF STOCK</>
@@ -246,7 +260,7 @@ export default function Product() {
                   ) : (
                     <>Add to Cart • {formatPrice(product.price * (product.stock === 0 ? 0 : qty))}</>
                   )}
-                </button>
+                </motion.button>
 
                 <button
                   aria-label="Add to wishlist"

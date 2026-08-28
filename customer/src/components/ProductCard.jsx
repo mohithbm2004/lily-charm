@@ -1,7 +1,7 @@
 import { memo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Heart, Plus, Loader2 } from 'lucide-react'
+import { Heart, Plus, Loader2, Check } from 'lucide-react'
 import { formatPrice } from '../lib/format'
 import { useCart } from '../context/CartContext'
 import { useAlert } from '../context/AlertContext'
@@ -11,6 +11,7 @@ function ProductCard({ product, index = 0 }) {
   const { items, addItemAsync } = useCart()
   const { showAlert, showToast } = useAlert()
   const [loading, setLoading] = useState(false)
+  const [justAdded, setJustAdded] = useState(false)
 
   const cartItem = items?.find(
     (i) =>
@@ -126,7 +127,8 @@ function ProductCard({ product, index = 0 }) {
             <p className="text-[0.72rem] sm:text-sm font-semibold text-[var(--color-primary)] font-sans text-center">{formatPrice(product.price)}</p>
           </div>
 
-          <button
+          <motion.button
+            whileTap={{ scale: 0.94 }}
             onClick={async (e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -134,6 +136,8 @@ function ProductCard({ product, index = 0 }) {
               setLoading(true)
               const res = await addItemAsync(product)
               if (res && res.success) {
+                setJustAdded(true)
+                setTimeout(() => setJustAdded(false), 900)
                 showToast({
                   title: 'Added to Cart',
                   message: product.title,
@@ -149,14 +153,23 @@ function ProductCard({ product, index = 0 }) {
               setLoading(false)
             }}
             disabled={loading || isMaxQty || product.stock === 0}
-            className={`w-full btn-outline rounded-xl py-2.5 sm:py-3 px-1.5 sm:px-2 text-[0.58rem] sm:text-[0.68rem] tracking-[0.12em] sm:tracking-[0.2em] uppercase font-bold flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis ${
-              product.stock === 0 ? 'border-rose-400/40 text-rose-700/60 bg-rose-50/20' :
-              isMaxQty ? 'border-amber-600/40 text-amber-700/60 bg-amber-50/20' : ''
+            className={`w-full btn-outline rounded-xl py-2.5 sm:py-3 px-1.5 sm:px-2 text-[0.58rem] sm:text-[0.68rem] tracking-[0.12em] sm:tracking-[0.2em] uppercase font-bold flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis transition-all duration-300 ${
+              justAdded
+                ? '!bg-[var(--color-primary)] !text-white !border-[var(--color-primary)] shadow-md'
+                : product.stock === 0
+                ? 'border-rose-400/40 text-rose-700/60 bg-rose-50/20'
+                : isMaxQty
+                ? 'border-amber-600/40 text-amber-700/60 bg-amber-50/20'
+                : ''
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {loading ? (
               <>
                 <Loader2 size={12} className="animate-spin" /> ADDING...
+              </>
+            ) : justAdded ? (
+              <>
+                <Check size={13} strokeWidth={2.5} className="text-emerald-300 animate-pulse" /> ADDED
               </>
             ) : product.stock === 0 ? (
               <>OUT OF STOCK</>
@@ -167,7 +180,7 @@ function ProductCard({ product, index = 0 }) {
                 <Plus size={12} /> ADD TO CART
               </>
             )}
-          </button>
+          </motion.button>
         </div>
       </motion.div>
     </TiltCard3D>
