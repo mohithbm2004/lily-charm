@@ -527,50 +527,64 @@ export function CartProvider({ children }) {
       }
 
       if (token && user) {
+        // 1. Optimistically update local state immediately
         try {
-          const authToken = token || localStorage.getItem('lilycharm_token') || ''
-          const res = await fetch(`${API_URL}/cart`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-            },
-            body: JSON.stringify({
+          isRemoteUpdate.current = true
+          dispatch({
+            type: 'SET_CART',
+            items: updatedItems,
+            coupon: state.coupon,
+          })
+          localStorage.setItem(
+            CART_STORAGE_KEY,
+            JSON.stringify({
               items: updatedItems,
               coupon: state.coupon,
-            }),
+            })
+          )
+        } catch {}
+
+        // 2. Perform the background API sync without awaiting it, returning success immediately
+        const authToken = token || localStorage.getItem('lilycharm_token') || ''
+        fetch(`${API_URL}/cart`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+          body: JSON.stringify({
+            items: updatedItems,
+            coupon: state.coupon,
+          }),
+        })
+          .then(async (res) => {
+            if (!res.ok) throw new Error('Server cart update failed')
+            const data = await res.json()
+            if (data && Array.isArray(data.items)) {
+              isRemoteUpdate.current = true
+              dispatch({
+                type: 'SET_CART',
+                items: data.items,
+                coupon: data.coupon,
+              })
+              try {
+                localStorage.setItem(
+                  CART_STORAGE_KEY,
+                  JSON.stringify({
+                    items: data.items,
+                    coupon: data.coupon,
+                  })
+                )
+              } catch {}
+            }
+          })
+          .catch((err) => {
+            console.error('[CART BACKGROUND SYNC ERROR]:', err)
           })
 
-          if (!res.ok) {
-            throw new Error('Server cart update failed')
-          }
-
-          const data = await res.json()
-          if (data && Array.isArray(data.items)) {
-            isRemoteUpdate.current = true
-            dispatch({
-              type: 'SET_CART',
-              items: data.items,
-              coupon: data.coupon,
-            })
-            try {
-              localStorage.setItem(
-                CART_STORAGE_KEY,
-                JSON.stringify({
-                  items: data.items,
-                  coupon: data.coupon,
-                })
-              )
-            } catch {}
-            return { success: true }
-          } else {
-            throw new Error('Invalid response payload')
-          }
-        } catch (err) {
-          console.error('[CART BACKGROUND UPDATE ERROR]:', err)
-          return { success: false, message: 'Unable to add this item. Please try again.' }
-        }
+        return { success: true }
       } else {
+        // Guest flow - already instant
         try {
           isRemoteUpdate.current = true
           dispatch({

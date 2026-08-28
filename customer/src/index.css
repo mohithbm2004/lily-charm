@@ -133,12 +133,6 @@
     box-sizing: border-box;
     box-shadow: 0 4px 14px rgba(45, 57, 38, 0.16);
   }
-  .btn-primary:hover:not(:disabled) {
-    background-color: var(--color-primary-hover);
-    color: #ffffff;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(45, 57, 38, 0.25);
-  }
   .btn-primary:active:not(:disabled) {
     transform: translateY(0);
   }
@@ -156,14 +150,23 @@
     max-width: 100%;
     box-sizing: border-box;
   }
-  .btn-outline:hover:not(:disabled) {
-    background-color: var(--color-primary);
-    color: #ffffff;
-    border-color: var(--color-primary);
-    transform: translateY(-1px);
-  }
   .btn-outline:active:not(:disabled) {
     transform: translateY(0);
+  }
+
+  @media (hover: hover) {
+    .btn-primary:hover:not(:disabled) {
+      background-color: var(--color-primary-hover);
+      color: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(45, 57, 38, 0.25);
+    }
+    .btn-outline:hover:not(:disabled) {
+      background-color: var(--color-primary);
+      color: #ffffff;
+      border-color: var(--color-primary);
+      transform: translateY(-1px);
+    }
   }
   .specimen-tag {
     font-family: var(--font-button);
