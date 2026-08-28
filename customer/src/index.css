@@ -128,13 +128,18 @@
     color: #ffffff;
     padding: 0.9rem 2rem;
     border-radius: 0.75rem;
-    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     max-width: 100%;
     box-sizing: border-box;
     box-shadow: 0 4px 14px rgba(45, 57, 38, 0.16);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   .btn-primary:active:not(:disabled) {
-    transform: translateY(0);
+    transform: scale(0.97);
+    background-color: var(--color-primary-hover);
+    box-shadow: 0 2px 8px rgba(45, 57, 38, 0.2);
   }
   .btn-outline {
     font-family: var(--font-button);
@@ -146,12 +151,18 @@
     border: 1px solid rgba(28, 27, 24, 0.25);
     border-radius: 0.75rem;
     padding: 0.85rem 1.9rem;
-    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     max-width: 100%;
     box-sizing: border-box;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   .btn-outline:active:not(:disabled) {
-    transform: translateY(0);
+    transform: scale(0.97);
+    background-color: var(--color-primary);
+    color: #ffffff;
+    border-color: var(--color-primary);
   }
 
   @media (hover: hover) {
