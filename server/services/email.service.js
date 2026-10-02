@@ -167,9 +167,10 @@ export async function sendEmail({
 
       const apiUrl = process.env.ZEPTO_API_URL || 'https://api.zeptomail.in/v1.1/email'
       
-      const authHeader = transporterWrapper.apiKey.trim().toLowerCase().startsWith('zoho-enczapikey')
-        ? transporterWrapper.apiKey.trim()
-        : `Zoho-enczapikey ${transporterWrapper.apiKey.trim()}`
+      const rawApiKey = (transporterWrapper.apiKey || '').toString().trim().replace(/^["']|["']$/g, '').trim()
+      const authHeader = rawApiKey.toLowerCase().startsWith('zoho-enczapikey')
+        ? rawApiKey
+        : `Zoho-enczapikey ${rawApiKey}`
 
       const response = await fetch(apiUrl, {
         method: 'POST',

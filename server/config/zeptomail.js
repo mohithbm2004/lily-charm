@@ -34,26 +34,31 @@ export function getZeptoMailAgent(purpose = 'otp') {
 /**
  * Standard Verified ZeptoMail Senders for Lily Charm
  */
+const cleanStr = (val, fallback = '') => {
+  if (!val) return fallback
+  return String(val).trim().replace(/^["']|["']$/g, '').trim()
+}
+
 export const SENDER_ADDRESSES = {
   NOREPLY: {
-    address: process.env.EMAIL_NOREPLY_ADDRESS || 'no-reply@lilycharm.in',
-    name: process.env.EMAIL_NOREPLY_NAME || 'Lily Charm',
-    full: 'Lily Charm <no-reply@lilycharm.in>',
+    address: cleanStr(process.env.EMAIL_NOREPLY_ADDRESS, 'no-reply@lilycharm.in'),
+    name: cleanStr(process.env.EMAIL_NOREPLY_NAME, 'Lily Charm'),
+    full: cleanStr(process.env.EMAIL_FROM_NOREPLY || process.env.EMAIL_FROM, 'Lily Charm <no-reply@lilycharm.in>'),
   },
   ORDERS: {
-    address: process.env.EMAIL_ORDERS_ADDRESS || 'orders@lilycharm.in',
-    name: process.env.EMAIL_ORDERS_NAME || 'Lily Charm Orders',
-    full: 'Lily Charm Orders <orders@lilycharm.in>',
+    address: cleanStr(process.env.EMAIL_ORDERS_ADDRESS, 'orders@lilycharm.in'),
+    name: cleanStr(process.env.EMAIL_ORDERS_NAME, 'Lily Charm Orders'),
+    full: cleanStr(process.env.EMAIL_FROM_ORDERS, 'Lily Charm Orders <orders@lilycharm.in>'),
   },
   SUPPORT: {
-    address: process.env.EMAIL_SUPPORT_ADDRESS || 'support@lilycharm.in',
-    name: process.env.EMAIL_SUPPORT_NAME || 'Lily Charm Support',
-    full: 'Lily Charm Support <support@lilycharm.in>',
+    address: cleanStr(process.env.EMAIL_SUPPORT_ADDRESS, 'support@lilycharm.in'),
+    name: cleanStr(process.env.EMAIL_SUPPORT_NAME, 'Lily Charm Support'),
+    full: cleanStr(process.env.EMAIL_FROM_SUPPORT, 'Lily Charm Support <support@lilycharm.in>'),
   },
   CONTACT: {
-    address: process.env.EMAIL_CONTACT_ADDRESS || 'contact@lilycharm.in',
-    name: process.env.EMAIL_CONTACT_NAME || 'Lily Charm Studio',
-    full: 'Lily Charm Studio <contact@lilycharm.in>',
+    address: cleanStr(process.env.EMAIL_CONTACT_ADDRESS, 'contact@lilycharm.in'),
+    name: cleanStr(process.env.EMAIL_CONTACT_NAME, 'Lily Charm Studio'),
+    full: cleanStr(process.env.EMAIL_FROM_CONTACT, 'Lily Charm Studio <contact@lilycharm.in>'),
   },
 }
 
