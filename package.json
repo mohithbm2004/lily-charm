@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "start": "node server/index.js",
+    "postinstall": "npm --prefix server install",
     "dev:server": "npm --prefix server start",
     "dev:customer": "npm --prefix customer run dev",
     "dev:admin": "npm --prefix admin run dev",
