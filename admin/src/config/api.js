@@ -6,7 +6,7 @@ export const API_URL =
   import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL !== 'http://localhost:5000/api'
     ? import.meta.env.VITE_API_URL
     : isProduction
-    ? 'https://lily-charm-server.onrender.com/api'
+    ? 'https://lily-charm.onrender.com/api'
     : 'http://localhost:5000/api'
 
 export const SOCKET_URL = import.meta.env.VITE_WS_URL || API_URL.replace(/\/api\/?$/, '')

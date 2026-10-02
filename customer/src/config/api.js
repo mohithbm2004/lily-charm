@@ -9,7 +9,7 @@ export const API_URL =
     ? envApiUrl
     : isLocalhost
     ? 'http://localhost:5000/api'
-    : 'https://lily-charm-server.onrender.com/api'
+    : 'https://lily-charm.onrender.com/api'
 
 export const SOCKET_URL = import.meta.env.VITE_WS_URL || API_URL.replace(/\/api\/?$/, '')
 

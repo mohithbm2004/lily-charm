@@ -27,7 +27,7 @@ async function runCustomerAuthTests() {
   })
   console.log(`✅ Created test customer: ${testEmail}`)
 
-  const baseUrl = `https://lily-charm-server.onrender.com/api`
+  const baseUrl = `https://lily-charm.onrender.com/api`
   console.log(`\n--- Testing against Production Backend: ${baseUrl} ---`)
 
   // 2. Test Non-existent Email
