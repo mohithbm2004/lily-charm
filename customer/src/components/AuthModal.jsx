@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { API_URL } from '../config/api'
 import { useScrollLock } from '../lib/useScrollLock'
-import { detectDomainTypo, maskEmailForDisplay } from '../utils/emailValidator'
+import { detectDomainTypo } from '../utils/emailValidator'
 
 export default function AuthModal({
   isOpen,
@@ -607,52 +607,55 @@ export default function AuthModal({
 
           {/* STEP 2 EMAIL CONFIRMATION CARD */}
           {showConfirmEmail ? (
-            <div className="space-y-4 text-center bg-amber-50/60 border border-amber-200 p-4 rounded-2xl">
-              <div className="w-10 h-10 bg-amber-100 text-amber-900 rounded-full flex items-center justify-center mx-auto border border-amber-300">
-                <Mail size={22} />
+            <div className="space-y-4 text-center py-1">
+              <div className="w-11 h-11 rounded-full bg-[var(--color-primary)]/8 text-[var(--color-primary)] flex items-center justify-center mx-auto border border-[var(--color-primary)]/15">
+                <Mail size={19} strokeWidth={1.75} />
               </div>
+
               <div className="space-y-1">
-                <h3 className="text-sm font-bold text-amber-950 uppercase tracking-wide">Please Confirm Your Email Address</h3>
-                <p className="text-xs text-[var(--color-ink-soft)]">
+                <span className="eyebrow block">Confirm Email</span>
+                <p className="text-xs text-[var(--color-ink-soft)] max-w-xs mx-auto">
                   {mode === 'forgot'
                     ? 'We will send a secure password reset link to:'
                     : 'We will send a 6-digit OTP verification code to:'}
                 </p>
-                <div className="bg-white border border-amber-300 p-2.5 rounded-xl font-mono text-sm font-bold text-[var(--color-primary)] break-all shadow-sm my-2">
+              </div>
+
+              <div className="py-3 px-4 bg-[var(--color-card-bg)] border border-[var(--color-line)] rounded-xl text-center">
+                <p className="font-mono text-sm sm:text-base font-semibold text-[var(--color-ink)] break-all select-all">
                   {formData.email}
-                  <div className="text-[0.68rem] text-slate-500 font-sans font-normal mt-0.5">
-                    (Preview: {maskEmailForDisplay(formData.email)})
-                  </div>
-                </div>
-                <p className="text-[0.7rem] text-slate-600">
-                  Please make sure there are no typos in your email domain so that you receive your link/code without delay.
                 </p>
               </div>
 
-              <div className="flex gap-2 pt-2">
+              <div className="grid grid-cols-2 gap-2.5 pt-1">
                 <button
                   type="button"
                   onClick={() => setShowConfirmEmail(false)}
-                  className="flex-1 py-2.5 px-3 border border-[var(--color-line)] bg-white hover:bg-gray-100 text-xs font-bold uppercase tracking-wider rounded flex items-center justify-center gap-1 text-slate-700"
+                  className="btn-outline py-2.5 px-3 text-[0.7rem] font-semibold tracking-wider flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <Edit3 size={13} /> Edit Email
+                  <Edit3 size={13} strokeWidth={1.8} />
+                  <span>Edit Email</span>
                 </button>
                 <button
                   type="button"
                   onClick={executeSubmitApi}
                   disabled={isLoading}
-                  className="flex-1 btn-primary py-2.5 px-3 text-xs font-bold uppercase tracking-wider rounded flex items-center justify-center gap-1 disabled:opacity-50"
+                  className="btn-primary py-2.5 px-3 text-[0.7rem] font-semibold tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  {isLoading ? <Sparkles size={13} className="animate-spin" /> : <Send size={13} />}
-                  {mode === 'forgot' ? 'Send Reset Link' : 'Send OTP Code'}
+                  {isLoading ? (
+                    <Sparkles size={13} className="animate-spin" />
+                  ) : (
+                    <Send size={13} strokeWidth={1.8} />
+                  )}
+                  <span>{mode === 'forgot' ? 'Send Link' : 'Send Code'}</span>
                 </button>
               </div>
             </div>
           ) : mode === 'otp' ? (
             /* MODE: OTP VERIFICATION */
             <div className="space-y-4 sm:space-y-5 text-center">
-              <div className="w-12 h-12 bg-amber-100 text-amber-900 rounded-full flex items-center justify-center mx-auto border border-amber-300">
-                <ShieldCheck size={26} />
+              <div className="w-11 h-11 rounded-full bg-[var(--color-primary)]/8 text-[var(--color-primary)] flex items-center justify-center mx-auto border border-[var(--color-primary)]/15">
+                <ShieldCheck size={20} strokeWidth={1.75} />
               </div>
 
               <div className="space-y-1">
@@ -680,7 +683,7 @@ export default function AuthModal({
 
               <div className="flex flex-wrap items-center justify-between text-xs text-[var(--color-ink-soft)] px-1 font-mono gap-2">
                 <span className="flex items-center gap-1">
-                  <Clock size={12} /> Expires: <strong className={timeLeft < 60 ? 'text-rose-600' : 'text-amber-800'}>{formatMinutes(timeLeft)}</strong>
+                  <Clock size={12} /> Expires: <strong className={timeLeft < 60 ? 'text-rose-600' : 'text-[var(--color-primary)]'}>{formatMinutes(timeLeft)}</strong>
                 </span>
 
                 <button

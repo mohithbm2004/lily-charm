@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles, AlertTriangle, AlertCircle, Info, X } from 'lucide-react'
+import { Sparkles, AlertTriangle, AlertCircle, Info, X, Check } from 'lucide-react'
 import { useScrollLock } from '../lib/useScrollLock'
 
 const AlertContext = createContext()
